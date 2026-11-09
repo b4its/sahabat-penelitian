@@ -40,6 +40,30 @@
             color: #111827;
         }
 
+        /* Ensure paper contents remain high-contrast on white canvas */
+        #document-editor h1,
+        #document-editor h2,
+        #document-editor h3,
+        #document-editor h4,
+        #document-editor h5,
+        #document-editor h6,
+        #document-editor p,
+        #document-editor li,
+        #document-editor th,
+        #document-editor td {
+            color: #111827;
+        }
+
+        #document-page-canvas.canvas-dark-sheet {
+            background: #18181b !important;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        #document-page-canvas.canvas-dark-sheet #document-editor,
+        #document-page-canvas.canvas-dark-sheet #document-editor * {
+            color: #f3f4f6 !important;
+        }
+
         #document-editor h1.heading-chapter,
         #document-editor h1.heading-preliminary {
             font-size: 14pt;
@@ -501,13 +525,16 @@
             </div>
 
             <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
-                <button id="btn-toggle-ruler" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 rounded text-xs flex items-center gap-1">
+                <button id="btn-toggle-ruler" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1 cursor-pointer">
                     <input type="checkbox" checked class="pointer-events-none" />
                     <span>Penggaris Metrik</span>
                 </button>
-                <button id="btn-toggle-outline" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 rounded text-xs flex items-center gap-1">
+                <button id="btn-toggle-outline" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1 cursor-pointer">
                     <input type="checkbox" checked class="pointer-events-none" />
                     <span>Struktur Dokumen (Outline)</span>
+                </button>
+                <button id="btn-toggle-dark-sheet" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1 cursor-pointer" title="Ganti Lembar Terang/Gelap">
+                    <span>🌙 Lembar Gelap</span>
                 </button>
             </div>
 

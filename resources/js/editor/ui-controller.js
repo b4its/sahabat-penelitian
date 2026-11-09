@@ -216,6 +216,18 @@ export class UiController {
             });
         }
 
+        const toggleDarkSheetBtn = document.getElementById('btn-toggle-dark-sheet');
+        if (toggleDarkSheetBtn) {
+            toggleDarkSheetBtn.addEventListener('click', () => {
+                const canvas = document.getElementById('document-page-canvas');
+                if (canvas) {
+                    const isDark = canvas.classList.toggle('canvas-dark-sheet');
+                    toggleDarkSheetBtn.querySelector('span').textContent = isDark ? '☀️ Lembar Terang' : '🌙 Lembar Gelap';
+                    this.showToast(isDark ? 'Mode Lembar Gelap aktif.' : 'Mode Lembar Terang (Standar Kertas) aktif.');
+                }
+            });
+        }
+
         const toggleAiBtn = document.getElementById('btn-toggle-ai');
         if (toggleAiBtn) {
             toggleAiBtn.addEventListener('click', () => {

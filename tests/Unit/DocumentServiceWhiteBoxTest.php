@@ -212,3 +212,27 @@ HTML;
         ->and($result['adapted_html'])->toContain('data-page-break')
         ->and(count($result['headings']))->toBeGreaterThanOrEqual(3);
 });
+
+test('white-box: adaptDocumentStructure intelligently merges two-line chapter headings and preliminary pages', function () {
+    $inputHtml = <<<HTML
+        <p>LEMBAR PENGESAHAN</p>
+        <p>Disetujui oleh dosen pembimbing.</p>
+        <p>BAB II</p>
+        <p>LANDASAN TEORI</p>
+        <p>2.1 Tinjauan Pustaka Sensor Warna</p>
+        <p>Sensor TCS3200 mendeteksi frekuensi spektrum cahaya.</p>
+        <p>DAFTAR PUSTAKA</p>
+        <p>[1] Smith, J. 2024. IoT Sensors Handbook.</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($inputHtml, 'skripsi.docx');
+
+    expect($result['adapted_html'])->toContain('BAB II LANDASAN TEORI')
+        ->and($result['adapted_html'])->toContain('LEMBAR PENGESAHAN')
+        ->and($result['adapted_html'])->toContain('DAFTAR PUSTAKA')
+        ->and($result['headings'])->toContain([
+            'id' => 'heading-1',
+            'level' => 1,
+            'text' => 'BAB II LANDASAN TEORI',
+        ]);
+});

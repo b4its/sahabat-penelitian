@@ -456,6 +456,15 @@ class DocumentService
                 continue;
             }
 
+            // Check if we hit a chapter heading or preliminary section, which ends cover page immediately
+            if ($inCoverPage && (
+                preg_match('/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i', $innerText) ||
+                preg_match('/^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)/i', $innerText)
+            )) {
+                $inCoverPage = false;
+                $adaptedBlocks[] = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span></div>';
+            }
+
             // Cover page processing for academic papers
             if ($inCoverPage) {
                 $coverParagraphCount++;
@@ -473,9 +482,24 @@ class DocumentService
                 continue;
             }
 
-            // Chapter Headings: BAB I, BAB II, etc.
-            if (preg_match('/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i', $innerText)) {
-                $titleText = trim($innerText);
+            // Chapter Headings: BAB I, BAB II, etc. (Handles single line or two-line chapter title)
+            if (preg_match('/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i', $innerText, $bm)) {
+                $chapterPrefix = trim($bm[1]);
+                $chapterSuffix = trim($bm[2]);
+
+                // If suffix is empty, look ahead at the next token to see if it's the chapter title (e.g. PENDAHULUAN)
+                if (empty($chapterSuffix) && isset($tokens[$i + 2])) {
+                    $nextCandidate = trim(strip_tags($tokens[$i + 2]));
+                    if (!empty($nextCandidate) && strlen($nextCandidate) < 100 && !str_starts_with($nextCandidate, '<') && !preg_match('/^\d+\.\d+/', $nextCandidate)) {
+                        $titleText = $chapterPrefix . ' ' . $nextCandidate;
+                        $i += 2; // consume next token
+                    } else {
+                        $titleText = $chapterPrefix;
+                    }
+                } else {
+                    $titleText = trim($innerText);
+                }
+
                 $hId = 'heading-' . count($headings);
                 $headings[] = ['id' => $hId, 'level' => 1, 'text' => $titleText];
 
@@ -484,8 +508,8 @@ class DocumentService
                 continue;
             }
 
-            // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, etc.
-            if (preg_match('/^(SKRIPSI|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)$/i', $innerText)) {
+            // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, LEMBAR PENGESAHAN, etc.
+            if (preg_match('/^(SKRIPSI|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)$/i', $innerText)) {
                 $titleText = strtoupper(trim($innerText));
                 $hId = 'heading-' . count($headings);
                 $headings[] = ['id' => $hId, 'level' => 1, 'text' => $titleText];

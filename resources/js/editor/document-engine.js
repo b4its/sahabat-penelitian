@@ -307,6 +307,19 @@ export class DocumentEngine {
         for (let el of children) {
             const text = el.textContent.trim();
 
+            // Check if we hit a chapter heading or preliminary section, which ends cover page immediately
+            if (inCover && (
+                /^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i.test(text) ||
+                /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)/i.test(text)
+            )) {
+                inCover = false;
+                const pb = doc.createElement('div');
+                pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
+                pb.setAttribute('data-page-break', 'true');
+                pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span>';
+                el.before(pb);
+            }
+
             // Cover Page centering
             if (inCover) {
                 coverCount++;
@@ -332,12 +345,24 @@ export class DocumentEngine {
                 continue;
             }
 
-            // Chapter Headings: BAB I, BAB II, etc.
-            if (/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i.test(text)) {
+            // Chapter Headings: BAB I, BAB II, etc. (Handles single line and two-line chapter title)
+            const babMatch = text.match(/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i);
+            if (babMatch) {
                 headingCount++;
+                let titleText = text;
+                const nextEl = el.nextElementSibling;
+                // If chapter title is on the next line (e.g. BAB I followed by PENDAHULUAN)
+                if ((!babMatch[2] || babMatch[2].trim() === '') && nextEl) {
+                    const nextText = nextEl.textContent.trim();
+                    if (nextText && nextText.length < 100 && !/^\d+\.\d+/.test(nextText)) {
+                        titleText = `${babMatch[1]} ${nextText}`;
+                        nextEl.remove();
+                    }
+                }
+
                 const h1 = doc.createElement('h1');
                 h1.className = 'heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
-                h1.innerHTML = el.innerHTML;
+                h1.textContent = titleText;
 
                 // Add page break before chapter if not already at page break
                 const pb = doc.createElement('div');
@@ -350,12 +375,12 @@ export class DocumentEngine {
                 continue;
             }
 
-            // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, etc.
-            if (/^(SKRIPSI|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)$/i.test(text)) {
+            // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, LEMBAR PENGESAHAN, etc.
+            if (/^(SKRIPSI|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)$/i.test(text)) {
                 headingCount++;
                 const h1 = doc.createElement('h1');
                 h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
-                h1.innerHTML = text;
+                h1.textContent = text.toUpperCase();
 
                 const pb = doc.createElement('div');
                 pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
@@ -505,6 +530,16 @@ export class DocumentEngine {
     setFontFamily(fontName) {
         this.editorEl.style.fontFamily = fontName;
         this.execute('fontName', fontName);
+
+        const fontSelect = document.getElementById('font-family-select');
+        if (fontSelect) {
+            for (let i = 0; i < fontSelect.options.length; i++) {
+                if (fontSelect.options[i].value.includes(fontName) || fontName.includes(fontSelect.options[i].text) || fontName.includes('Times') && fontSelect.options[i].value.includes('Times')) {
+                    fontSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
     }
 
     setFontSize(ptSize) {
@@ -519,6 +554,11 @@ export class DocumentEngine {
         } else {
             this.editorEl.style.fontSize = ptSize;
         }
+
+        const sizeSelect = document.getElementById('font-size-select');
+        if (sizeSelect) {
+            sizeSelect.value = ptSize;
+        }
     }
 
     setLineSpacing(val) {
@@ -526,6 +566,11 @@ export class DocumentEngine {
         this.editorEl.querySelectorAll('p').forEach(p => {
             p.style.lineHeight = val;
         });
+
+        const lineSelect = document.getElementById('line-spacing-select');
+        if (lineSelect) {
+            lineSelect.value = val;
+        }
         this.handleInput();
     }
 
