@@ -1,7 +1,7 @@
 /**
  * VelScribe UI Controller
  * Manages Microsoft Word-style Ribbon tabs, Google Docs-style Outline and Bubble Menu,
- * Zoom, Rulers, Modals, Drag-and-Drop, and Keyboard Shortcuts.
+ * Interactive Table & Image Toolbars, Zoom, Rulers, Modals, Drag-and-Drop, and Keyboard Shortcuts.
  */
 
 export class UiController {
@@ -14,6 +14,8 @@ export class UiController {
         this.isRulerVisible = true;
         this.isOutlineVisible = true;
         this.isWordcraftVisible = true;
+        this.findMatches = [];
+        this.currentMatchIndex = -1;
 
         this.init();
     }
@@ -22,6 +24,7 @@ export class UiController {
         this.bindRibbonTabs();
         this.bindRibbonTools();
         this.bindBubbleMenu();
+        this.bindContextToolbars();
         this.bindZoomControls();
         this.bindLayoutModeSwitchers();
         this.bindModals();
@@ -59,7 +62,6 @@ export class UiController {
                     }
                 });
 
-                // If AI tab is clicked, also open the Wordcraft sidebar if closed
                 if (targetTab === 'ai') {
                     this.toggleWordcraftSidebar(true);
                 }
@@ -76,7 +78,7 @@ export class UiController {
         document.querySelectorAll('[data-action="undo"]').forEach(b => b.addEventListener('click', () => this.engine.undo()));
         document.querySelectorAll('[data-action="redo"]').forEach(b => b.addEventListener('click', () => this.engine.redo()));
 
-        // Basic formatting
+        // Basic formatting commands
         document.querySelectorAll('[data-cmd]').forEach(b => {
             b.addEventListener('click', () => {
                 const cmd = b.getAttribute('data-cmd');
@@ -100,6 +102,23 @@ export class UiController {
                 this.engine.setFontSize(e.target.value);
             });
         }
+
+        // Line Spacing
+        const lineSpacingSelect = document.getElementById('line-spacing-select');
+        if (lineSpacingSelect) {
+            lineSpacingSelect.addEventListener('change', (e) => {
+                this.engine.setLineSpacing(e.target.value);
+                this.showToast(`Spasi baris diatur ke ${e.target.value}`);
+            });
+        }
+
+        // Text Alignment buttons
+        document.querySelectorAll('[data-align]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const align = btn.getAttribute('data-align');
+                this.engine.setTextAlignment(align);
+            });
+        });
 
         // Text Color & Highlight Color
         const textColorInput = document.getElementById('text-color-picker');
@@ -127,7 +146,29 @@ export class UiController {
             });
         }
 
-        // Page Layout tab settings
+        // Insert Table of Contents
+        const btnInsertToc = document.getElementById('btn-insert-toc');
+        if (btnInsertToc) {
+            btnInsertToc.addEventListener('click', () => {
+                const ok = this.engine.generateTableOfContents();
+                if (ok) {
+                    this.showToast('Daftar Isi Otomatis berhasil dibuat dan disisipkan!');
+                } else {
+                    this.showToast('Tidak ada judul/heading untuk dibuatkan Daftar Isi.', 'warning');
+                }
+            });
+        }
+
+        // Page Layout tab settings (Margins preset)
+        const marginsSelect = document.getElementById('layout-margins');
+        if (marginsSelect) {
+            marginsSelect.addEventListener('change', (e) => {
+                this.engine.setMarginPreset(e.target.value);
+                this.showToast(`Margin halaman diatur ke preset: ${e.target.value.toUpperCase()}`);
+            });
+        }
+
+        // Paper Size
         const paperSizeSelect = document.getElementById('layout-paper-size');
         if (paperSizeSelect) {
             paperSizeSelect.addEventListener('change', (e) => {
@@ -135,10 +176,12 @@ export class UiController {
                 if (canvas) {
                     canvas.classList.remove('page-a4', 'page-letter', 'page-legal');
                     canvas.classList.add(`page-${e.target.value}`);
+                    this.showToast(`Ukuran kertas diatur ke ${e.target.value.toUpperCase()}`);
                 }
             });
         }
 
+        // Orientation
         const orientationSelect = document.getElementById('layout-orientation');
         if (orientationSelect) {
             orientationSelect.addEventListener('change', (e) => {
@@ -149,24 +192,7 @@ export class UiController {
                     } else {
                         canvas.classList.remove('page-landscape');
                     }
-                }
-            });
-        }
-
-        const marginsSelect = document.getElementById('layout-margins');
-        if (marginsSelect) {
-            marginsSelect.addEventListener('change', (e) => {
-                const editor = this.engine.editorEl;
-                if (!editor) return;
-                const val = e.target.value;
-                if (val === 'narrow') {
-                    editor.style.padding = '12mm 15mm';
-                } else if (val === 'wide') {
-                    editor.style.padding = '35mm 30mm';
-                } else if (val === 'none') {
-                    editor.style.padding = '5mm 5mm';
-                } else {
-                    editor.style.padding = '25mm 25mm';
+                    this.showToast(`Orientasi halaman: ${e.target.value}`);
                 }
             });
         }
@@ -212,6 +238,33 @@ export class UiController {
     }
 
     /* -------------------------------------------------------------
+     * Interactive Table & Image Context Toolbars
+     * ------------------------------------------------------------- */
+
+    bindContextToolbars() {
+        // Table toolbar actions
+        const tableToolbar = document.getElementById('floating-table-toolbar');
+        if (tableToolbar) {
+            tableToolbar.querySelector('[data-table-action="add-row-above"]')?.addEventListener('click', () => this.engine.addRowAbove());
+            tableToolbar.querySelector('[data-table-action="add-row-below"]')?.addEventListener('click', () => this.engine.addRowBelow());
+            tableToolbar.querySelector('[data-table-action="del-row"]')?.addEventListener('click', () => this.engine.deleteRow());
+            tableToolbar.querySelector('[data-table-action="add-col"]')?.addEventListener('click', () => this.engine.addColumn());
+            tableToolbar.querySelector('[data-table-action="del-col"]')?.addEventListener('click', () => this.engine.deleteColumn());
+            tableToolbar.querySelector('[data-table-action="del-table"]')?.addEventListener('click', () => this.engine.deleteTable());
+        }
+
+        // Image toolbar actions
+        const imageToolbar = document.getElementById('floating-image-toolbar');
+        if (imageToolbar) {
+            imageToolbar.querySelector('[data-img-align="left"]')?.addEventListener('click', () => this.engine.setImageAlignment('left'));
+            imageToolbar.querySelector('[data-img-align="center"]')?.addEventListener('click', () => this.engine.setImageAlignment('center'));
+            imageToolbar.querySelector('[data-img-align="right"]')?.addEventListener('click', () => this.engine.setImageAlignment('right'));
+            imageToolbar.querySelector('[data-img-size="50%"]')?.addEventListener('click', () => this.engine.setImageWidth('50%'));
+            imageToolbar.querySelector('[data-img-size="100%"]')?.addEventListener('click', () => this.engine.setImageWidth('100%'));
+        }
+    }
+
+    /* -------------------------------------------------------------
      * Floating Bubble Menu (Google Docs style)
      * ------------------------------------------------------------- */
 
@@ -221,9 +274,7 @@ export class UiController {
 
         this.engine.onSelectionChange = (state) => {
             if (state.hasSelection && state.rect && state.text.trim().length > 0) {
-                const editorRect = this.engine.editorEl.getBoundingClientRect();
                 const bubbleRect = bubble.getBoundingClientRect();
-
                 const top = Math.max(10, state.rect.top - bubbleRect.height - 10);
                 const left = Math.max(10, Math.min(window.innerWidth - bubbleRect.width - 20, state.rect.left + (state.rect.width / 2) - (bubbleRect.width / 2)));
 
@@ -237,7 +288,6 @@ export class UiController {
             }
         };
 
-        // Quick ask AI from bubble
         const bubbleAiBtn = bubble.querySelector('#bubble-ask-ai');
         if (bubbleAiBtn) {
             bubbleAiBtn.addEventListener('click', () => {
@@ -319,7 +369,6 @@ export class UiController {
                 if (topNav) topNav.classList.remove('hidden');
                 if (ruler) ruler.classList.add('hidden');
             } else if (mode === 'zen') {
-                // Focus / Zen Mode
                 if (canvas) {
                     canvas.classList.remove('page-a4', 'shadow-2xl');
                     canvas.classList.add('w-full', 'max-w-3xl', 'shadow-none');
@@ -328,7 +377,7 @@ export class UiController {
                 if (ruler) ruler.classList.add('hidden');
                 if (outline) outline.classList.add('hidden');
                 if (wordcraft) wordcraft.classList.add('hidden');
-                this.showToast('Mode Zen aktif. Tekan Escape atau klik tombol keluar untuk kembali.');
+                this.showToast('Mode Zen aktif. Tekan Escape untuk kembali.');
             }
         };
 
@@ -336,7 +385,6 @@ export class UiController {
             btn.addEventListener('click', () => setMode(btn.getAttribute('data-layout-mode')));
         });
 
-        // Exit zen mode on Escape
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.layoutMode === 'zen') {
                 setMode('print');
@@ -345,7 +393,7 @@ export class UiController {
     }
 
     /* -------------------------------------------------------------
-     * Modals (Open File, Find & Replace, Link, Table, Image, Export)
+     * Modals (Open File, Find & Replace, Link, Table, Image, Export, Stats, Shortcuts)
      * ------------------------------------------------------------- */
 
     bindModals() {
@@ -361,7 +409,7 @@ export class UiController {
                 if (e.target.files.length > 0) {
                     const file = e.target.files[0];
                     this.closeModal(openFileModal);
-                    this.showToast(`Memuat ${file.name} dan menyesuaikan format...`);
+                    this.showToast(`Membaca ${file.name} dan menyelaraskan format...`);
                     try {
                         const res = await this.engine.loadLocalFile(file);
                         this.showToast(res.message);
@@ -372,7 +420,16 @@ export class UiController {
             });
         }
 
-        // Find & Replace Modal
+        // Quick sample template loaders in open modal
+        document.querySelectorAll('[data-load-sample]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sampleType = btn.getAttribute('data-load-sample');
+                this.closeModal(openFileModal);
+                this.loadSampleTemplate(sampleType);
+            });
+        });
+
+        // Find & Replace Modal with active search highlight
         const findModal = document.getElementById('modal-find-replace');
         const findBtns = document.querySelectorAll('[data-action="find-replace"]');
         findBtns.forEach(b => b.addEventListener('click', () => this.openModal(findModal)));
@@ -380,6 +437,7 @@ export class UiController {
         const findInput = document.getElementById('find-search-input');
         const replaceInput = document.getElementById('find-replace-input');
         const btnReplaceAll = document.getElementById('btn-replace-all');
+        const btnReplaceOne = document.getElementById('btn-replace-one');
 
         if (btnReplaceAll && findInput && replaceInput) {
             btnReplaceAll.addEventListener('click', () => {
@@ -397,10 +455,43 @@ export class UiController {
                     this.closeModal(findModal);
                     this.showToast(`Berhasil mengganti ${count} kata "${query}"!`);
                 } else {
-                    this.showToast(`Kata "${query}" tidak ditemukan dalam dokumen.`, 'warning');
+                    this.showToast(`Kata "${query}" tidak ditemukan.`, 'warning');
                 }
             });
         }
+
+        if (btnReplaceOne && findInput && replaceInput) {
+            btnReplaceOne.addEventListener('click', () => {
+                const query = findInput.value;
+                const replacement = replaceInput.value;
+                if (!query) return;
+
+                const content = this.engine.getContent();
+                const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                if (regex.test(content)) {
+                    const updated = content.replace(regex, replacement);
+                    this.engine.setContent(updated);
+                    this.showToast(`Kata "${query}" pertama berhasil diganti.`);
+                } else {
+                    this.showToast(`Kata "${query}" tidak ditemukan.`, 'warning');
+                }
+            });
+        }
+
+        // Detailed Statistics Modal
+        const statsModal = document.getElementById('modal-stats');
+        document.querySelectorAll('[data-action="open-stats-modal"]').forEach(b => {
+            b.addEventListener('click', () => {
+                this.populateStatsModal();
+                this.openModal(statsModal);
+            });
+        });
+
+        // Keyboard Shortcuts Modal
+        const shortcutsModal = document.getElementById('modal-shortcuts');
+        document.querySelectorAll('[data-action="open-shortcuts-modal"]').forEach(b => {
+            b.addEventListener('click', () => this.openModal(shortcutsModal));
+        });
 
         // Insert Link Modal
         const linkModal = document.getElementById('modal-insert-link');
@@ -495,6 +586,81 @@ export class UiController {
         });
     }
 
+    populateStatsModal() {
+        const text = this.engine.editorEl.innerText || '';
+        const clean = text.trim();
+        const words = clean ? clean.split(/\s+/).filter(Boolean).length : 0;
+        const chars = clean.length;
+        const charsNoSpaces = clean.replace(/\s+/g, '').length;
+        const paragraphs = clean ? clean.split(/\n\s*\n/).filter(Boolean).length : 0;
+        const sentences = clean ? clean.split(/[.!?]+/).filter(Boolean).length : 0;
+        const readingTime = Math.max(1, Math.ceil(words / 200));
+        const speakingTime = Math.max(1, Math.ceil(words / 130));
+
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+
+        setVal('modal-stat-words', words);
+        setVal('modal-stat-chars', chars);
+        setVal('modal-stat-chars-nospace', charsNoSpaces);
+        setVal('modal-stat-sentences', sentences);
+        setVal('modal-stat-paras', paragraphs);
+        setVal('modal-stat-reading', `${readingTime} menit`);
+        setVal('modal-stat-speaking', `${speakingTime} menit`);
+    }
+
+    loadSampleTemplate(type) {
+        if (type === 'skripsi') {
+            const title = 'SKRIPSI — PENERAPAN ENSEMBLE LEARNING PADA SISTEM MONITORING IOT';
+            const sampleHtml = `
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100 my-2">SKRIPSI</p>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100 my-2 text-lg">PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL BERBASIS SENSOR WARNA PADA SISTEM MONITORING INTERNET OF THINGS</p>
+                <figure class="my-6 text-center">
+                    <div class="w-32 h-32 mx-auto bg-emerald-100 dark:bg-emerald-950/60 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xl border-2 border-emerald-500">LOGO</div>
+                </figure>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100 my-1">Oleh :</p>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100 my-1">BAITS RIKA SAPUTRA</p>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100 my-1">NIM. 23.6651.071</p>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100 mt-6">PROGRAM STUDI SARJANA TERAPAN TEKNIK INFORMATIKA MULTIMEDIA</p>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100">JURUSAN TEKNOLOGI INFORMASI</p>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100">POLITEKNIK NEGERI SAMARINDA</p>
+                <p class="text-center font-bold text-gray-900 dark:text-gray-100 mb-8">2026</p>
+
+                <div class="page-break my-8 border-b-2 border-dashed border-gray-400 text-center py-2 select-none" data-page-break="true">
+                    <span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs font-mono">Pemisah Halaman (Akhir Sampul)</span>
+                </div>
+
+                <h1 id="heading-0" class="heading-preliminary text-center font-bold text-xl my-6">ABSTRAK</h1>
+                <p class="text-justify my-3 leading-relaxed indent-8">Pencemaran limbah cair industri tekstil membutuhkan mekanisme monitoring secara real-time dan berkesinambungan. Penelitian ini mengintegrasikan sensor warna TCS3200 dengan mikrokontroler ESP32 serta algoritma ensemble learning guna mengklasifikasikan baku mutu limbah dengan akurasi teruji.</p>
+
+                <div class="page-break my-6 border-b border-dashed border-gray-300 text-center py-1 select-none" data-page-break="true">
+                    <span class="text-[10px] font-mono">Awal Bab Baru</span>
+                </div>
+
+                <h1 id="heading-1" class="heading-chapter text-center font-bold text-xl my-6">BAB I PENDAHULUAN</h1>
+                <h2 id="heading-2" class="heading-section font-bold text-lg my-4">1.1 Latar Belakang Masalah</h2>
+                <p class="text-justify my-3 leading-relaxed indent-8">Perkembangan sektor perindustrian tekstil menghasilkan limbah cair dengan konsentrasi zat warna sintetis yang berdampak buruk pada kualitas perairan jika tidak dipantau secara ketat. Berdasarkan standar baku mutu lingkungan, pengujian konvensional di laboratorium membutuhkan waktu berhari-hari sehingga berisiko menunda penanganan pencemaran.</p>
+
+                <h2 id="heading-3" class="heading-section font-bold text-lg my-4">1.2 Rumusan Masalah</h2>
+                <p class="text-justify my-3 leading-relaxed indent-8">Bagaimana mengimplementasikan algoritma ensemble learning pada data sensor warna untuk mendeteksi ambang batas limbah cair tekstil secara akurat dan real-time?</p>
+
+                <h2 id="heading-4" class="heading-section font-bold text-lg my-4">1.3 Tujuan Penelitian</h2>
+                <p class="text-justify my-3 leading-relaxed indent-8">1. Merancang arsitektur perangkat keras IoT berbasis sensor warna.</p>
+                <p class="text-justify my-3 leading-relaxed indent-8">2. Mengembangkan model klasifikasi ensemble learning dengan akurasi di atas 90%.</p>
+            `;
+
+            this.engine.setTitle(title);
+            this.engine.setContent(sampleHtml);
+            this.engine.setMarginPreset('skripsi');
+            this.engine.setFontFamily("'Times New Roman', serif");
+            this.engine.setFontSize('12pt');
+            this.engine.setLineSpacing('1.5');
+            this.showToast('Contoh Naskah Skripsi berhasil dimuat dengan format 4-4-3-3 cm!');
+        }
+    }
+
     openModal(modal) {
         if (!modal) return;
         modal.classList.remove('hidden');
@@ -537,7 +703,7 @@ export class UiController {
                     const files = e.dataTransfer.files;
                     if (files.length > 0) {
                         const file = files[0];
-                        this.showToast(`Memuat ${file.name} dan menyesuaikan format...`);
+                        this.showToast(`Memuat ${file.name} dan menyelaraskan format...`);
                         this.engine.loadLocalFile(file)
                             .then(res => this.showToast(res.message))
                             .catch(err => this.showToast(err.message, 'error'));
@@ -573,6 +739,13 @@ export class UiController {
                 e.preventDefault();
                 const modal = document.getElementById('modal-find-replace');
                 this.openModal(modal);
+            } else if (isCtrl && e.shiftKey && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                this.populateStatsModal();
+                this.openModal(document.getElementById('modal-stats'));
+            } else if (isCtrl && e.key === '/') {
+                e.preventDefault();
+                this.openModal(document.getElementById('modal-shortcuts'));
             }
         });
     }
@@ -586,7 +759,7 @@ export class UiController {
         if (!ruler) return;
 
         ruler.innerHTML = '';
-        // Standard A4 width is 21 cm
+        // A4 width = 21 cm
         for (let cm = 0; cm <= 21; cm++) {
             const cmTick = document.createElement('div');
             cmTick.className = 'flex-1 border-r border-gray-300 dark:border-gray-700 h-full relative';
@@ -619,17 +792,15 @@ export class UiController {
 
         container.appendChild(toast);
 
-        // Animate in
         requestAnimationFrame(() => {
             toast.classList.remove('translate-y-2', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
         });
 
-        // Auto remove
         setTimeout(() => {
             toast.classList.remove('translate-y-0', 'opacity-100');
             toast.classList.add('translate-y-2', 'opacity-0');
             setTimeout(() => toast.remove(), 300);
-        }, 3500);
+        }, 3800);
     }
 }

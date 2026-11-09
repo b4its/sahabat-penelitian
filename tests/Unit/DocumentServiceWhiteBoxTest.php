@@ -179,3 +179,36 @@ test('white-box: extractTitle prioritizes H1 tag over filename', function () {
     $title3 = $this->service->extractTitle('', '<p>Kosong</p>');
     expect($title3)->toBe('Dokumen Tanpa Judul');
 });
+
+test('white-box: adaptDocumentStructure promotes chapters and configures academic skripsi margins', function () {
+    $inputHtml = <<<HTML
+        <p>SKRIPSI</p>
+        <p>PENELITIAN LIMBAH CAIR</p>
+        <p>Oleh : Peneliti</p>
+        <p>NIM. 123456</p>
+        <p>UNIVERSITAS INDONESIA</p>
+        <p>2026</p>
+        <p>BAB I PENDAHULUAN</p>
+        <p>1.1 Latar Belakang Masalah</p>
+        <p>Paragraf isi latar belakang permasalahan.</p>
+        <p>1.1.1 Identifikasi Masalah</p>
+        <p>Sub poin identifikasi.</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($inputHtml, 'skripsi_penelitian.docx');
+
+    expect($result['presets']['is_academic'])->toBeTrue()
+        ->and($result['presets']['margins'])->toBe('skripsi')
+        ->and($result['presets']['margin_details']['top'])->toBe('4cm')
+        ->and($result['presets']['margin_details']['left'])->toBe('4cm')
+        ->and($result['presets']['margin_details']['right'])->toBe('3cm')
+        ->and($result['presets']['margin_details']['bottom'])->toBe('3cm')
+        ->and($result['presets']['font_family'])->toBe('Times New Roman, serif')
+        ->and($result['presets']['font_size'])->toBe('12pt')
+        ->and($result['presets']['line_spacing'])->toBe('1.5')
+        ->and($result['adapted_html'])->toContain('heading-chapter')
+        ->and($result['adapted_html'])->toContain('heading-section')
+        ->and($result['adapted_html'])->toContain('heading-subsection')
+        ->and($result['adapted_html'])->toContain('data-page-break')
+        ->and(count($result['headings']))->toBeGreaterThanOrEqual(3);
+});

@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Document Engine
     const engine = new DocumentEngine({
         editorEl,
+        canvasEl: document.getElementById('document-page-canvas'),
         titleInput,
         formatBadge,
         onStatsChange: (stats) => {
@@ -46,9 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             headings.forEach(h => {
                 const li = document.createElement('li');
-                const indentClass = h.level === 1 ? 'font-semibold text-gray-800 dark:text-gray-200' :
-                                    h.level === 2 ? 'pl-3 text-gray-600 dark:text-gray-400 text-xs' :
-                                    'pl-6 text-gray-500 dark:text-gray-500 text-xs';
+                const indentClass = h.level === 1 ? 'font-bold text-gray-900 dark:text-gray-100 text-xs mt-1.5' :
+                                    h.level === 2 ? 'pl-3 font-medium text-gray-700 dark:text-gray-300 text-[11px]' :
+                                    'pl-6 text-gray-500 dark:text-gray-400 text-[11px]';
 
                 li.className = `py-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 truncate transition ${indentClass}`;
                 li.textContent = h.text || 'Judul Kosong';
@@ -58,8 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const targetEl = document.getElementById(h.id);
                     if (targetEl) {
                         targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        targetEl.classList.add('bg-indigo-50', 'dark:bg-indigo-950/40');
-                        setTimeout(() => targetEl.classList.remove('bg-indigo-50', 'dark:bg-indigo-950/40'), 1500);
+                        targetEl.classList.add('bg-indigo-100', 'dark:bg-indigo-950/60');
+                        setTimeout(() => targetEl.classList.remove('bg-indigo-100', 'dark:bg-indigo-950/60'), 1800);
                     }
                 });
 
@@ -69,6 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
         onSaveStateChange: (msg) => {
             if (saveStatusEl) {
                 saveStatusEl.textContent = msg;
+            }
+        },
+        onAdaptationNotice: (notice) => {
+            if (window.uiController) {
+                window.uiController.showToast(notice.message, notice.type === 'academic' ? 'success' : 'info');
             }
         },
     });
@@ -93,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.documentEngine = engine;
     window.wordcraftAi = wordcraftAi;
 
-    // Optional: Check if local storage draft is newer
+    // Optional: Check if local storage draft exists
     try {
         const raw = localStorage.getItem('velscribe_document_state');
         if (raw) {
@@ -114,5 +120,5 @@ document.addEventListener('DOMContentLoaded', () => {
         // silent
     }
 
-    console.log('VelScribe Wordcraft Studio successfully initialized.');
+    console.log('VelScribe Wordcraft Studio core initialized.');
 });

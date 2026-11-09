@@ -1,25 +1,39 @@
 /**
  * VelScribe Document Engine
- * Core rich text editing, local file ingestion, auto-formatting adaptation,
- * and export handlers inspired by Microsoft Word & Google Docs.
+ * Comprehensive Word Processor Engine inspired by Microsoft Word & Google Documents.
+ * Features:
+ * - Intelligent local file ingestion (.docx, .md, .html, .txt, .json)
+ * - Automatic document structure adaptation (Academic/Skripsi 4-4-3-3 margins, Times New Roman 12pt, justified text)
+ * - Semantic chapter & heading promotion (BAB I-V, Preliminaries, 1.1 subheadings)
+ * - Cover page centering and auto page-break
+ * - Dynamic Left Outline synchronization
+ * - Table of Contents generator (Daftar Isi Otomatis)
+ * - Rich table and image editing tools
+ * - Undo/Redo history stack, auto-save to localStorage
+ * - Multi-format export (DOCX, PDF, MD, HTML, TXT, JSON)
  */
 
 export class DocumentEngine {
     constructor(options = {}) {
         this.editorEl = options.editorEl;
+        this.canvasEl = options.canvasEl || document.getElementById('document-page-canvas');
         this.titleInput = options.titleInput;
         this.formatBadge = options.formatBadge;
         this.onStatsChange = options.onStatsChange || (() => {});
         this.onOutlineChange = options.onOutlineChange || (() => {});
         this.onSaveStateChange = options.onSaveStateChange || (() => {});
         this.onSelectionChange = options.onSelectionChange || (() => {});
+        this.onAdaptationNotice = options.onAdaptationNotice || (() => {});
 
         this.currentFormat = 'docx';
+        this.currentMarginPreset = 'normal';
         this.history = [];
         this.historyIndex = -1;
         this.maxHistory = 50;
         this.autoSaveTimer = null;
         this.isTyping = false;
+        this.activeTable = null;
+        this.activeImage = null;
 
         this.init();
     }
@@ -27,7 +41,7 @@ export class DocumentEngine {
     init() {
         if (!this.editorEl) return;
 
-        // Save initial state to history
+        // Record initial state
         this.recordHistory();
 
         // Editor input listeners
@@ -35,14 +49,34 @@ export class DocumentEngine {
             this.handleInput();
         });
 
-        // Selection listeners for active styles and bubble menu
+        // Selection listeners
         document.addEventListener('selectionchange', () => {
             if (this.isEditorFocused()) {
                 this.onSelectionChange(this.getSelectionState());
             }
         });
 
-        // Paste handler to clean and adapt rich text or pasted images
+        // Click listeners for tables and images to show context toolbars
+        this.editorEl.addEventListener('click', (e) => {
+            const table = e.target.closest('table');
+            const img = e.target.closest('img');
+
+            if (table) {
+                this.activeTable = table;
+                this.showTableToolbar(table, e);
+            } else {
+                this.hideTableToolbar();
+            }
+
+            if (img) {
+                this.activeImage = img;
+                this.showImageToolbar(img, e);
+            } else {
+                this.hideImageToolbar();
+            }
+        });
+
+        // Paste handler
         this.editorEl.addEventListener('paste', (e) => {
             this.handlePaste(e);
         });
@@ -52,7 +86,7 @@ export class DocumentEngine {
             this.handleKeydown(e);
         });
 
-        // Initial stats and outline update
+        // Initial stats and outline
         this.updateStats();
         this.updateOutline();
     }
@@ -79,7 +113,7 @@ export class DocumentEngine {
     }
 
     handleKeydown(e) {
-        // Tab key handling for indentation / table cells
+        // Tab indentation
         if (e.key === 'Tab') {
             e.preventDefault();
             if (e.shiftKey) {
@@ -89,18 +123,25 @@ export class DocumentEngine {
             }
             this.handleInput();
         }
+
+        // Ctrl + Enter = Insert Page Break
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            this.insertPageBreak();
+        }
     }
 
     handlePaste(e) {
-        // Check for pasted images from clipboard
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+        if (!items) return;
+
         for (let item of items) {
             if (item.type.indexOf('image') === 0) {
                 e.preventDefault();
                 const blob = item.getAsFile();
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    this.insertImage(event.target.result, 'Gambar yang ditempel');
+                    this.insertImage(event.target.result, 'Gambar ditempel');
                 };
                 reader.readAsDataURL(blob);
                 return;
@@ -109,11 +150,11 @@ export class DocumentEngine {
     }
 
     /* -------------------------------------------------------------
-     * Local File Ingestion & Format Adaptation
+     * Local File Ingestion & Intelligent Auto-Adaptation
      * ------------------------------------------------------------- */
 
     /**
-     * Ingest local file from File object, detect format, and adapt layout automatically.
+     * Ingest local file, detect format, and adapt layout, headings, and margins automatically.
      */
     async loadLocalFile(file) {
         const filename = file.name;
@@ -125,12 +166,31 @@ export class DocumentEngine {
             if (['docx', 'doc'].includes(extension)) {
                 detectedFormat = 'docx';
                 const arrayBuffer = await file.arrayBuffer();
+
                 if (window.mammoth) {
-                    const result = await window.mammoth.convertToHtml({ arrayBuffer });
+                    const styleMap = [
+                        "p[style-name='Title'] => h1.doc-title.text-center:fresh",
+                        "p[style-name='Subtitle'] => p.doc-subtitle.text-center:fresh",
+                        "p[style-name='Heading 1'] => h1.heading-chapter:fresh",
+                        "p[style-name='Heading 2'] => h2.heading-section:fresh",
+                        "p[style-name='Heading 3'] => h3.heading-subsection:fresh",
+                        "p[style-name='Heading 4'] => h4:fresh",
+                        "p[style-name='Heading 5'] => h5:fresh",
+                        "p[style-name='Heading 6'] => h6:fresh",
+                        "r[style-name='Strong'] => strong",
+                        "p:has(w:jc[w:val='center']) => p.text-center:fresh",
+                        "p:has(w:jc[w:val='right']) => p.text-right:fresh",
+                        "p:has(w:jc[w:val='both']) => p.text-justify:fresh",
+                    ];
+
+                    const result = await window.mammoth.convertToHtml({
+                        arrayBuffer,
+                        styleMap,
+                    });
                     contentHtml = result.value;
                 } else {
-                    // Fallback to backend API
-                    contentHtml = await this.uploadToBackend(file);
+                    const backendResult = await this.uploadToBackend(file);
+                    contentHtml = backendResult.content_html;
                 }
             } else if (['md', 'markdown'].includes(extension)) {
                 detectedFormat = 'markdown';
@@ -152,51 +212,218 @@ export class DocumentEngine {
                     this.setTitle(data.title);
                 }
             } else {
-                // Default plain text (.txt, etc.)
                 detectedFormat = 'txt';
                 const text = await file.text();
                 const paragraphs = text.split(/\n\s*\n/);
                 contentHtml = paragraphs
-                    .map(p => `<p>${p.trim().replace(/\n/g, '<br>')}</p>`)
+                    .map(p => `<p class="text-justify my-3">${p.trim().replace(/\n/g, '<br>')}</p>`)
                     .join('');
             }
 
-            // Set document title from filename if not set by JSON
-            if (extension !== 'json' || !this.titleInput.value) {
+            // Set document title
+            if (extension !== 'json' || !this.titleInput?.value) {
                 const baseTitle = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
                 this.setTitle(this.capitalizeWords(baseTitle));
             }
 
-            // Adapt and inject content
-            this.setContent(contentHtml);
+            // Run semantic document structure & formatting adapter
+            const adapted = this.adaptDocumentStructure(contentHtml, filename);
+
+            this.setContent(adapted.html);
             this.setFormatBadge(detectedFormat);
-            this.adaptDocumentFormat(detectedFormat, contentHtml);
+
+            // Apply adapted typography and margins
+            if (adapted.isAcademic) {
+                this.setMarginPreset('skripsi');
+                this.setFontFamily("'Times New Roman', serif");
+                this.setFontSize('12pt');
+                this.setLineSpacing('1.5');
+                this.onAdaptationNotice({
+                    type: 'academic',
+                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font Times New Roman 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil diselaraskan.`,
+                });
+            } else {
+                this.setMarginPreset('normal');
+                this.onAdaptationNotice({
+                    type: 'normal',
+                    message: `Format ${detectedFormat.toUpperCase()} berhasil dimuat dan diselaraskan ke dalam kanvas A4.`,
+                });
+            }
 
             return {
                 success: true,
                 filename,
                 format: detectedFormat,
+                isAcademic: adapted.isAcademic,
                 message: `Format ${detectedFormat.toUpperCase()} otomatis disesuaikan.`,
             };
         } catch (err) {
-            console.error('Gagal membaca file lokal:', err);
-            // Attempt server-side import fallback
+            console.error('Error loading local file:', err);
+            // Fallback to backend parser
             try {
-                const result = await this.uploadToBackend(file);
-                this.setContent(result.content_html);
-                this.setTitle(result.title);
-                this.setFormatBadge(result.format);
-                this.adaptDocumentFormat(result.format, result.content_html);
+                const backendResult = await this.uploadToBackend(file);
+                this.setContent(backendResult.content_html);
+                this.setTitle(backendResult.title);
+                this.setFormatBadge(backendResult.format);
                 return {
                     success: true,
                     filename,
-                    format: result.format,
-                    message: `Format ${result.format.toUpperCase()} otomatis disesuaikan via backend.`,
+                    format: backendResult.format,
+                    message: backendResult.message,
                 };
-            } catch (backendErr) {
-                throw new Error('Tidak dapat memproses berkas lokal: ' + (err.message || backendErr.message));
+            } catch (bErr) {
+                throw new Error('Gagal memproses berkas lokal: ' + (err.message || bErr.message));
             }
         }
+    }
+
+    /**
+     * Semantic document structure & formatting adapter.
+     * Identifies academic skripsi patterns, centers cover page, promotes chapters/subheadings,
+     * and splits pages cleanly.
+     */
+    adaptDocumentStructure(html, filename = '') {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+        const container = doc.body.firstElementChild;
+
+        const allText = container.textContent.toLowerCase();
+        const isAcademic =
+            allText.includes('skripsi') ||
+            allText.includes('tesis') ||
+            allText.includes('disertasi') ||
+            allText.includes('politeknik') ||
+            allText.includes('universitas') ||
+            allText.includes('nim.') ||
+            allText.includes('bab i') ||
+            filename.toLowerCase().includes('skripsi');
+
+        let inCover = isAcademic;
+        let coverCount = 0;
+        let headingCount = 0;
+
+        // Process all direct children
+        const children = Array.from(container.children);
+        for (let el of children) {
+            const text = el.textContent.trim();
+
+            // Cover Page centering
+            if (inCover) {
+                coverCount++;
+
+                // If image in cover (e.g. university logo), center and size nicely
+                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
+                if (img) {
+                    img.className = 'mx-auto block my-6 max-h-44 object-contain';
+                    el.className = 'text-center my-4';
+                } else if (text) {
+                    el.className = 'text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
+                }
+
+                // Year detection or cover length limit: end cover page
+                if (/\b(19|20)\d{2}\b/.test(text) || coverCount > 14) {
+                    inCover = false;
+                    const pb = doc.createElement('div');
+                    pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
+                    pb.setAttribute('data-page-break', 'true');
+                    pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span>';
+                    el.after(pb);
+                }
+                continue;
+            }
+
+            // Chapter Headings: BAB I, BAB II, etc.
+            if (/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i.test(text)) {
+                headingCount++;
+                const h1 = doc.createElement('h1');
+                h1.className = 'heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
+                h1.innerHTML = el.innerHTML;
+
+                // Add page break before chapter if not already at page break
+                const pb = doc.createElement('div');
+                pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
+                pb.setAttribute('data-page-break', 'true');
+                pb.innerHTML = '<span class="text-[10px] text-gray-400 font-mono">Awal Bab Baru</span>';
+
+                el.before(pb);
+                el.replaceWith(h1);
+                continue;
+            }
+
+            // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, etc.
+            if (/^(SKRIPSI|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)$/i.test(text)) {
+                headingCount++;
+                const h1 = doc.createElement('h1');
+                h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
+                h1.innerHTML = text;
+
+                const pb = doc.createElement('div');
+                pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
+                pb.setAttribute('data-page-break', 'true');
+                pb.innerHTML = '<span class="text-[10px] text-gray-400 font-mono">Halaman Baru</span>';
+
+                el.before(pb);
+                el.replaceWith(h1);
+                continue;
+            }
+
+            // Subsections: 1.1 Latar Belakang, 2.1 Teori
+            if (/^(\d+\.\d+)\s+(.+)$/.test(text)) {
+                headingCount++;
+                const h2 = doc.createElement('h2');
+                h2.className = 'heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100';
+                h2.innerHTML = el.innerHTML;
+                el.replaceWith(h2);
+                continue;
+            }
+
+            // Sub-subsections: 1.1.1, 2.3.1
+            if (/^(\d+\.\d+\.\d+)\s+(.+)$/.test(text)) {
+                headingCount++;
+                const h3 = doc.createElement('h3');
+                h3.className = 'heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200';
+                h3.innerHTML = el.innerHTML;
+                el.replaceWith(h3);
+                continue;
+            }
+
+            // Standalone short uppercase lines
+            if (text.length > 3 && text.length < 70 && text === text.toUpperCase() && !/[.,;]$/.test(text) && !el.querySelector('img')) {
+                headingCount++;
+                const h2 = doc.createElement('h2');
+                h2.className = 'heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase';
+                h2.innerHTML = text;
+                el.replaceWith(h2);
+                continue;
+            }
+
+            // Table styling
+            if (el.tagName === 'TABLE') {
+                el.className = 'w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700';
+                el.querySelectorAll('th, td').forEach(cell => {
+                    cell.className = 'border border-gray-300 dark:border-gray-700 p-2 text-left';
+                });
+                el.querySelectorAll('th').forEach(th => {
+                    th.className = 'border border-gray-300 dark:border-gray-700 p-2 text-left bg-gray-100 dark:bg-gray-800 font-semibold';
+                });
+                continue;
+            }
+
+            // Normal Body Paragraphs
+            if (el.tagName === 'P') {
+                if (isAcademic) {
+                    el.className = 'text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200 indent-8';
+                } else {
+                    el.className = 'my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                }
+            }
+        }
+
+        return {
+            html: container.innerHTML,
+            isAcademic,
+            headingCount,
+        };
     }
 
     async uploadToBackend(file) {
@@ -221,66 +448,66 @@ export class DocumentEngine {
         return await res.json();
     }
 
-    /**
-     * Automatic format and layout adaptation based on document content characteristics.
-     */
-    adaptDocumentFormat(format, htmlContent) {
-        const hasWideTables = htmlContent.includes('<table') && htmlContent.length > 3000;
-        const pageContainer = document.getElementById('document-page-canvas');
-
-        if (pageContainer) {
-            if (hasWideTables) {
-                pageContainer.dataset.orientation = 'landscape';
-                pageContainer.classList.add('page-landscape');
-            } else {
-                pageContainer.dataset.orientation = 'portrait';
-                pageContainer.classList.remove('page-landscape');
-            }
-        }
-
-        // Apply font styling preset matching document origin
-        if (format === 'markdown') {
-            this.editorEl.style.fontFamily = "'Instrument Sans', ui-sans-serif, system-ui, sans-serif";
-            this.editorEl.style.lineHeight = '1.7';
-        } else if (format === 'docx') {
-            this.editorEl.style.fontFamily = "'Instrument Sans', Arial, sans-serif";
-            this.editorEl.style.lineHeight = '1.5';
-        } else if (format === 'txt') {
-            this.editorEl.style.lineHeight = '1.6';
-        }
-
-        // Clean empty tags and normalize table borders
-        this.editorEl.querySelectorAll('table').forEach(table => {
-            table.classList.add('w-full', 'border-collapse', 'my-4');
-            table.querySelectorAll('th, td').forEach(cell => {
-                cell.classList.add('border', 'border-gray-300', 'dark:border-gray-700', 'p-2', 'text-left');
-            });
-            table.querySelectorAll('th').forEach(th => {
-                th.classList.add('bg-gray-50', 'dark:bg-gray-800', 'font-semibold');
-            });
-        });
-
-        this.updateStats();
-        this.updateOutline();
-        this.recordHistory();
-    }
-
     /* -------------------------------------------------------------
-     * Document Editing Commands (Ribbon & Bubble)
+     * Margins, Layout Presets & Formatting
      * ------------------------------------------------------------- */
 
-    execute(command, value = null) {
-        this.editorEl.focus();
-        document.execCommand(command, false, value);
-        this.handleInput();
+    setMarginPreset(preset) {
+        this.currentMarginPreset = preset;
+        const canvas = this.canvasEl || document.getElementById('document-page-canvas');
+        if (!canvas) return;
+
+        // Apply margins to canvas container
+        if (preset === 'skripsi') {
+            // Skripsi standard: Top 4cm, Left 4cm, Right 3cm, Bottom 3cm
+            canvas.style.paddingTop = '40mm';
+            canvas.style.paddingLeft = '40mm';
+            canvas.style.paddingRight = '30mm';
+            canvas.style.paddingBottom = '30mm';
+            this.updateRulerMarkers(4, 18);
+        } else if (preset === 'narrow') {
+            // Sempit: 1.27cm
+            canvas.style.padding = '12.7mm';
+            this.updateRulerMarkers(1.3, 19.7);
+        } else if (preset === 'wide') {
+            // Lebar: 3.81cm left/right, 2.54cm top/bottom
+            canvas.style.paddingTop = '25.4mm';
+            canvas.style.paddingBottom = '25.4mm';
+            canvas.style.paddingLeft = '38.1mm';
+            canvas.style.paddingRight = '38.1mm';
+            this.updateRulerMarkers(3.8, 17.2);
+        } else {
+            // Standar Normal: 2.54cm (1 inch)
+            canvas.style.padding = '25.4mm';
+            this.updateRulerMarkers(2.5, 18.5);
+        }
+
+        // Sync with layout margin dropdown if present
+        const marginSelect = document.getElementById('layout-margins');
+        if (marginSelect) {
+            marginSelect.value = preset;
+        }
+    }
+
+    updateRulerMarkers(leftCm, rightCm) {
+        const leftMarker = document.getElementById('ruler-left-margin');
+        const rightMarker = document.getElementById('ruler-right-margin');
+
+        // A4 width = 21cm
+        if (leftMarker) {
+            leftMarker.style.left = `${(leftCm / 21) * 100}%`;
+        }
+        if (rightMarker) {
+            rightMarker.style.left = `${(rightCm / 21) * 100}%`;
+        }
     }
 
     setFontFamily(fontName) {
+        this.editorEl.style.fontFamily = fontName;
         this.execute('fontName', fontName);
     }
 
     setFontSize(ptSize) {
-        // Use span with style or fontSize
         this.editorEl.focus();
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -290,8 +517,229 @@ export class DocumentEngine {
             sel.getRangeAt(0).insertNode(span);
             this.handleInput();
         } else {
-            this.execute('fontSize', '3');
+            this.editorEl.style.fontSize = ptSize;
         }
+    }
+
+    setLineSpacing(val) {
+        this.editorEl.style.lineHeight = val;
+        this.editorEl.querySelectorAll('p').forEach(p => {
+            p.style.lineHeight = val;
+        });
+        this.handleInput();
+    }
+
+    setTextAlignment(align) {
+        this.editorEl.focus();
+        if (align === 'justify') {
+            document.execCommand('justifyFull');
+        } else if (align === 'center') {
+            document.execCommand('justifyCenter');
+        } else if (align === 'right') {
+            document.execCommand('justifyRight');
+        } else {
+            document.execCommand('justifyLeft');
+        }
+        this.handleInput();
+    }
+
+    /* -------------------------------------------------------------
+     * Table of Contents Generator (Daftar Isi Otomatis)
+     * ------------------------------------------------------------- */
+
+    generateTableOfContents() {
+        const headings = this.editorEl.querySelectorAll('h1, h2, h3');
+        if (headings.length === 0) {
+            return false;
+        }
+
+        let pageCounter = 1;
+        const tocEntries = [];
+
+        headings.forEach((h, index) => {
+            const text = h.textContent.trim();
+            const level = h.tagName.toLowerCase();
+            const id = h.id || `heading-${index}`;
+            h.id = id;
+
+            // Simple heuristic page count estimate based on DOM position
+            if (h.classList.contains('heading-chapter') || h.textContent.toLowerCase().includes('bab')) {
+                pageCounter = Math.max(pageCounter + 1, index * 2 + 1);
+            }
+
+            const indentClass = level === 'h1' ? 'font-bold mt-2' :
+                                level === 'h2' ? 'pl-4 text-sm' :
+                                'pl-8 text-xs text-gray-600 dark:text-gray-400';
+
+            tocEntries.push(`
+                <div class="flex items-baseline justify-between py-1 ${indentClass}">
+                    <a href="#${id}" class="hover:text-indigo-600 hover:underline truncate max-w-[80%]">${text}</a>
+                    <span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span>
+                    <span class="font-mono text-xs">${pageCounter}</span>
+                </div>
+            `);
+        });
+
+        const tocHtml = `
+            <div class="table-of-contents my-8 p-6 border border-gray-300 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 rounded-xl" contenteditable="false">
+                <h2 class="text-center font-bold text-lg mb-4 uppercase tracking-wider text-gray-900 dark:text-gray-100">DAFTAR ISI</h2>
+                <div class="space-y-1 font-serif">
+                    ${tocEntries.join('')}
+                </div>
+            </div>
+        `;
+
+        this.insertAtCursor(tocHtml);
+        return true;
+    }
+
+    /* -------------------------------------------------------------
+     * Interactive Table Tools
+     * ------------------------------------------------------------- */
+
+    showTableToolbar(table, event) {
+        let toolbar = document.getElementById('floating-table-toolbar');
+        if (!toolbar) return;
+
+        const rect = table.getBoundingClientRect();
+        toolbar.style.top = `${Math.max(10, rect.top - 45)}px`;
+        toolbar.style.left = `${Math.max(10, rect.left)}px`;
+        toolbar.classList.remove('hidden');
+        toolbar.classList.add('flex');
+    }
+
+    hideTableToolbar() {
+        const toolbar = document.getElementById('floating-table-toolbar');
+        if (toolbar) {
+            toolbar.classList.add('hidden');
+            toolbar.classList.remove('flex');
+        }
+    }
+
+    addRowAbove() {
+        if (!this.activeTable) return;
+        const row = this.activeTable.querySelector('tr');
+        if (!row) return;
+        const cols = row.children.length;
+        const newRow = document.createElement('tr');
+        for (let i = 0; i < cols; i++) {
+            const td = document.createElement('td');
+            td.className = 'border border-gray-300 dark:border-gray-700 p-2 text-left';
+            td.innerHTML = '&nbsp;';
+            newRow.appendChild(td);
+        }
+        row.before(newRow);
+        this.handleInput();
+    }
+
+    addRowBelow() {
+        if (!this.activeTable) return;
+        const row = this.activeTable.querySelector('tr:last-child');
+        if (!row) return;
+        const cols = row.children.length;
+        const newRow = document.createElement('tr');
+        for (let i = 0; i < cols; i++) {
+            const td = document.createElement('td');
+            td.className = 'border border-gray-300 dark:border-gray-700 p-2 text-left';
+            td.innerHTML = '&nbsp;';
+            newRow.appendChild(td);
+        }
+        row.after(newRow);
+        this.handleInput();
+    }
+
+    deleteRow() {
+        if (!this.activeTable) return;
+        const sel = window.getSelection();
+        const tr = sel?.anchorNode?.parentElement?.closest('tr') || this.activeTable.querySelector('tr:last-child');
+        if (tr && this.activeTable.querySelectorAll('tr').length > 1) {
+            tr.remove();
+            this.handleInput();
+        }
+    }
+
+    addColumn() {
+        if (!this.activeTable) return;
+        this.activeTable.querySelectorAll('tr').forEach((tr, idx) => {
+            const cell = idx === 0 && tr.querySelector('th') ? document.createElement('th') : document.createElement('td');
+            cell.className = 'border border-gray-300 dark:border-gray-700 p-2 text-left';
+            cell.innerHTML = idx === 0 ? 'Kolom Baru' : '&nbsp;';
+            tr.appendChild(cell);
+        });
+        this.handleInput();
+    }
+
+    deleteColumn() {
+        if (!this.activeTable) return;
+        this.activeTable.querySelectorAll('tr').forEach(tr => {
+            if (tr.children.length > 1) {
+                tr.lastElementChild.remove();
+            }
+        });
+        this.handleInput();
+    }
+
+    deleteTable() {
+        if (!this.activeTable) return;
+        this.activeTable.remove();
+        this.activeTable = null;
+        this.hideTableToolbar();
+        this.handleInput();
+    }
+
+    /* -------------------------------------------------------------
+     * Interactive Image Tools
+     * ------------------------------------------------------------- */
+
+    showImageToolbar(img, event) {
+        let toolbar = document.getElementById('floating-image-toolbar');
+        if (!toolbar) return;
+
+        const rect = img.getBoundingClientRect();
+        toolbar.style.top = `${Math.max(10, rect.top - 45)}px`;
+        toolbar.style.left = `${Math.max(10, rect.left)}px`;
+        toolbar.classList.remove('hidden');
+        toolbar.classList.add('flex');
+    }
+
+    hideImageToolbar() {
+        const toolbar = document.getElementById('floating-image-toolbar');
+        if (toolbar) {
+            toolbar.classList.add('hidden');
+            toolbar.classList.remove('flex');
+        }
+    }
+
+    setImageWidth(percentage) {
+        if (!this.activeImage) return;
+        this.activeImage.style.width = percentage;
+        this.handleInput();
+    }
+
+    setImageAlignment(align) {
+        if (!this.activeImage) return;
+        const figure = this.activeImage.closest('figure') || this.activeImage.parentElement;
+        if (align === 'center') {
+            this.activeImage.className = 'mx-auto block my-4 max-w-full rounded';
+            if (figure) figure.className = 'text-center my-4';
+        } else if (align === 'right') {
+            this.activeImage.className = 'ml-auto block my-4 max-w-full rounded';
+            if (figure) figure.className = 'text-right my-4';
+        } else {
+            this.activeImage.className = 'mr-auto block my-4 max-w-full rounded';
+            if (figure) figure.className = 'text-left my-4';
+        }
+        this.handleInput();
+    }
+
+    /* -------------------------------------------------------------
+     * Basic Commands, History & Stats
+     * ------------------------------------------------------------- */
+
+    execute(command, value = null) {
+        this.editorEl.focus();
+        document.execCommand(command, false, value);
+        this.handleInput();
     }
 
     setTextColor(hexColor) {
@@ -318,19 +766,18 @@ export class DocumentEngine {
         this.execute('insertHorizontalRule');
     }
 
-    insertLink(url, text = null) {
-        if (!url) return;
+    insertPageBreak() {
         this.editorEl.focus();
+        const pb = document.createElement('div');
+        pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-xs text-gray-500 select-none';
+        pb.setAttribute('data-page-break', 'true');
+        pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase tracking-wider font-mono">Pemisah Halaman (Page Break)</span>';
+
         const sel = window.getSelection();
-        if (sel && sel.isCollapsed && text) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.textContent = text;
-            a.target = '_blank';
-            a.className = 'text-blue-600 dark:text-blue-400 underline';
-            sel.getRangeAt(0).insertNode(a);
+        if (sel && sel.rangeCount > 0) {
+            sel.getRangeAt(0).insertNode(pb);
         } else {
-            this.execute('createLink', url);
+            this.editorEl.appendChild(pb);
         }
         this.handleInput();
     }
@@ -339,17 +786,17 @@ export class DocumentEngine {
         if (!src) return;
         this.editorEl.focus();
         const figure = document.createElement('figure');
-        figure.className = 'my-4 text-center inline-block max-w-full';
+        figure.className = 'my-6 text-center';
 
         const img = document.createElement('img');
         img.src = src;
         img.alt = alt;
-        img.className = 'max-w-full h-auto rounded-lg shadow-sm mx-auto cursor-pointer border border-gray-200 dark:border-gray-700';
+        img.className = 'mx-auto block max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-gray-700';
 
         figure.appendChild(img);
         if (alt) {
             const figcaption = document.createElement('figcaption');
-            figcaption.className = 'text-xs text-gray-500 mt-1 italic';
+            figcaption.className = 'text-xs text-gray-500 mt-2 italic font-serif';
             figcaption.textContent = alt;
             figure.appendChild(figcaption);
         }
@@ -401,70 +848,56 @@ export class DocumentEngine {
         this.handleInput();
     }
 
-    insertCallout(type = 'info', title = 'Catatan', message = 'Masukkan catatan penting Anda di sini.') {
+    insertLink(url, text = null) {
+        if (!url) return;
         this.editorEl.focus();
-        const callout = document.createElement('div');
-        let borderClass = 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200';
-        let icon = 'ℹ️';
-
-        if (type === 'warning') {
-            borderClass = 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200';
-            icon = '⚠️';
-        } else if (type === 'success') {
-            borderClass = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200';
-            icon = '✅';
-        }
-
-        callout.className = `p-4 my-4 rounded-lg border-l-4 ${borderClass}`;
-        callout.innerHTML = `
-            <div class="font-bold flex items-center gap-2 mb-1">
-                <span>${icon}</span>
-                <span>${title}</span>
-            </div>
-            <p class="text-sm m-0">${message}</p>
-        `;
-
         const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            sel.getRangeAt(0).insertNode(callout);
+        if (sel && sel.isCollapsed && text) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.textContent = text;
+            a.target = '_blank';
+            a.className = 'text-blue-600 dark:text-blue-400 underline';
+            sel.getRangeAt(0).insertNode(a);
         } else {
-            this.editorEl.appendChild(callout);
+            this.execute('createLink', url);
         }
         this.handleInput();
     }
 
-    insertPageBreak() {
+    insertAtCursor(htmlText) {
         this.editorEl.focus();
-        const pb = document.createElement('div');
-        pb.className = 'page-break-indicator my-6 border-b-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-xs text-gray-500';
-        pb.setAttribute('data-page-break', 'true');
-        pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase tracking-wider">Pemisah Halaman (Page Break)</span>';
-
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0) {
-            sel.getRangeAt(0).insertNode(pb);
+            const range = sel.getRangeAt(0);
+            const temp = document.createElement('div');
+            temp.innerHTML = htmlText;
+            const frag = document.createDocumentFragment();
+            while (temp.firstChild) {
+                frag.appendChild(temp.firstChild);
+            }
+            range.insertNode(frag);
         } else {
-            this.editorEl.appendChild(pb);
+            this.editorEl.innerHTML += htmlText;
         }
         this.handleInput();
     }
 
-    insertCurrentDateTime() {
-        const now = new Date();
-        const formatted = now.toLocaleDateString('id-ID', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-        this.execute('insertText', formatted);
+    replaceSelectedText(newText) {
+        this.editorEl.focus();
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const frag = document.createDocumentFragment();
+        const temp = document.createElement('div');
+        temp.innerHTML = newText;
+        while (temp.firstChild) {
+            frag.appendChild(temp.firstChild);
+        }
+        range.insertNode(frag);
+        this.handleInput();
     }
-
-    /* -------------------------------------------------------------
-     * Selection & State Queries
-     * ------------------------------------------------------------- */
 
     getSelectionState() {
         const sel = window.getSelection();
@@ -492,54 +925,13 @@ export class DocumentEngine {
             alignCenter: document.queryCommandState('justifyCenter'),
             alignRight: document.queryCommandState('justifyRight'),
             alignJustify: document.queryCommandState('justifyFull'),
-            isListUl: document.queryCommandState('insertUnorderedList'),
-            isListOl: document.queryCommandState('insertOrderedList'),
         };
     }
-
-    replaceSelectedText(newText) {
-        this.editorEl.focus();
-        const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
-        const range = sel.getRangeAt(0);
-        range.deleteContents();
-        const frag = document.createDocumentFragment();
-        const temp = document.createElement('div');
-        temp.innerHTML = newText;
-        while (temp.firstChild) {
-            frag.appendChild(temp.firstChild);
-        }
-        range.insertNode(frag);
-        this.handleInput();
-    }
-
-    insertAtCursor(htmlText) {
-        this.editorEl.focus();
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            const temp = document.createElement('div');
-            temp.innerHTML = htmlText;
-            const frag = document.createDocumentFragment();
-            while (temp.firstChild) {
-                frag.appendChild(temp.firstChild);
-            }
-            range.insertNode(frag);
-        } else {
-            this.editorEl.innerHTML += htmlText;
-        }
-        this.handleInput();
-    }
-
-    /* -------------------------------------------------------------
-     * Undo / Redo History Stack
-     * ------------------------------------------------------------- */
 
     recordHistory() {
         const content = this.getContent();
         if (this.history[this.historyIndex] === content) return;
 
-        // Cut off any redo states if we made a new action
         this.history = this.history.slice(0, this.historyIndex + 1);
         this.history.push(content);
         if (this.history.length > this.maxHistory) {
@@ -566,10 +958,6 @@ export class DocumentEngine {
         }
     }
 
-    /* -------------------------------------------------------------
-     * Document Statistics & Dynamic Outline
-     * ------------------------------------------------------------- */
-
     updateStats() {
         const text = this.editorEl.innerText || '';
         const cleanText = text.trim();
@@ -581,17 +969,23 @@ export class DocumentEngine {
         const paragraphs = cleanText ? cleanText.split(/\n\s*\n/).filter(Boolean) : [];
         const paragraphCount = paragraphs.length;
 
+        // Sentences count
+        const sentences = cleanText ? cleanText.split(/[.!?]+/).filter(Boolean) : [];
+        const sentenceCount = sentences.length;
+
         const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
-        // Estimate pages (standard 300 words per A4 page)
-        const pageCount = Math.max(1, Math.ceil(wordCount / 300));
+        // Count real page breaks or calculate based on words
+        const pageBreaks = this.editorEl.querySelectorAll('[data-page-break]').length;
+        const pageCount = Math.max(pageBreaks + 1, Math.max(1, Math.ceil(wordCount / 300)));
 
         this.onStatsChange({
             wordCount,
             charCount,
+            sentenceCount,
             paragraphCount,
             readingTimeMinutes,
-            readingTime: `${readingTimeMinutes} min`,
+            readingTime: `${readingTimeMinutes} min baca`,
             pageCount,
         });
     }
@@ -612,10 +1006,6 @@ export class DocumentEngine {
 
         this.onOutlineChange(headings);
     }
-
-    /* -------------------------------------------------------------
-     * Export Generators
-     * ------------------------------------------------------------- */
 
     async exportAs(format) {
         const title = this.getTitle();
@@ -665,7 +1055,7 @@ export class DocumentEngine {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            console.error('Ekspor via API gagal, menjalankan ekspor sisi klien:', err);
+            console.error('API export failed, performing client-side fallback:', err);
             this.clientSideExport(format, title, content);
         }
     }
@@ -678,7 +1068,7 @@ export class DocumentEngine {
         if (format === 'html') {
             mime = 'text/html; charset=utf-8';
             ext = 'html';
-            content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;}</style></head><body><h1>${title}</h1>${htmlContent}</body></html>`;
+            content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:'Times New Roman',serif;max-width:210mm;margin:40px auto;padding:40mm 30mm 30mm 40mm;line-height:1.5;}h1{text-align:center;}p{text-align:justify;text-indent:1.25cm;}</style></head><body>${htmlContent}</body></html>`;
         } else if (format === 'json') {
             mime = 'application/json; charset=utf-8';
             ext = 'json';
@@ -692,10 +1082,9 @@ export class DocumentEngine {
             ext = 'txt';
             content = `${title}\n\n${this.editorEl.innerText}`;
         } else {
-            // DOCX / HTML wrapper
             mime = 'application/msword; charset=utf-8';
             ext = 'doc';
-            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title></head><body><h1>${title}</h1>${htmlContent}</body></html>`;
+            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title><style>body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.5;}h1{text-align:center;}p{text-align:justify;text-indent:1.25cm;}</style></head><body>${htmlContent}</body></html>`;
         }
 
         const blob = new Blob([content], { type: mime });
@@ -709,21 +1098,18 @@ export class DocumentEngine {
         window.URL.revokeObjectURL(url);
     }
 
-    /* -------------------------------------------------------------
-     * Persistence & Helpers
-     * ------------------------------------------------------------- */
-
     saveToLocalStorage() {
         try {
             const data = {
                 title: this.getTitle(),
                 content: this.getContent(),
                 format: this.currentFormat,
+                marginPreset: this.currentMarginPreset,
                 savedAt: new Date().toISOString(),
             };
             localStorage.setItem('velscribe_document_state', JSON.stringify(data));
         } catch (e) {
-            console.warn('LocalStorage save failed:', e);
+            console.warn('LocalStorage save error:', e);
         }
     }
 
@@ -736,10 +1122,11 @@ export class DocumentEngine {
                 this.setTitle(data.title || 'Dokumen Tanpa Judul');
                 this.setContent(data.content);
                 this.setFormatBadge(data.format || 'docx');
+                if (data.marginPreset) this.setMarginPreset(data.marginPreset);
                 return true;
             }
         } catch (e) {
-            console.warn('LocalStorage load failed:', e);
+            console.warn('LocalStorage load error:', e);
         }
         return false;
     }

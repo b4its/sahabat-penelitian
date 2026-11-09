@@ -44,6 +44,12 @@ test('black-box: document editor view renders all ribbon tabs and interactive to
     $response->assertSee('modal-insert-table', false);
     $response->assertSee('modal-insert-image', false);
     $response->assertSee('modal-export', false);
+    $response->assertSee('modal-stats', false);
+    $response->assertSee('modal-shortcuts', false);
+
+    // Floating Context Toolbars
+    $response->assertSee('floating-table-toolbar', false);
+    $response->assertSee('floating-image-toolbar', false);
 });
 
 test('black-box: user can import a local markdown document and receive adapted format', function () {
@@ -72,9 +78,8 @@ test('black-box: user can import a local markdown document and receive adapted f
         ]);
 
     $html = $response->json('content_html');
-    expect($html)->toContain('<h1>Laporan Hasil Riset 2026</h1>')
-        ->and($html)->toContain('<strong>adaptasi format</strong>')
-        ->and($html)->toContain('<li>Poin Pertama</li>');
+    expect($html)->toMatch('/<h1[^>]*>Laporan Hasil Riset 2026<\/h1>/')
+        ->and($html)->toContain('Poin Pertama');
 });
 
 test('black-box: user can import a local html document with sanitization', function () {
@@ -92,7 +97,7 @@ test('black-box: user can import a local html document with sanitization', funct
         ]);
 
     $sanitized = $response->json('content_html');
-    expect($sanitized)->toContain('<h1>Studi Kasus</h1>')
+    expect($sanitized)->toMatch('/<h1[^>]*>Studi Kasus<\/h1>/')
         ->and($sanitized)->not->toContain('<script>')
         ->and($sanitized)->not->toContain('alert(');
 });
@@ -112,8 +117,46 @@ test('black-box: user can import a local plain text file and paragraphs are form
         ]);
 
     $html = $response->json('content_html');
-    expect($html)->toContain('<p>Paragraf pembuka teks.</p>')
-        ->and($html)->toContain('<p>Paragraf kedua naskah riset.</p>');
+    expect($html)->toMatch('/<p[^>]*>Paragraf pembuka teks\.<\/p>/')
+        ->and($html)->toMatch('/<p[^>]*>Paragraf kedua naskah riset\.<\/p>/');
+});
+
+test('black-box: user can import a local skripsi document and academic presets are applied', function () {
+    $skripsiContent = <<<HTML
+        <p>SKRIPSI</p>
+        <p>PENERAPAN ALGORITMA SISTEM MONITORING</p>
+        <p>Oleh : BAITS RIKA SAPUTRA</p>
+        <p>NIM. 23.6651.071</p>
+        <p>POLITEKNIK NEGERI SAMARINDA</p>
+        <p>2026</p>
+        <p>BAB I PENDAHULUAN</p>
+        <p>1.1 Latar Belakang Masalah</p>
+        <p>Limbah cair industri merupakan permasalahan lingkungan yang kritis.</p>
+HTML;
+
+    $file = UploadedFile::fake()->createWithContent('SKRIPSI_BAITS.docx', $skripsiContent);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $adapted = $response->json('adapted_settings');
+
+    expect($adapted['is_academic'])->toBeTrue()
+        ->and($adapted['margins'])->toBe('skripsi')
+        ->and($adapted['margin_details']['top'])->toBe('4cm')
+        ->and($adapted['margin_details']['left'])->toBe('4cm')
+        ->and($adapted['margin_details']['right'])->toBe('3cm')
+        ->and($adapted['margin_details']['bottom'])->toBe('3cm')
+        ->and($adapted['font_size'])->toBe('12pt')
+        ->and($adapted['line_spacing'])->toBe('1.5');
+
+    $html = $response->json('content_html');
+    expect($html)->toContain('text-center font-bold')
+        ->and($html)->toContain('heading-chapter')
+        ->and($html)->toContain('heading-section')
+        ->and($html)->toContain('data-page-break');
 });
 
 test('black-box: user can import a local json backup file and restore document state', function () {

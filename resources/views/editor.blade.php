@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>VelScribe Wordcraft Studio — Editor Dokumen Cerdas</title>
+    <title>VelScribe Wordcraft Studio — Word & Document Editor Cerdas</title>
 
     @fonts
 
@@ -17,11 +17,12 @@
         #document-page-canvas {
             width: 210mm;
             min-height: 297mm;
-            padding: 25mm 25mm;
+            padding: 25.4mm;
             margin: 20px auto;
             background: #ffffff;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
-            transition: transform 0.15s ease-out, width 0.2s ease, padding 0.2s ease;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.15s ease-out, padding 0.2s ease, width 0.2s ease;
+            box-sizing: border-box;
         }
 
         #document-page-canvas.page-landscape {
@@ -29,48 +30,39 @@
             min-height: 210mm !important;
         }
 
-        #document-page-canvas.page-letter {
-            width: 8.5in;
-            min-height: 11in;
-        }
-
-        #document-page-canvas.page-legal {
-            width: 8.5in;
-            min-height: 14in;
-        }
-
         /* Editor Typography & Styling */
         #document-editor {
             outline: none;
             min-height: 247mm;
-            font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-            font-size: 11pt;
-            line-height: 1.6;
-            color: #1f2937;
+            font-family: 'Times New Roman', 'Instrument Sans', serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #111827;
         }
 
-        #document-editor h1 {
-            font-size: 24pt;
+        #document-editor h1.heading-chapter,
+        #document-editor h1.heading-preliminary {
+            font-size: 14pt;
             font-weight: 700;
             color: #111827;
-            margin-top: 18pt;
-            margin-bottom: 10pt;
-            line-height: 1.25;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 4pt;
-        }
-
-        #document-editor h2 {
-            font-size: 18pt;
-            font-weight: 600;
-            color: #1f2937;
-            margin-top: 14pt;
-            margin-bottom: 8pt;
+            text-align: center;
+            margin-top: 24pt;
+            margin-bottom: 14pt;
             line-height: 1.3;
+            text-transform: uppercase;
         }
 
-        #document-editor h3 {
-            font-size: 14pt;
+        #document-editor h2.heading-section {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #1f2937;
+            margin-top: 16pt;
+            margin-bottom: 8pt;
+            line-height: 1.35;
+        }
+
+        #document-editor h3.heading-subsection {
+            font-size: 12pt;
             font-weight: 600;
             color: #374151;
             margin-top: 12pt;
@@ -78,23 +70,35 @@
         }
 
         #document-editor p {
-            margin-bottom: 10pt;
+            margin-bottom: 8pt;
+            text-align: justify;
+            line-height: 1.5;
+        }
+
+        #document-editor p.text-center {
+            text-align: center !important;
+            text-indent: 0 !important;
+        }
+
+        #document-editor p.indent-8 {
+            text-indent: 1.25cm;
         }
 
         #document-editor ul {
             list-style-type: disc;
-            margin-left: 20pt;
+            margin-left: 24pt;
             margin-bottom: 10pt;
         }
 
         #document-editor ol {
             list-style-type: decimal;
-            margin-left: 20pt;
+            margin-left: 24pt;
             margin-bottom: 10pt;
         }
 
         #document-editor li {
             margin-bottom: 4pt;
+            text-align: justify;
         }
 
         #document-editor blockquote {
@@ -109,32 +113,38 @@
             border-collapse: collapse;
             width: 100%;
             margin: 14pt 0;
+            font-size: 10.5pt;
         }
 
         #document-editor th, #document-editor td {
-            border: 1px solid #d1d5db;
-            padding: 8pt 10pt;
+            border: 1px solid #9ca3af;
+            padding: 6pt 10pt;
             text-align: left;
         }
 
         #document-editor th {
-            background-color: #f9fafb;
+            background-color: #f3f4f6;
             font-weight: 600;
+            text-align: center;
         }
 
-        #document-editor code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            background: #f3f4f6;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 0.9em;
-            color: #d946ef;
-        }
-
-        #document-editor hr {
-            border: 0;
-            border-top: 1px solid #e5e7eb;
+        #document-editor figure {
             margin: 16pt 0;
+            text-align: center;
+        }
+
+        #document-editor figure img {
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+        }
+
+        #document-editor figure figcaption {
+            font-size: 10pt;
+            color: #4b5563;
+            margin-top: 6pt;
+            font-style: italic;
         }
 
         /* Ribbon Tab States */
@@ -144,20 +154,10 @@
             font-weight: 600;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #c7c7c7;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
+        /* Page Break Indicator */
+        .page-break {
+            page-break-after: always;
+            break-after: page;
         }
     </style>
 </head>
@@ -191,7 +191,7 @@
                         id="document-title-input"
                         value="{{ $initialTitle }}"
                         class="text-sm font-semibold text-gray-800 dark:text-gray-100 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-white dark:focus:bg-gray-900 border border-transparent focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none w-52 sm:w-80 transition"
-                        title="Klik untuk mengubah nama dokumen"
+                        title="Klik untuk mengubah nama naskah/dokumen"
                     />
                     <svg class="w-3.5 h-3.5 text-gray-400 pointer-events-none absolute right-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
@@ -219,7 +219,7 @@
             <button
                 data-action="open-file-modal"
                 class="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow transition flex items-center gap-1.5 cursor-pointer"
-                title="Buka Dokumen dari File Lokal (Ctrl+O)"
+                title="Buka Dokumen dari File Komputer (Ctrl+O)"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -231,7 +231,7 @@
             <button
                 data-action="export-modal"
                 class="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition flex items-center gap-1.5 cursor-pointer"
-                title="Ekspor / Unduh Dokumen (Word, PDF, Markdown, HTML, dll)"
+                title="Ekspor Dokumen (Word, PDF, Markdown, HTML, dll)"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -300,27 +300,32 @@
                 </button>
             </div>
 
-            <!-- Font Family & Size -->
+            <!-- Font Family, Size & Line Spacing -->
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <select id="font-family-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-36">
+                    <option value="'Times New Roman', serif" selected>Times New Roman</option>
                     <option value="'Instrument Sans', sans-serif">Instrument Sans</option>
                     <option value="Arial, sans-serif">Arial</option>
-                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="Calibri, sans-serif">Calibri</option>
                     <option value="Georgia, serif">Georgia</option>
                     <option value="'Courier New', monospace">Courier New</option>
-                    <option value="ui-monospace, monospace">JetBrains Mono</option>
                 </select>
 
                 <select id="font-size-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-16">
-                    <option value="9pt">9 pt</option>
                     <option value="10pt">10 pt</option>
-                    <option value="11pt" selected>11 pt</option>
-                    <option value="12pt">12 pt</option>
-                    <option value="14pt">14 pt</option>
+                    <option value="11pt">11 pt</option>
+                    <option value="12pt" selected>12 pt (Skripsi)</option>
+                    <option value="14pt">14 pt (Judul)</option>
                     <option value="16pt">16 pt</option>
                     <option value="18pt">18 pt</option>
                     <option value="24pt">24 pt</option>
-                    <option value="32pt">32 pt</option>
+                </select>
+
+                <select id="line-spacing-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-22" title="Spasi Baris Paragraf">
+                    <option value="1.0">Spasi 1.0</option>
+                    <option value="1.15">Spasi 1.15</option>
+                    <option value="1.5" selected>Spasi 1.5 (Skripsi)</option>
+                    <option value="2.0">Spasi 2.0</option>
                 </select>
             </div>
 
@@ -350,7 +355,7 @@
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <label class="flex items-center gap-1 cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="Warna Teks">
                     <span class="font-bold text-xs text-red-600">A</span>
-                    <input type="color" id="text-color-picker" value="#1f2937" class="w-4 h-4 rounded cursor-pointer border-0 p-0" />
+                    <input type="color" id="text-color-picker" value="#111827" class="w-4 h-4 rounded cursor-pointer border-0 p-0" />
                 </label>
                 <label class="flex items-center gap-1 cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="Warna Sorotan (Highlight)">
                     <span class="bg-yellow-200 text-gray-900 px-1 rounded text-[10px] font-bold">ab</span>
@@ -361,18 +366,18 @@
                 </button>
             </div>
 
-            <!-- Paragraph Alignments & Lists -->
+            <!-- Paragraph Alignments (Left, Center, Right, Justify) -->
             <div class="flex items-center gap-0.5 pr-3 border-r border-gray-200 dark:border-gray-800">
-                <button data-cmd="justifyLeft" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Rata Kiri">
+                <button data-align="left" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Rata Kiri">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"></path></svg>
                 </button>
-                <button data-cmd="justifyCenter" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Rata Tengah">
+                <button data-align="center" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Rata Tengah (Judul/Bab)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"></path></svg>
                 </button>
-                <button data-cmd="justifyRight" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Rata Kanan">
+                <button data-align="right" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Rata Kanan">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M6 18h14"></path></svg>
                 </button>
-                <button data-cmd="justifyFull" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Rata Kanan Kiri (Justify)">
+                <button data-align="justify" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition bg-gray-100 dark:bg-gray-800" title="Rata Kiri-Kanan / Justify (Standar Skripsi)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
                 <button data-cmd="insertUnorderedList" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Daftar Poin (Bullets)">
@@ -384,7 +389,7 @@
                 <button data-cmd="outdent" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Kurangi Indentasi">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
                 </button>
-                <button data-cmd="indent" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Tambah Indentasi">
+                <button data-cmd="indent" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Tambah Indentasi Paragraf">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
                 </button>
             </div>
@@ -394,8 +399,8 @@
                 <select id="heading-preset-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-32 font-medium">
                     <option value="" disabled selected>Gaya Teks...</option>
                     <option value="p">Paragraf Normal</option>
-                    <option value="h1">Judul Utama (H1)</option>
-                    <option value="h2">Subjudul (H2)</option>
+                    <option value="h1">Judul Utama / Bab (H1)</option>
+                    <option value="h2">Subjudul / Subbab (H2)</option>
                     <option value="h3">Bagian (H3)</option>
                     <option value="blockquote">Kutipan Blok</option>
                 </select>
@@ -415,6 +420,11 @@
             <button data-action="open-file-modal" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 <span>Buka Dokumen Lokal</span>
+            </button>
+
+            <!-- Insert Table of Contents -->
+            <button id="btn-insert-toc" class="px-3 py-1.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-200 transition">
+                <span>📑 Daftar Isi Otomatis</span>
             </button>
 
             <button data-action="insert-table-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
@@ -437,24 +447,30 @@
                 <span>Garis Pemisah</span>
             </button>
 
-            <button onclick="window.documentEngine.insertCallout('info', 'Catatan Penelitian', 'Informasi relevan untuk analisis selanjutnya.')" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
+            <button onclick="window.documentEngine.insertPageBreak()" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition">
+                <span>📄 Pemisah Halaman (Page Break)</span>
+            </button>
+
+            <button onclick="window.documentEngine.insertCallout('info', 'Catatan Penelitian', 'Informasi terverifikasi untuk analisis bab selanjutnya.')" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
                 <span>💬 Callout Box</span>
-            </button>
-
-            <button onclick="window.documentEngine.insertPageBreak()" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <span>📄 Pemisah Halaman</span>
-            </button>
-
-            <button onclick="window.documentEngine.insertCurrentDateTime()" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <span>🕒 Tanggal & Waktu</span>
             </button>
         </div>
 
         <!-- Ribbon Panel 3: TATA LETAK (LAYOUT) -->
         <div data-ribbon-panel="layout" class="hidden flex-wrap items-center px-4 py-2 gap-4 overflow-x-auto text-xs">
             <div class="flex items-center gap-2">
-                <label class="text-gray-500 font-medium">Ukuran Kertas:</label>
-                <select id="layout-paper-size" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none">
+                <label class="text-gray-500 font-bold">Preset Margin:</label>
+                <select id="layout-margins" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none font-semibold">
+                    <option value="skripsi" selected>Skripsi / Tesis (Atas 4, Kiri 4, Kanan 3, Bawah 3 cm)</option>
+                    <option value="normal">Normal (2.54 cm / 1 inch)</option>
+                    <option value="narrow">Sempit (1.27 cm)</option>
+                    <option value="wide">Lebar (3.81 cm)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <label class="text-gray-500 font-bold">Ukuran Kertas:</label>
+                <select id="layout-paper-size" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none">
                     <option value="a4" selected>A4 (210 x 297 mm)</option>
                     <option value="letter">Letter (8.5 x 11 in)</option>
                     <option value="legal">Legal (8.5 x 14 in)</option>
@@ -462,20 +478,10 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <label class="text-gray-500 font-medium">Orientasi:</label>
-                <select id="layout-orientation" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none">
+                <label class="text-gray-500 font-bold">Orientasi:</label>
+                <select id="layout-orientation" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none">
                     <option value="portrait" selected>Potret (Portrait)</option>
                     <option value="landscape">Lanskap (Landscape)</option>
-                </select>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <label class="text-gray-500 font-medium">Margin:</label>
-                <select id="layout-margins" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none">
-                    <option value="normal" selected>Normal (2.5 cm)</option>
-                    <option value="narrow">Sempit (1.27 cm)</option>
-                    <option value="wide">Lebar (3.8 cm)</option>
-                    <option value="none">Tanpa Margin</option>
                 </select>
             </div>
         </div>
@@ -497,13 +503,17 @@
             <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button id="btn-toggle-ruler" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 rounded text-xs flex items-center gap-1">
                     <input type="checkbox" checked class="pointer-events-none" />
-                    <span>Penggaris</span>
+                    <span>Penggaris Metrik</span>
                 </button>
                 <button id="btn-toggle-outline" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 rounded text-xs flex items-center gap-1">
                     <input type="checkbox" checked class="pointer-events-none" />
-                    <span>Panel Navigasi (Outline)</span>
+                    <span>Struktur Dokumen (Outline)</span>
                 </button>
             </div>
+
+            <button data-action="open-shortcuts-modal" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 rounded text-xs flex items-center gap-1">
+                <span>⌨️ Pintasan Keyboard (Ctrl+/)</span>
+            </button>
         </div>
 
         <!-- Ribbon Panel 5: ASISTEN AI WORDCRAFT -->
@@ -516,7 +526,7 @@
                 🔍 Elaborasi Gagasan
             </button>
             <button onclick="window.wordcraftAi.executeAction('rewrite')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
-                ✍️ Parafrase Teks
+                ✍️ Parafrase Nada
             </button>
             <button onclick="window.wordcraftAi.executeAction('grammar')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
                 🛠️ Koreksi PUEBI
@@ -533,10 +543,13 @@
     <!-- ========================================================================= -->
     <!-- 3. METRIC HORIZONTAL RULER BAR                                            -->
     <!-- ========================================================================= -->
-    <div id="ruler-bar" class="h-4.5 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0 no-print overflow-hidden">
+    <div id="ruler-bar" class="h-5 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0 no-print overflow-hidden relative">
         <div class="w-[210mm] max-w-full h-full flex relative px-6" id="ruler-ticks">
             <!-- Rendered dynamically by UiController -->
         </div>
+        <!-- Margin indicators on ruler -->
+        <div id="ruler-left-margin" class="absolute top-0 bottom-0 w-1 bg-indigo-500 pointer-events-none opacity-80" style="left: 19%;" title="Margin Kiri (4 cm)"></div>
+        <div id="ruler-right-margin" class="absolute top-0 bottom-0 w-1 bg-indigo-500 pointer-events-none opacity-80" style="left: 85.7%;" title="Margin Kanan (3 cm)"></div>
     </div>
 
     <!-- ========================================================================= -->
@@ -545,20 +558,19 @@
     <main class="flex-1 flex overflow-hidden relative">
 
         <!-- Left Document Outline Sidebar (Google Docs inspired) -->
-        <aside id="outline-sidebar" class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shrink-0 flex flex-col no-print z-10 transition-all duration-200">
+        <aside id="outline-sidebar" class="w-64 md:w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shrink-0 flex flex-col no-print z-10 transition-all duration-200">
             <div class="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Struktur Dokumen</span>
-                <span class="text-[10px] text-gray-400">Outline Otomatis</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Struktur Dokumen (Outline)</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold">Bab & Subbab</span>
             </div>
             <div class="flex-1 overflow-y-auto p-3">
                 <ul id="outline-headings-list" class="space-y-0.5 text-xs">
                     <!-- Populated dynamically by DocumentEngine -->
                 </ul>
             </div>
-            <!-- Quick document shortcuts -->
             <div class="p-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 text-[11px] text-gray-500">
-                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-1">Tips Adaptasi Berkas:</div>
-                <p>Tarik file <span class="font-mono text-indigo-600 font-semibold">.docx</span> atau <span class="font-mono text-indigo-600 font-semibold">.md</span> lokal ke lembar untuk langsung memuat format.</p>
+                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-1">Penyelarasan Format Cerdas:</div>
+                <p>Heading dan Bab (BAB I, BAB II, 1.1, dst.) otomatis dideteksi dan dinavigasikan.</p>
             </div>
         </aside>
 
@@ -572,20 +584,47 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
                     <h3 class="text-xl font-bold mb-2">Lepaskan Berkas di Sini</h3>
-                    <p class="text-sm text-indigo-100">VelScribe akan otomatis mendeteksi format .docx, .md, .html, .txt, atau .json dan menyelaraskan tata letak dokumen.</p>
+                    <p class="text-sm text-indigo-100">VelScribe akan otomatis mendeteksi format .docx, .md, .html, .txt, atau .json dan menyelaraskan margin serta hierarki bab.</p>
                 </div>
             </div>
 
             <!-- Floating Selection Bubble Menu (Google Docs style) -->
-            <div id="bubble-menu" class="hidden fixed bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2 py-1 rounded-lg shadow-xl z-40 items-center gap-1 text-xs border border-gray-700 no-print animate-fade-in">
+            <div id="bubble-menu" class="hidden fixed bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2 py-1 rounded-lg shadow-xl z-40 items-center gap-1 text-xs border border-gray-700 no-print">
                 <button data-cmd="bold" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded font-bold" title="Tebal (Ctrl+B)">B</button>
                 <button data-cmd="italic" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded italic" title="Miring (Ctrl+I)">I</button>
                 <button data-cmd="underline" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded underline" title="Garis Bawah (Ctrl+U)">U</button>
+                <span class="w-px h-3.5 bg-gray-700 dark:bg-gray-300 mx-0.5"></span>
+                <button data-align="center" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded" title="Rata Tengah">Tengah</button>
+                <button data-align="justify" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded" title="Justify">Justify</button>
                 <span class="w-px h-3.5 bg-gray-700 dark:bg-gray-300 mx-0.5"></span>
                 <button data-action="insert-link-modal" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded" title="Tautan">🔗</button>
                 <button id="bubble-ask-ai" class="px-2 py-0.5 bg-indigo-600 text-white rounded text-[11px] font-semibold flex items-center gap-1 hover:bg-indigo-500 transition" title="Tanya AI Wordcraft">
                     <span>✨ Wordcraft AI</span>
                 </button>
+            </div>
+
+            <!-- Floating Table Context Toolbar -->
+            <div id="floating-table-toolbar" class="hidden fixed bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-2xl z-40 items-center gap-2 text-xs border border-gray-700 no-print">
+                <span class="text-gray-400 font-semibold mr-1">Tabel:</span>
+                <button data-table-action="add-row-above" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">+ Baris Atas</button>
+                <button data-table-action="add-row-below" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">+ Baris Bawah</button>
+                <button data-table-action="del-row" class="px-2 py-0.5 hover:bg-red-800 rounded text-red-300 text-[11px]">Hapus Baris</button>
+                <span class="w-px h-3 bg-gray-700"></span>
+                <button data-table-action="add-col" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">+ Kolom</button>
+                <button data-table-action="del-col" class="px-2 py-0.5 hover:bg-red-800 rounded text-red-300 text-[11px]">Hapus Kolom</button>
+                <span class="w-px h-3 bg-gray-700"></span>
+                <button data-table-action="del-table" class="px-2 py-0.5 bg-red-600 hover:bg-red-700 rounded text-white text-[11px] font-bold">Hapus Tabel</button>
+            </div>
+
+            <!-- Floating Image Context Toolbar -->
+            <div id="floating-image-toolbar" class="hidden fixed bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-2xl z-40 items-center gap-2 text-xs border border-gray-700 no-print">
+                <span class="text-gray-400 font-semibold mr-1">Gambar:</span>
+                <button data-img-align="left" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">Kiri</button>
+                <button data-img-align="center" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-indigo-600 text-[11px]">Tengah</button>
+                <button data-img-align="right" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">Kanan</button>
+                <span class="w-px h-3 bg-gray-700"></span>
+                <button data-img-size="50%" class="px-2 py-0.5 hover:bg-gray-800 rounded text-[11px]">50%</button>
+                <button data-img-size="100%" class="px-2 py-0.5 hover:bg-gray-800 rounded text-[11px]">100%</button>
             </div>
 
             <!-- A4 Document Page Sheet -->
@@ -602,8 +641,8 @@
                 </div>
 
                 <!-- Page Footer Simulation (Print Layout) -->
-                <footer class="mt-12 pt-4 border-t border-gray-200 text-xs text-gray-400 flex items-center justify-between no-print">
-                    <span>Dokumen VelScribe</span>
+                <footer class="mt-12 pt-4 border-t border-gray-200 text-xs text-gray-400 flex items-center justify-between no-print select-none">
+                    <span>Dokumen VelScribe Wordcraft</span>
                     <span>Halaman 1</span>
                 </footer>
             </article>
@@ -703,20 +742,20 @@
     <footer id="status-bar" class="h-8 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 flex items-center justify-between text-xs text-gray-500 shrink-0 no-print z-20">
         <div class="flex items-center gap-4">
             <span id="stat-pages">Halaman 1 dari 1</span>
-            <span id="stat-words">{{ $initialStats['word_count'] }} kata</span>
+            <button data-action="open-stats-modal" class="hover:text-indigo-600 font-semibold" title="Buka Detail Statistik Dokumen">
+                <span id="stat-words">{{ $initialStats['word_count'] }} kata</span>
+            </button>
             <span id="stat-chars" class="hidden sm:inline">{{ $initialStats['char_count'] }} karakter</span>
             <span id="stat-reading-time" class="hidden md:inline">{{ $initialStats['reading_time'] }}</span>
         </div>
 
         <div class="flex items-center gap-3">
-            <!-- Layout views shortcut -->
             <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button data-layout-mode="print" class="p-1 hover:text-indigo-600" title="Tata Letak Halaman">📄</button>
                 <button data-layout-mode="web" class="p-1 hover:text-indigo-600" title="Tampilan Aliran Web">🌐</button>
-                <button data-layout-mode="zen" class="p-1 hover:text-indigo-600" title="Mode Fokus">🧘</button>
+                <button data-layout-mode="zen" class="p-1 hover:text-indigo-600" title="Mode Fokus (Zen)">🧘</button>
             </div>
 
-            <!-- Zoom Slider -->
             <div class="flex items-center gap-1.5">
                 <button id="btn-zoom-out" class="p-0.5 hover:text-gray-800 dark:hover:text-gray-200 font-bold">-</button>
                 <input type="range" id="zoom-slider" min="50" max="200" value="100" step="5" class="w-20 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer" />
@@ -727,7 +766,7 @@
     </footer>
 
     <!-- ========================================================================= -->
-    <!-- 6. MODALS (OPEN FILE, FIND & REPLACE, TABLE, LINK, IMAGE, EXPORT)         -->
+    <!-- 6. MODALS                                                                 -->
     <!-- ========================================================================= -->
 
     <!-- Modal 1: Buka Dokumen Lokal -->
@@ -750,13 +789,13 @@
                     <input type="file" id="local-file-input" class="hidden" accept=".docx,.doc,.md,.markdown,.html,.htm,.txt,.json" />
                 </label>
 
-                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500">
-                    <div class="font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Penyesuaian Format Otomatis:</div>
-                    <ul class="space-y-1 list-disc list-inside">
-                        <li><strong>DOCX / Word</strong>: Mengimpor paragraf, heading, tabel, format teks, dan gambar.</li>
-                        <li><strong>Markdown</strong>: Dikonversi menjadi struktur HTML kaya dengan heading hierarkis.</li>
-                        <li><strong>HTML / Plain Text</strong>: Menormalisasi jarak baris dan sanitasi keamanan data.</li>
-                    </ul>
+                <!-- Sample template loader -->
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <div class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Atau Coba Contoh Naskah Terstruktur:</div>
+                    <button data-load-sample="skripsi" class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 hover:bg-indigo-100 transition flex items-center justify-between border border-indigo-200 dark:border-indigo-800">
+                        <span>🎓 Naskah Skripsi / Penelitian (Format 4-4-3-3 cm, Sampul & Bab I)</span>
+                        <span>Muat →</span>
+                    </button>
                 </div>
             </div>
             <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end">
@@ -787,13 +826,99 @@
                 </div>
             </div>
             <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
-                <button data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Batal</button>
+                <button id="btn-replace-one" class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Ganti Satu</button>
                 <button id="btn-replace-all" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition">Ganti Semua</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal 3: Sisipkan Tautan (Hyperlink) -->
+    <!-- Modal 3: Statistik Lengkap Dokumen -->
+    <div id="modal-stats" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white">📊 Statistik Dokumen</h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            <div class="p-6 space-y-3 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-gray-500">Jumlah Kata:</span>
+                    <span id="modal-stat-words" class="font-bold font-mono">0</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-gray-500">Jumlah Karakter (dengan spasi):</span>
+                    <span id="modal-stat-chars" class="font-bold font-mono">0</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-gray-500">Jumlah Karakter (tanpa spasi):</span>
+                    <span id="modal-stat-chars-nospace" class="font-bold font-mono">0</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-gray-500">Jumlah Kalimat:</span>
+                    <span id="modal-stat-sentences" class="font-bold font-mono">0</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-gray-500">Jumlah Paragraf:</span>
+                    <span id="modal-stat-paras" class="font-bold font-mono">0</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-gray-500">Estimasi Waktu Baca (200 kpm):</span>
+                    <span id="modal-stat-reading" class="font-bold font-mono">0 menit</span>
+                </div>
+                <div class="flex justify-between py-1">
+                    <span class="text-gray-500">Estimasi Waktu Bicara (130 kpm):</span>
+                    <span id="modal-stat-speaking" class="font-bold font-mono">0 menit</span>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                <button data-close-modal class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 text-white">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Pintasan Keyboard (Shortcuts) -->
+    <div id="modal-shortcuts" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white">⌨️ Pintasan Keyboard</h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            <div class="p-6 space-y-2 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span>Cetak / Ekspor PDF</span>
+                    <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">Ctrl + P</kbd>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span>Simpan Dokumen</span>
+                    <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">Ctrl + S</kbd>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span>Buka Berkas Lokal</span>
+                    <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">Ctrl + O</kbd>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span>Cari & Ganti</span>
+                    <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">Ctrl + F</kbd>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span>Pemisah Halaman (Page Break)</span>
+                    <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">Ctrl + Enter</kbd>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
+                    <span>Statistik Dokumen</span>
+                    <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">Ctrl + Shift + C</kbd>
+                </div>
+                <div class="flex justify-between py-1">
+                    <span>Format Tebal / Miring / Garis Bawah</span>
+                    <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[11px]">Ctrl + B / I / U</kbd>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                <button data-close-modal class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 text-white">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Sisipkan Tautan -->
     <div id="modal-insert-link" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -817,7 +942,7 @@
         </div>
     </div>
 
-    <!-- Modal 4: Sisipkan Tabel -->
+    <!-- Modal 6: Sisipkan Tabel -->
     <div id="modal-insert-table" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -841,7 +966,7 @@
         </div>
     </div>
 
-    <!-- Modal 5: Sisipkan Gambar -->
+    <!-- Modal 7: Sisipkan Gambar -->
     <div id="modal-insert-image" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -870,7 +995,7 @@
         </div>
     </div>
 
-    <!-- Modal 6: Ekspor / Unduh Dokumen -->
+    <!-- Modal 8: Ekspor / Unduh Dokumen -->
     <div id="modal-export" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
