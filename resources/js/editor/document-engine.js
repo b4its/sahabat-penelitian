@@ -280,6 +280,16 @@ export class DocumentEngine {
             }];
         }
 
+        const isTableOfContentsLine = (str) => {
+            if (!str) return false;
+            const clean = str.trim();
+            if (!clean) return false;
+            if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
+            if (/[\s.\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
+            if (/\.\s*(\d+|[ivxlcdm]+)$/i.test(clean) && !/^\d+(\.\d+)+$/.test(clean)) return true;
+            return false;
+        };
+
         const parser = new DOMParser();
         const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
         const container = doc.body.firstElementChild;
@@ -297,7 +307,7 @@ export class DocumentEngine {
         let currentBlocks = [];
         let currentWeight = 0;
         let currentChapter = '';
-        const MAX_PAGE_WEIGHT = 740; // Printable A4 body height budget in px (approx 220mm at 96dpi)
+        const MAX_PAGE_WEIGHT = 780; // Printable A4 body height budget in px (approx 220mm at 96dpi)
 
         const finalizeCurrentPage = () => {
             if (currentBlocks.length === 0) return;
@@ -312,9 +322,10 @@ export class DocumentEngine {
 
         const estimateElementWeight = (el) => {
             const tag = el.tagName ? el.tagName.toUpperCase() : '';
-            const text = el.textContent || '';
-            const textLen = text.trim().length;
+            const text = (el.textContent || '').trim();
+            const textLen = text.length;
 
+            if (textLen === 0 && !el.querySelector('img')) return 0;
             if (tag === 'H1') return 80;
             if (tag === 'H2') return 55;
             if (tag === 'H3') return 45;
@@ -328,21 +339,22 @@ export class DocumentEngine {
                 const liCount = el.querySelectorAll('li').length || 3;
                 return liCount * 28 + 20;
             }
+            if (el.classList?.contains('toc-entry')) return 24;
             if (tag === 'P') {
-                if (textLen === 0) return 24;
-                const lines = Math.max(1, Math.ceil(textLen / 70));
-                return lines * 22 + 16;
+                const lines = Math.max(1, Math.ceil(textLen / 75));
+                return lines * 22 + 14;
             }
             if (tag === 'PRE' || tag === 'BLOCKQUOTE') {
                 const lines = Math.max(2, (text.match(/\n/g) || []).length + 1);
                 return lines * 20 + 30;
             }
-            return Math.max(30, Math.ceil(textLen / 70) * 22 + 16);
+            return Math.max(24, Math.ceil(textLen / 75) * 22 + 14);
         };
 
         const isChapterHeading = (el) => {
             const tag = (el.tagName || '').toUpperCase();
             const text = (el.textContent || '').trim();
+            if (isTableOfContentsLine(text)) return false;
             const isHeadingTag = /^H[1-6]$/.test(tag) || el.classList?.contains('heading-chapter');
             const isShortTitle = text.length <= 80 && !/[.!?]$/.test(text);
             if (!isHeadingTag && !isShortTitle) return false;
@@ -353,11 +365,12 @@ export class DocumentEngine {
         const isPreliminaryHeading = (el) => {
             const tag = (el.tagName || '').toUpperCase();
             const text = (el.textContent || '').trim();
+            if (isTableOfContentsLine(text)) return false;
             const isHeadingTag = /^H[1-6]$/.test(tag) || el.classList?.contains('heading-preliminary');
             const isShortTitle = text.length <= 60 && !/[.!?]$/.test(text);
             if (!isHeadingTag && !isShortTitle) return false;
 
-            return /^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text);
+            return /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text);
         };
 
         const isExplicitPageBreak = (el) => {
@@ -373,7 +386,9 @@ export class DocumentEngine {
 
             // 1. Explicit Page Break
             if (isExplicitPageBreak(el)) {
-                finalizeCurrentPage();
+                if (currentBlocks.length > 0) {
+                    finalizeCurrentPage();
+                }
                 continue;
             }
 
@@ -479,9 +494,10 @@ export class DocumentEngine {
                 sheet.classList.add('canvas-dark-sheet');
             }
 
-            // Header
+            // Header (Cover page has no running header, just like Word's "Different First Page")
+            const isCoverPage = pageNum === 1;
             const header = document.createElement('header');
-            header.className = 'page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print';
+            header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print ${isCoverPage ? 'invisible' : ''}`;
             header.innerHTML = `
                 <span class="header-doc-title truncate max-w-[60%] font-medium">${this.escapeHtml(docTitle)}</span>
                 <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]">${this.escapeHtml(p.chapterName || '')}</span>
@@ -504,9 +520,9 @@ export class DocumentEngine {
             body.innerHTML = p.contentHtml;
             sheet.appendChild(body);
 
-            // Footer
+            // Footer (Cover page has no page number footer)
             const footer = document.createElement('footer');
-            footer.className = 'page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print';
+            footer.className = `page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print ${isCoverPage ? 'invisible' : ''}`;
             footer.innerHTML = `
                 <span class="text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
                 <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono">Halaman ${pageNum} dari ${totalPages}</span>
@@ -621,6 +637,10 @@ export class DocumentEngine {
                         "p[style-name='Heading 5'] => h5:fresh",
                         "p[style-name='Heading 6'] => h6:fresh",
                         "r[style-name='Strong'] => strong",
+                        "p[style-name^='toc'] => p.toc-entry:fresh",
+                        "p[style-name^='TOC'] => p.toc-entry:fresh",
+                        "p[style-name='Table of Figures'] => p.toc-entry:fresh",
+                        "p[style-name='Daftar Isi'] => p.toc-entry:fresh",
                         "p:has(w:jc[w:val='center']) => p.text-center:fresh",
                         "p:has(w:jc[w:val='right']) => p.text-right:fresh",
                         "p:has(w:jc[w:val='both']) => p.text-justify:fresh",
@@ -725,6 +745,16 @@ export class DocumentEngine {
         const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
         const container = doc.body.firstElementChild;
 
+        const isTableOfContentsLine = (str) => {
+            if (!str) return false;
+            const clean = str.trim();
+            if (!clean) return false;
+            if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
+            if (/[\s.\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
+            if (/\.\s*(\d+|[ivxlcdm]+)$/i.test(clean) && !/^\d+(\.\d+)+$/.test(clean)) return true;
+            return false;
+        };
+
         const allText = container.textContent.toLowerCase();
         const isAcademic =
             allText.includes('skripsi') ||
@@ -740,22 +770,57 @@ export class DocumentEngine {
         let inCover = isAcademic;
         let coverCount = 0;
         let headingCount = 0;
+        let consecutiveEmpty = 0;
 
         const children = Array.from(container.children);
         for (let el of children) {
             const text = el.textContent.trim();
 
-            // End cover page immediately when chapter or preliminary section begins
+            // Collapse excessive empty paragraphs
+            if (text === '' && !el.querySelector('img')) {
+                consecutiveEmpty++;
+                if (consecutiveEmpty > 1) {
+                    el.remove();
+                    continue;
+                }
+            } else {
+                consecutiveEmpty = 0;
+            }
+
+            // Table of Contents entries: format as clean dot-leader rows (never headings or page breaks)
+            if (isTableOfContentsLine(text)) {
+                const match = text.match(/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i);
+                if (match) {
+                    const itemTitle = match[1].trim();
+                    const itemPage = match[2].trim();
+                    const tocDiv = doc.createElement('div');
+                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200';
+                    tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(itemTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span><span class="toc-page font-mono text-xs text-gray-600 dark:text-gray-400">${this.escapeHtml(itemPage)}</span>`;
+                    el.replaceWith(tocDiv);
+                    continue;
+                } else {
+                    const cleanTitle = text.replace(/[\s.·…]+$/, '').trim();
+                    const tocDiv = doc.createElement('div');
+                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200';
+                    tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(cleanTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span>`;
+                    el.replaceWith(tocDiv);
+                    continue;
+                }
+            }
+
+            // End cover page when next section begins
             if (inCover && (
                 /^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i.test(text) ||
-                /^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)/i.test(text)
+                /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)(\s+.*)?$/i.test(text)
             )) {
                 inCover = false;
-                const pb = doc.createElement('div');
-                pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
-                pb.setAttribute('data-page-break', 'true');
-                pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span>';
-                el.before(pb);
+                if (coverCount > 0) {
+                    const pb = doc.createElement('div');
+                    pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
+                    pb.setAttribute('data-page-break', 'true');
+                    pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span>';
+                    el.before(pb);
+                }
             }
 
             // Cover Page centering
@@ -763,13 +828,21 @@ export class DocumentEngine {
                 coverCount++;
                 const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
                 if (img) {
-                    img.className = 'mx-auto block my-6 max-h-44 object-contain';
+                    img.className = 'cover-logo mx-auto block my-6 max-h-40 object-contain';
                     el.className = 'text-center my-4';
                 } else if (text) {
-                    el.className = 'text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
+                    if (/^(OLEH|DISUSUN\s+OLEH|BY)\s*:/i.test(text)) {
+                        el.className = 'cover-author-label text-center text-sm font-medium text-gray-600 dark:text-gray-400 my-2';
+                    } else if (/^NIM\b/i.test(text)) {
+                        el.className = 'cover-author-nim text-center font-bold text-base text-gray-900 dark:text-gray-100 my-1';
+                    } else if (/^(PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM)/i.test(text)) {
+                        el.className = 'cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-snug';
+                    } else {
+                        el.className = 'cover-title text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
+                    }
                 }
 
-                if (/\b(19|20)\d{2}\b/.test(text) || coverCount > 14) {
+                if (/\b(19|20)\d{2}\b/.test(text) && coverCount >= 4) {
                     inCover = false;
                     const pb = doc.createElement('div');
                     pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
@@ -782,7 +855,7 @@ export class DocumentEngine {
 
             // Chapter Headings: BAB I, BAB II, etc.
             const babMatch = text.match(/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i);
-            if (babMatch) {
+            if (!isTableOfContentsLine(text) && babMatch) {
                 headingCount++;
                 let titleText = text;
                 const nextEl = el.nextElementSibling;
@@ -809,7 +882,12 @@ export class DocumentEngine {
             }
 
             // Academic Preliminaries: ABSTRAK, DAFTAR ISI, LEMBAR PENGESAHAN, etc.
-            if (/^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text)) {
+            if (
+                !isTableOfContentsLine(text) &&
+                /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text) &&
+                text.length <= 60 &&
+                !/[.!?]$/.test(text)
+            ) {
                 headingCount++;
                 const h1 = doc.createElement('h1');
                 h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
@@ -826,7 +904,7 @@ export class DocumentEngine {
             }
 
             // Subsections: 1.1 Latar Belakang, 2.1 Teori
-            if (/^(\d+\.\d+)\s+(.+)$/.test(text)) {
+            if (!isTableOfContentsLine(text) && /^(\d+\.\d+)\s+(.+)$/.test(text)) {
                 headingCount++;
                 const h2 = doc.createElement('h2');
                 h2.className = 'heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100';
@@ -836,7 +914,7 @@ export class DocumentEngine {
             }
 
             // Sub-subsections: 1.1.1, 2.3.1
-            if (/^(\d+\.\d+\.\d+)\s+(.+)$/.test(text)) {
+            if (!isTableOfContentsLine(text) && /^(\d+\.\d+\.\d+)\s+(.+)$/.test(text)) {
                 headingCount++;
                 const h3 = doc.createElement('h3');
                 h3.className = 'heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200';
@@ -846,7 +924,16 @@ export class DocumentEngine {
             }
 
             // Standalone short uppercase lines
-            if (text.length > 3 && text.length < 70 && text === text.toUpperCase() && !/[.,;]$/.test(text) && !el.querySelector('img')) {
+            if (
+                !inCover &&
+                !isTableOfContentsLine(text) &&
+                text.length > 5 &&
+                text.length < 60 &&
+                text === text.toUpperCase() &&
+                !/[.,;!?]$/.test(text) &&
+                !/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i.test(text) &&
+                !el.querySelector('img')
+            ) {
                 headingCount++;
                 const h2 = doc.createElement('h2');
                 h2.className = 'heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase';
@@ -1558,15 +1645,35 @@ export class DocumentEngine {
         const bodies = this.getAllEditorBodies();
         let headingIndex = 0;
 
+        const isTOC = (text) => {
+            if (!text) return true;
+            const clean = text.trim();
+            if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
+            if (/[\s.\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
+            if (/\.\s*(\d+|[ivxlcdm]+)$/i.test(clean) && !/^\d+(\.\d+)+$/.test(clean)) return true;
+            return false;
+        };
+
+        const isCoverMetadata = (text) => {
+            if (!text) return true;
+            return /^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i.test(text.trim());
+        };
+
         bodies.forEach((body, bodyIdx) => {
             const headingEls = body.querySelectorAll('h1, h2, h3, h4');
             headingEls.forEach(el => {
+                if (el.classList?.contains('toc-entry') || el.closest('.toc-entry')) return;
+
+                const text = (el.innerText || el.textContent || '').trim();
+                if (!text || text.length < 2 || text.length > 120) return;
+                if (isTOC(text) || isCoverMetadata(text)) return;
+
                 const id = el.id || `heading-${headingIndex++}`;
                 el.id = id;
                 headings.push({
                     id,
                     level: parseInt(el.tagName.replace('H', ''), 10),
-                    text: (el.innerText || el.textContent || '').trim(),
+                    text,
                     pageNumber: bodyIdx + 1,
                 });
             });

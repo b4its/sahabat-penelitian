@@ -205,6 +205,55 @@ HTML;
         ->and(substr_count($html, 'data-page-break="true"'))->toBeGreaterThanOrEqual(6);
 });
 
+test('black-box: user can import docx with table of contents and ensure dot-leader entries are rendered as toc-entry without outline pollution', function () {
+    $thesisWithToc = <<<HTML
+        <p>SKRIPSI</p>
+        <p>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</p>
+        <p>Oleh : BAITS RIKA SAPUTRA</p>
+        <p>NIM. 23.6651.071</p>
+        <p>POLITEKNIK NEGERI SAMARINDA</p>
+        <p>2026</p>
+        <p>DAFTAR ISI</p>
+        <p>BAB 1 PENDAHULUAN ................................................ 1</p>
+        <p>1.1 Latar Belakang ................................................ 1</p>
+        <p>1.2 Rumusan Masalah ................................................ 3</p>
+        <p>BAB 2 TINJAUAN PUSTAKA ................................................ 6</p>
+        <p>2.1 Landasan Teori ................................................ 6</p>
+        <p>BAB 1 PENDAHULUAN</p>
+        <p>1.1 Latar Belakang</p>
+        <p>Air limbah tekstil mengandung zat pewarna azo berbahaya.</p>
+        <p>BAB 2 TINJAUAN PUSTAKA</p>
+        <p>2.1 Landasan Teori</p>
+        <p>Ensemble learning menggabungkan beberapa algoritma prediksi.</p>
+HTML;
+
+    $file = UploadedFile::fake()->createWithContent('SKRIPSI 236651071 BAITS RIKA SAPUTRA.docx', $thesisWithToc);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+
+    // Verify TOC entries rendered with proper styling
+    expect($html)->toContain('class="toc-entry')
+        ->and($html)->toContain('border-dotted')
+        ->and($html)->toContain('toc-page');
+
+    // Verify headings do not contain Table of Contents lines or author metadata
+    $headings = $response->json('headings');
+    $texts = array_column($headings, 'text');
+
+    expect($texts)->not->toContain('BAB 1 PENDAHULUAN ................................................ 1')
+        ->and($texts)->not->toContain('1.1 Latar Belakang ................................................ 1')
+        ->and($texts)->not->toContain('BAITS RIKA SAPUTRA')
+        ->and($texts)->not->toContain('NIM. 23.6651.071')
+        ->and($texts)->toContain('DAFTAR ISI')
+        ->and($texts)->toContain('BAB 1 PENDAHULUAN')
+        ->and($texts)->toContain('1.1 Latar Belakang');
+});
+
 test('black-box: user can import a local json backup file and restore document state', function () {
     $jsonContent = json_encode([
         'title' => 'Naskah Proyek JSON',

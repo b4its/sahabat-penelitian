@@ -264,3 +264,42 @@ HTML;
         ->and($result['adapted_html'])->toContain('BAB 2 TINJAUAN PUSTAKA')
         ->and(substr_count($result['adapted_html'], 'data-page-break="true"'))->toBeGreaterThanOrEqual(4);
 });
+
+test('white-box: adaptDocumentStructure converts Table of Contents lines to .toc-entry without creating false headings', function () {
+    $inputHtml = <<<HTML
+        <p>SKRIPSI</p>
+        <p>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</p>
+        <p>Oleh :</p>
+        <p>BAITS RIKA SAPUTRA</p>
+        <p>NIM. 23.6651.071</p>
+        <p>POLITEKNIK NEGERI SAMARINDA</p>
+        <p>2026</p>
+        <p>DAFTAR ISI</p>
+        <p>BAB 1 PENDAHULUAN ................................................ 1</p>
+        <p>1.1 Latar Belakang ................................................ 1</p>
+        <p>1.2 Rumusan Masalah ................................................ 3</p>
+        <p>BAB 2 TINJAUAN PUSTAKA ................................................ 6</p>
+        <p>2.1 Landasan Teori ................................................ 6</p>
+        <p>2.1.1 Ensemble Learning ................................................ 7</p>
+        <p>BAB 1 PENDAHULUAN</p>
+        <p>1.1 Latar Belakang</p>
+        <p>Air limbah industri tekstil merupakan persoalan lingkungan serius.</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($inputHtml, 'skripsi.docx');
+
+    // TOC entries must be formatted with class toc-entry and dotted borders
+    expect($result['adapted_html'])->toContain('toc-entry')
+        ->and($result['adapted_html'])->toContain('border-dotted')
+        ->and($result['adapted_html'])->toContain('toc-page');
+
+    // Headings list MUST NOT contain TOC dot leaders or author metadata
+    $headingTexts = array_column($result['headings'], 'text');
+    expect($headingTexts)->not->toContain('BAB 1 PENDAHULUAN ................................................ 1')
+        ->and($headingTexts)->not->toContain('1.1 Latar Belakang ................................................ 1')
+        ->and($headingTexts)->not->toContain('BAITS RIKA SAPUTRA')
+        ->and($headingTexts)->not->toContain('NIM. 23.6651.071')
+        ->and($headingTexts)->toContain('DAFTAR ISI')
+        ->and($headingTexts)->toContain('BAB 1 PENDAHULUAN')
+        ->and($headingTexts)->toContain('1.1 Latar Belakang');
+});

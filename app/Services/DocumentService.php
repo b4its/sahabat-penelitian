@@ -384,6 +384,41 @@ class DocumentService
     }
 
     /**
+     * Check if a given line belongs to a Table of Contents (Daftar Isi).
+     */
+    private function isTableOfContentsLine(string $text): bool
+    {
+        if (empty($text)) {
+            return false;
+        }
+        $clean = trim($text);
+        if (empty($clean)) {
+            return false;
+        }
+        if (preg_match('/^(NIM|NPM|NIS|NIK)\b/i', $clean)) {
+            return false;
+        }
+        if (preg_match('/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/', $clean)) {
+            return true;
+        }
+        if (preg_match('/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i', $clean)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check if text belongs to cover metadata that must never be a heading.
+     */
+    private function isCoverMetadataLine(string $text): bool
+    {
+        if (empty($text)) {
+            return false;
+        }
+        return (bool) preg_match('/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i', trim($text));
+    }
+
+    /**
      * Intelligently adapt document structure, promoting headings, centering cover page elements,
      * preserving existing heading/list elements, and applying academic formatting presets.
      */
@@ -396,6 +431,7 @@ class DocumentService
         if (
             str_contains($checkText, 'skripsi') ||
             str_contains($checkText, 'tesis') ||
+            str_contains($checkText, 'thesis') ||
             str_contains($checkText, 'disertasi') ||
             str_contains($checkText, 'politeknik') ||
             str_contains($checkText, 'universitas') ||
@@ -412,6 +448,7 @@ class DocumentService
         $headings = [];
         $inCoverPage = $isAcademic;
         $coverParagraphCount = 0;
+        $consecutiveEmpty = 0;
 
         for ($i = 0; $i < count($tokens); $i += 2) {
             $block = trim($tokens[$i]);
@@ -423,21 +460,82 @@ class DocumentService
             $fullTag = $block . $closer;
             $innerText = trim(strip_tags($fullTag));
 
+            // Collapse excessive empty paragraphs
+            if ($innerText === '' && !str_contains($fullTag, '<img')) {
+                $consecutiveEmpty++;
+                if ($consecutiveEmpty > 1) {
+                    continue;
+                }
+            } else {
+                $consecutiveEmpty = 0;
+            }
+
+            // End cover page when section following cover arrives
+            if ($inCoverPage && (
+                preg_match('/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i', $innerText) ||
+                preg_match('/^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)(\s+.*)?$/i', $innerText)
+            )) {
+                $inCoverPage = false;
+                if ($coverParagraphCount > 0) {
+                    $adaptedBlocks[] = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span></div>';
+                }
+            }
+
+            // Cover page processing for academic papers
+            if ($inCoverPage) {
+                $coverParagraphCount++;
+
+                if (!empty($innerText)) {
+                    if (preg_match('/^(OLEH|DISUSUN\s+OLEH|BY)\s*:/i', $innerText)) {
+                        $adaptedBlocks[] = "<p class=\"cover-author-label text-center text-sm font-medium text-gray-600 dark:text-gray-400 my-2\">{$innerText}</p>";
+                    } elseif (preg_match('/^NIM\b/i', $innerText)) {
+                        $adaptedBlocks[] = "<p class=\"cover-author-nim text-center font-bold text-base text-gray-900 dark:text-gray-100 my-1\">{$innerText}</p>";
+                    } elseif (preg_match('/^(PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM)/i', $innerText)) {
+                        $adaptedBlocks[] = "<p class=\"cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-snug\">{$innerText}</p>";
+                    } else {
+                        $adaptedBlocks[] = "<p class=\"cover-title text-center font-bold text-gray-900 dark:text-gray-100 leading-snug my-2\">{$innerText}</p>";
+                    }
+                } elseif (str_contains($fullTag, '<img')) {
+                    $adaptedBlocks[] = preg_replace('/<img\b([^>]*)>/i', '<figure class="my-6 text-center"><img $1 class="cover-logo mx-auto max-h-40 object-contain" /></figure>', $fullTag);
+                }
+
+                if (preg_match('/\b(19|20)\d{2}\b/', $innerText) && $coverParagraphCount >= 4) {
+                    $inCoverPage = false;
+                    $adaptedBlocks[] = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span></div>';
+                }
+                continue;
+            }
+
+            // Outside Cover: Check for Table of Contents (Daftar Isi) dot-leader lines
+            if ($this->isTableOfContentsLine($innerText)) {
+                if (preg_match('/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i', $innerText, $tm)) {
+                    $itemTitle = trim($tm[1]);
+                    $itemPage = trim($tm[2]);
+                    $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200\"><span class=\"toc-title truncate max-w-[80%]\">{$itemTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600\"></span><span class=\"toc-page font-mono text-xs text-gray-600 dark:text-gray-400\">{$itemPage}</span></div>";
+                } else {
+                    $cleanTitle = trim(preg_replace('/[\s.·…]+$/', '', $innerText));
+                    $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200\"><span class=\"toc-title truncate max-w-[80%]\">{$cleanTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600\"></span></div>";
+                }
+                continue;
+            }
+
             // If it's already an H1, H2, H3, H4, H5, H6 tag, PRESERVE IT and record heading!
             if (preg_match('/^<h([1-6])\b([^>]*)>(.*?)<\/h\1>$/is', $fullTag, $m)) {
+                if ($this->isCoverMetadataLine($innerText)) {
+                    $adaptedBlocks[] = "<p class=\"cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-snug\">{$innerText}</p>";
+                    continue;
+                }
                 $lvl = (int) $m[1];
                 $hId = 'heading-' . count($headings);
                 $headings[] = ['id' => $hId, 'level' => $lvl, 'text' => $innerText];
-                $hClass = $lvl === 1 ? 'heading-chapter font-bold text-xl my-6' : ($lvl === 2 ? 'heading-section font-bold text-lg my-4' : 'heading-subsection font-semibold text-base my-3');
+                $hClass = $lvl === 1 ? 'heading-chapter font-bold text-xl my-6 text-center uppercase' : ($lvl === 2 ? 'heading-section font-bold text-lg my-4' : 'heading-subsection font-semibold text-base my-3');
                 $adaptedBlocks[] = "<h{$lvl} id=\"{$hId}\" class=\"{$hClass} text-gray-900 dark:text-gray-100\">{$m[3]}</h{$lvl}>";
-                $inCoverPage = false;
                 continue;
             }
 
             // If it's a list (ul or ol), PRESERVE IT!
             if (str_starts_with($fullTag, '<ul') || str_starts_with($fullTag, '<ol')) {
                 $adaptedBlocks[] = $fullTag;
-                $inCoverPage = false;
                 continue;
             }
 
@@ -448,7 +546,6 @@ class DocumentService
                     '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">',
                     $fullTag
                 );
-                $inCoverPage = false;
                 continue;
             }
 
@@ -456,34 +553,8 @@ class DocumentService
                 continue;
             }
 
-            // Check if we hit a chapter heading or preliminary section, which ends cover page immediately
-            if ($inCoverPage && (
-                preg_match('/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i', $innerText) ||
-                preg_match('/^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)(\s+.*)?$/i', $innerText)
-            )) {
-                $inCoverPage = false;
-                $adaptedBlocks[] = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span></div>';
-            }
-
-            // Cover page processing for academic papers
-            if ($inCoverPage) {
-                $coverParagraphCount++;
-
-                if (!empty($innerText)) {
-                    $adaptedBlocks[] = "<p class=\"text-center font-bold text-gray-900 dark:text-gray-100 leading-snug my-2\">{$innerText}</p>";
-                } elseif (str_contains($fullTag, '<img')) {
-                    $adaptedBlocks[] = preg_replace('/<img\b([^>]*)>/i', '<figure class="my-6 text-center"><img $1 class="mx-auto max-h-44 object-contain" /></figure>', $fullTag);
-                }
-
-                if (preg_match('/\b(19|20)\d{2}\b/', $innerText) || $coverParagraphCount > 12) {
-                    $inCoverPage = false;
-                    $adaptedBlocks[] = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span></div>';
-                }
-                continue;
-            }
-
             // Chapter Headings: BAB I, BAB II, etc. (Handles single line or two-line chapter title)
-            if (preg_match('/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i', $innerText, $bm)) {
+            if (!$this->isTableOfContentsLine($innerText) && preg_match('/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i', $innerText, $bm)) {
                 $chapterPrefix = trim($bm[1]);
                 $chapterSuffix = trim($bm[2]);
 
@@ -504,13 +575,14 @@ class DocumentService
                 $headings[] = ['id' => $hId, 'level' => 1, 'text' => $titleText];
 
                 $adaptedBlocks[] = "<div class=\"page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none\" data-page-break=\"true\"><span class=\"text-[10px] text-gray-400 font-mono\">Awal Bab Baru</span></div>";
-                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100\">{$titleText}</h1>";
+                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\">{$titleText}</h1>";
                 continue;
             }
 
             // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, LEMBAR PENGESAHAN, etc.
             if (
-                preg_match('/^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i', $innerText) &&
+                !$this->isTableOfContentsLine($innerText) &&
+                preg_match('/^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i', $innerText) &&
                 strlen($innerText) <= 60 &&
                 !preg_match('/[.!?]$/', $innerText)
             ) {
@@ -519,12 +591,12 @@ class DocumentService
                 $headings[] = ['id' => $hId, 'level' => 1, 'text' => $titleText];
 
                 $adaptedBlocks[] = "<div class=\"page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none\" data-page-break=\"true\"><span class=\"text-[10px] text-gray-400 font-mono\">Halaman Baru</span></div>";
-                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100\">{$titleText}</h1>";
+                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\">{$titleText}</h1>";
                 continue;
             }
 
             // Subsections: 1.1 Latar Belakang, 2.1 Teori
-            if (preg_match('/^(\d+\.\d+)\s+(.+)$/', $innerText)) {
+            if (!$this->isTableOfContentsLine($innerText) && preg_match('/^(\d+\.\d+)\s+(.+)$/', $innerText)) {
                 $titleText = trim($innerText);
                 $hId = 'heading-' . count($headings);
                 $headings[] = ['id' => $hId, 'level' => 2, 'text' => $titleText];
@@ -534,12 +606,29 @@ class DocumentService
             }
 
             // Sub-subsections: 1.1.1, 2.1.1
-            if (preg_match('/^(\d+\.\d+\.\d+)\s+(.+)$/', $innerText)) {
+            if (!$this->isTableOfContentsLine($innerText) && preg_match('/^(\d+\.\d+\.\d+)\s+(.+)$/', $innerText)) {
                 $titleText = trim($innerText);
                 $hId = 'heading-' . count($headings);
                 $headings[] = ['id' => $hId, 'level' => 3, 'text' => $titleText];
 
                 $adaptedBlocks[] = "<h3 id=\"{$hId}\" class=\"heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200\">{$titleText}</h3>";
+                continue;
+            }
+
+            // Standalone short uppercase lines
+            if (
+                !$inCoverPage &&
+                !$this->isTableOfContentsLine($innerText) &&
+                !$this->isCoverMetadataLine($innerText) &&
+                strlen($innerText) > 5 &&
+                strlen($innerText) < 60 &&
+                $innerText === strtoupper($innerText) &&
+                !preg_match('/[.,;!?]$/', $innerText) &&
+                !str_contains($fullTag, '<img')
+            ) {
+                $hId = 'heading-' . count($headings);
+                $headings[] = ['id' => $hId, 'level' => 2, 'text' => $innerText];
+                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase\">{$innerText}</h2>";
                 continue;
             }
 
