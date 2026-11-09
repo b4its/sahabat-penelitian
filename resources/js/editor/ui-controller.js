@@ -670,6 +670,47 @@ export class UiController {
             this.engine.setFontSize('12pt');
             this.engine.setLineSpacing('1.5');
             this.showToast('Contoh Naskah Skripsi berhasil dimuat dengan format 4-4-3-3 cm!');
+        } else if (type === 'report') {
+            const title = 'Laporan Riset Evaluasi Sistem Monitoring IoT 2026';
+            const sampleHtml = `
+                <h1 id="heading-0" class="font-bold text-2xl mb-2 text-gray-900">Laporan Riset Evaluasi Sistem Monitoring IoT 2026</h1>
+                <p class="text-gray-600 text-sm mb-4">Disusun oleh Tim Laboratorium Multimedia & IoT — Versi 2.4 Final</p>
+                <hr class="my-4 border-gray-200" />
+                <h2 id="heading-1" class="font-bold text-lg my-3 text-gray-800">1. Ringkasan Eksekutif</h2>
+                <p class="text-justify my-2 leading-relaxed">Pengujian komputasi edge dan transmisi data sensor warna telah dievaluasi dengan throughput tinggi. Hasil integrasi sistem membuktikan efisiensi kompresi dan kecepatan deteksi mencapai 99.4% reliabilitas operasional.</p>
+                <h2 id="heading-2" class="font-bold text-lg my-3 text-gray-800">2. Matriks Pengujian Sensor</h2>
+                <table class="w-full border-collapse my-4 border border-gray-300 text-sm">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 p-2 text-left font-semibold">Komponen</th>
+                            <th class="border border-gray-300 p-2 text-left font-semibold">Rentang Deteksi</th>
+                            <th class="border border-gray-300 p-2 text-left font-semibold">Toleransi Error</th>
+                            <th class="border border-gray-300 p-2 text-left font-semibold">Hasil</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-gray-300 p-2">TCS3200 Warna</td>
+                            <td class="border border-gray-300 p-2">RGB 400 - 700 nm</td>
+                            <td class="border border-gray-300 p-2">&plusmn; 1.2%</td>
+                            <td class="border border-gray-300 p-2 text-emerald-600 font-bold">Lolos Uji</td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 p-2">ESP32 MCU</td>
+                            <td class="border border-gray-300 p-2">Wi-Fi 2.4 GHz</td>
+                            <td class="border border-gray-300 p-2">&lt; 0.5% Loss</td>
+                            <td class="border border-gray-300 p-2 text-emerald-600 font-bold">Lolos Uji</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            this.engine.setTitle(title);
+            this.engine.setContent(sampleHtml);
+            this.engine.setMarginPreset('normal');
+            this.engine.setFontFamily("'Instrument Sans', sans-serif");
+            this.engine.setFontSize('11pt');
+            this.engine.setLineSpacing('1.5');
+            this.showToast('Contoh Laporan Riset (Format Normal 2.54 cm) berhasil dimuat!');
         }
     }
 

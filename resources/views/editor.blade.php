@@ -817,10 +817,14 @@
                 </label>
 
                 <!-- Sample template loader -->
-                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                    <div class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Atau Coba Contoh Naskah Terstruktur:</div>
-                    <button data-load-sample="skripsi" class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 hover:bg-indigo-100 transition flex items-center justify-between border border-indigo-200 dark:border-indigo-800">
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                    <div class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Atau Coba Contoh Naskah Terstruktur:</div>
+                    <button data-load-sample="skripsi" class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 hover:bg-indigo-100 transition flex items-center justify-between border border-indigo-200 dark:border-indigo-800 cursor-pointer">
                         <span>🎓 Naskah Skripsi / Penelitian (Format 4-4-3-3 cm, Sampul & Bab I)</span>
+                        <span>Muat →</span>
+                    </button>
+                    <button data-load-sample="report" class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-gray-50 text-gray-800 dark:bg-gray-800 dark:text-gray-200 hover:bg-gray-100 transition flex items-center justify-between border border-gray-200 dark:border-gray-700 cursor-pointer">
+                        <span>📑 Laporan Riset & Tabel Matriks (Format Normal 2.54 cm)</span>
                         <span>Muat →</span>
                     </button>
                 </div>
