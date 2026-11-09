@@ -2,8 +2,69 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Custom styles for A4 Document Pages and Print Mode */
+@layer utilities {
+    .page-a4 {
+        width: 210mm;
+        min-height: 297mm;
+        box-sizing: border-box;
+    }
+    .page-letter {
+        width: 8.5in;
+        min-height: 11in;
+        box-sizing: border-box;
+    }
+    .page-legal {
+        width: 8.5in;
+        min-height: 14in;
+        box-sizing: border-box;
+    }
+}
+
+/* Print Styling for high-fidelity PDF / Paper Print */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .no-print,
+    header,
+    nav,
+    aside,
+    #ribbon-bar,
+    #top-nav,
+    #status-bar,
+    #wordcraft-sidebar,
+    #outline-sidebar,
+    #bubble-menu,
+    #ruler-bar,
+    .editor-modal,
+    .toast-container {
+        display: none !important;
+    }
+    #document-canvas-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    .document-page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        min-height: auto !important;
+        page-break-after: always;
+        break-after: page;
+    }
 }

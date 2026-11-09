@@ -15,5 +15,9 @@
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1"
+    },
+    "dependencies": {
+        "mammoth": "^1.13.0",
+        "marked": "^18.1.3"
     }
 }
