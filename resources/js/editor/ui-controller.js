@@ -172,12 +172,12 @@ export class UiController {
         const paperSizeSelect = document.getElementById('layout-paper-size');
         if (paperSizeSelect) {
             paperSizeSelect.addEventListener('change', (e) => {
-                const canvas = document.getElementById('document-page-canvas');
-                if (canvas) {
-                    canvas.classList.remove('page-a4', 'page-letter', 'page-legal');
-                    canvas.classList.add(`page-${e.target.value}`);
-                    this.showToast(`Ukuran kertas diatur ke ${e.target.value.toUpperCase()}`);
-                }
+                const sheets = document.querySelectorAll('.document-page-sheet');
+                sheets.forEach(sheet => {
+                    sheet.classList.remove('page-a4', 'page-letter', 'page-legal');
+                    sheet.classList.add(`page-${e.target.value}`);
+                });
+                this.showToast(`Ukuran kertas diatur ke ${e.target.value.toUpperCase()}`);
             });
         }
 
@@ -185,15 +185,15 @@ export class UiController {
         const orientationSelect = document.getElementById('layout-orientation');
         if (orientationSelect) {
             orientationSelect.addEventListener('change', (e) => {
-                const canvas = document.getElementById('document-page-canvas');
-                if (canvas) {
+                const sheets = document.querySelectorAll('.document-page-sheet');
+                sheets.forEach(sheet => {
                     if (e.target.value === 'landscape') {
-                        canvas.classList.add('page-landscape');
+                        sheet.classList.add('page-landscape');
                     } else {
-                        canvas.classList.remove('page-landscape');
+                        sheet.classList.remove('page-landscape');
                     }
-                    this.showToast(`Orientasi halaman: ${e.target.value}`);
-                }
+                });
+                this.showToast(`Orientasi halaman: ${e.target.value}`);
             });
         }
 
@@ -219,12 +219,14 @@ export class UiController {
         const toggleDarkSheetBtn = document.getElementById('btn-toggle-dark-sheet');
         if (toggleDarkSheetBtn) {
             toggleDarkSheetBtn.addEventListener('click', () => {
-                const canvas = document.getElementById('document-page-canvas');
-                if (canvas) {
-                    const isDark = canvas.classList.toggle('canvas-dark-sheet');
-                    toggleDarkSheetBtn.querySelector('span').textContent = isDark ? '☀️ Lembar Terang' : '🌙 Lembar Gelap';
-                    this.showToast(isDark ? 'Mode Lembar Gelap aktif.' : 'Mode Lembar Terang (Standar Kertas) aktif.');
-                }
+                const sheets = document.querySelectorAll('.document-page-sheet');
+                let isDark = false;
+                sheets.forEach(sheet => {
+                    isDark = sheet.classList.toggle('canvas-dark-sheet');
+                });
+                toggleDarkSheetBtn.classList.toggle('active-dark', isDark);
+                toggleDarkSheetBtn.querySelector('span').textContent = isDark ? '☀️ Lembar Terang' : '🌙 Lembar Gelap';
+                this.showToast(isDark ? 'Mode Lembar Gelap aktif.' : 'Mode Lembar Terang (Standar Kertas) aktif.');
             });
         }
 
@@ -320,15 +322,15 @@ export class UiController {
         const zoomLabel = document.getElementById('zoom-label');
         const zoomInBtn = document.getElementById('btn-zoom-in');
         const zoomOutBtn = document.getElementById('btn-zoom-out');
-        const canvas = document.getElementById('document-page-canvas');
 
         const applyZoom = (val) => {
             this.currentZoom = Math.min(200, Math.max(50, val));
             if (zoomSlider) zoomSlider.value = this.currentZoom;
             if (zoomLabel) zoomLabel.textContent = `${this.currentZoom}%`;
-            if (canvas) {
-                canvas.style.transform = `scale(${this.currentZoom / 100})`;
-                canvas.style.transformOrigin = 'top center';
+            const wrapper = document.getElementById('document-pages-wrapper') || document.getElementById('document-page-canvas');
+            if (wrapper) {
+                wrapper.style.transform = `scale(${this.currentZoom / 100})`;
+                wrapper.style.transformOrigin = 'top center';
             }
         };
 
@@ -348,7 +350,6 @@ export class UiController {
      * ------------------------------------------------------------- */
 
     bindLayoutModeSwitchers() {
-        const canvas = document.getElementById('document-page-canvas');
         const ribbon = document.getElementById('ribbon-bar');
         const topNav = document.getElementById('top-nav');
         const ruler = document.getElementById('ruler-bar');
@@ -357,6 +358,8 @@ export class UiController {
 
         const setMode = (mode) => {
             this.layoutMode = mode;
+            const sheets = document.querySelectorAll('.document-page-sheet');
+            const gaps = document.querySelectorAll('.page-sheet-gap');
 
             document.querySelectorAll('[data-layout-mode]').forEach(btn => {
                 const active = btn.getAttribute('data-layout-mode') === mode;
@@ -365,26 +368,29 @@ export class UiController {
             });
 
             if (mode === 'print') {
-                if (canvas) {
-                    canvas.classList.add('page-a4', 'shadow-2xl', 'rounded-sm');
-                    canvas.classList.remove('w-full', 'max-w-4xl', 'shadow-none');
-                }
+                sheets.forEach(sheet => {
+                    sheet.classList.add('page-a4', 'shadow-2xl', 'rounded-sm');
+                    sheet.classList.remove('w-full', 'max-w-4xl', 'shadow-none');
+                });
+                gaps.forEach(g => g.classList.remove('hidden'));
                 if (ribbon) ribbon.classList.remove('hidden');
                 if (topNav) topNav.classList.remove('hidden');
                 if (ruler) ruler.classList.toggle('hidden', !this.isRulerVisible);
             } else if (mode === 'web') {
-                if (canvas) {
-                    canvas.classList.remove('page-a4', 'shadow-2xl');
-                    canvas.classList.add('w-full', 'max-w-4xl', 'shadow-sm');
-                }
+                sheets.forEach(sheet => {
+                    sheet.classList.remove('page-a4', 'shadow-2xl');
+                    sheet.classList.add('w-full', 'max-w-4xl', 'shadow-sm');
+                });
+                gaps.forEach(g => g.classList.add('hidden'));
                 if (ribbon) ribbon.classList.remove('hidden');
                 if (topNav) topNav.classList.remove('hidden');
                 if (ruler) ruler.classList.add('hidden');
             } else if (mode === 'zen') {
-                if (canvas) {
-                    canvas.classList.remove('page-a4', 'shadow-2xl');
-                    canvas.classList.add('w-full', 'max-w-3xl', 'shadow-none');
-                }
+                sheets.forEach(sheet => {
+                    sheet.classList.remove('page-a4', 'shadow-2xl');
+                    sheet.classList.add('w-full', 'max-w-3xl', 'shadow-none');
+                });
+                gaps.forEach(g => g.classList.add('hidden'));
                 if (ribbon) ribbon.classList.add('hidden');
                 if (ruler) ruler.classList.add('hidden');
                 if (outline) outline.classList.add('hidden');

@@ -13,162 +13,250 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        /* A4 Page View Simulation */
-        #document-page-canvas {
+        /* A4 Page View Simulation (Single & Multi-Page Sheets) */
+        #document-page-canvas,
+        .document-page-sheet {
             width: 210mm;
             min-height: 297mm;
             padding: 25.4mm;
-            margin: 20px auto;
+            margin: 18px auto;
             background: #ffffff;
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
             transition: transform 0.15s ease-out, padding 0.2s ease, width 0.2s ease;
             box-sizing: border-box;
+            border-radius: 2px;
+            position: relative;
         }
 
-        #document-page-canvas.page-landscape {
+        #document-page-canvas.page-landscape,
+        .document-page-sheet.page-landscape {
             width: 297mm !important;
             min-height: 210mm !important;
         }
 
-        /* Editor Typography & Styling */
-        #document-editor {
-            outline: none;
-            min-height: 247mm;
-            font-family: 'Times New Roman', 'Instrument Sans', serif;
-            font-size: 12pt;
-            line-height: 1.5;
-            color: #111827;
-        }
-
-        /* Ensure paper contents remain high-contrast on white canvas */
-        #document-editor h1,
-        #document-editor h2,
-        #document-editor h3,
-        #document-editor h4,
-        #document-editor h5,
-        #document-editor h6,
-        #document-editor p,
-        #document-editor li,
-        #document-editor th,
-        #document-editor td {
-            color: #111827;
-        }
-
-        #document-page-canvas.canvas-dark-sheet {
+        /* Dark Sheet Mode */
+        #document-page-canvas.canvas-dark-sheet,
+        .document-page-sheet.canvas-dark-sheet {
             background: #18181b !important;
             box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6) !important;
         }
 
         #document-page-canvas.canvas-dark-sheet #document-editor,
-        #document-page-canvas.canvas-dark-sheet #document-editor * {
+        #document-page-canvas.canvas-dark-sheet #document-editor *,
+        .document-page-sheet.canvas-dark-sheet .page-sheet-body,
+        .document-page-sheet.canvas-dark-sheet .page-sheet-body * {
             color: #f3f4f6 !important;
         }
 
+        /* Page Sheet Gap / Margin */
+        .page-sheet-gap {
+            width: 210mm;
+            max-width: 100%;
+            margin: 14px auto;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .page-sheet-gap::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(156, 163, 175, 0.35);
+            border-bottom: 1px dashed rgba(156, 163, 175, 0.35);
+        }
+
+        .page-gap-indicator {
+            position: relative;
+            z-index: 1;
+            background: #e5e7eb;
+            color: #4b5563;
+            padding: 3px 14px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-family: ui-monospace, monospace;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(209, 213, 219, 0.6);
+        }
+
+        .dark .page-gap-indicator {
+            background: #1f2937;
+            color: #9ca3af;
+            border-color: #374151;
+        }
+
+        /* Page Sheet Header & Footer */
+        .page-sheet-header {
+            font-size: 10pt;
+            color: #9ca3af;
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        .page-sheet-footer {
+            font-size: 10pt;
+            color: #9ca3af;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 8px;
+            margin-top: 24px;
+        }
+
+        /* Editor Typography & Styling */
+        #document-editor,
+        .page-sheet-body {
+            outline: none;
+            min-height: 200mm;
+            font-family: 'Times New Roman', 'Instrument Sans', serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #111827 !important;
+        }
+
+        #document-editor *,
+        .page-sheet-body * {
+            color: #111827;
+        }
+
         #document-editor h1.heading-chapter,
-        #document-editor h1.heading-preliminary {
+        #document-editor h1.heading-preliminary,
+        .page-sheet-body h1.heading-chapter,
+        .page-sheet-body h1.heading-preliminary {
             font-size: 14pt;
             font-weight: 700;
-            color: #111827;
+            color: #111827 !important;
             text-align: center;
-            margin-top: 24pt;
-            margin-bottom: 14pt;
+            margin-top: 16pt;
+            margin-bottom: 12pt;
             line-height: 1.3;
             text-transform: uppercase;
         }
 
-        #document-editor h2.heading-section {
+        #document-editor h2.heading-section,
+        .page-sheet-body h2.heading-section {
             font-size: 12pt;
             font-weight: 700;
-            color: #1f2937;
-            margin-top: 16pt;
-            margin-bottom: 8pt;
+            color: #1f2937 !important;
+            margin-top: 14pt;
+            margin-bottom: 6pt;
             line-height: 1.35;
         }
 
-        #document-editor h3.heading-subsection {
+        #document-editor h3.heading-subsection,
+        .page-sheet-body h3.heading-subsection {
             font-size: 12pt;
             font-weight: 600;
-            color: #374151;
-            margin-top: 12pt;
-            margin-bottom: 6pt;
+            color: #374151 !important;
+            margin-top: 10pt;
+            margin-bottom: 4pt;
         }
 
-        #document-editor p {
+        #document-editor p,
+        .page-sheet-body p {
             margin-bottom: 8pt;
             text-align: justify;
             line-height: 1.5;
+            color: #111827 !important;
         }
 
-        #document-editor p.text-center {
+        #document-editor p.text-center,
+        .page-sheet-body p.text-center {
             text-align: center !important;
             text-indent: 0 !important;
         }
 
-        #document-editor p.indent-8 {
+        #document-editor p.indent-8,
+        .page-sheet-body p.indent-8 {
             text-indent: 1.25cm;
         }
 
-        #document-editor ul {
+        #document-editor ul,
+        .page-sheet-body ul {
             list-style-type: disc;
             margin-left: 24pt;
             margin-bottom: 10pt;
         }
 
-        #document-editor ol {
+        #document-editor ol,
+        .page-sheet-body ol {
             list-style-type: decimal;
             margin-left: 24pt;
             margin-bottom: 10pt;
         }
 
-        #document-editor li {
+        #document-editor li,
+        .page-sheet-body li {
             margin-bottom: 4pt;
             text-align: justify;
+            color: #111827 !important;
         }
 
-        #document-editor blockquote {
+        #document-editor blockquote,
+        .page-sheet-body blockquote {
             border-left: 4px solid #6366f1;
             padding-left: 14pt;
             margin: 12pt 0;
-            color: #4b5563;
+            color: #4b5563 !important;
             font-style: italic;
         }
 
-        #document-editor table {
+        #document-editor table,
+        .page-sheet-body table {
             border-collapse: collapse;
             width: 100%;
-            margin: 14pt 0;
+            margin: 12pt 0;
             font-size: 10.5pt;
         }
 
-        #document-editor th, #document-editor td {
+        #document-editor th, #document-editor td,
+        .page-sheet-body th, .page-sheet-body td {
             border: 1px solid #9ca3af;
             padding: 6pt 10pt;
             text-align: left;
+            color: #111827 !important;
         }
 
-        #document-editor th {
+        #document-editor th,
+        .page-sheet-body th {
             background-color: #f3f4f6;
             font-weight: 600;
             text-align: center;
         }
 
-        #document-editor figure {
-            margin: 16pt 0;
+        #document-editor figure,
+        .page-sheet-body figure {
+            margin: 14pt 0;
             text-align: center;
         }
 
-        #document-editor figure img {
+        #document-editor figure img,
+        .page-sheet-body figure img {
             max-width: 100%;
             height: auto;
             margin: 0 auto;
             display: block;
         }
 
-        #document-editor figure figcaption {
+        #document-editor figure figcaption,
+        .page-sheet-body figure figcaption {
             font-size: 10pt;
             color: #4b5563;
             margin-top: 6pt;
             font-style: italic;
+        }
+
+        /* Pulse animation for outline jump */
+        .outline-pulse-active {
+            animation: outlinePulse 1.6s ease-out;
+        }
+
+        @keyframes outlinePulse {
+            0% { background-color: rgba(99, 102, 241, 0.35); }
+            100% { background-color: transparent; }
         }
 
         /* Ribbon Tab States */
@@ -654,25 +742,35 @@
                 <button data-img-size="100%" class="px-2 py-0.5 hover:bg-gray-800 rounded text-[11px]">100%</button>
             </div>
 
-            <!-- A4 Document Page Sheet -->
-            <article id="document-page-canvas" class="page-a4 relative flex flex-col justify-between">
-                <!-- Page Content Area (Editable) -->
-                <div
-                    id="document-editor"
-                    contenteditable="true"
-                    spellcheck="true"
-                    role="textbox"
-                    aria-multiline="true"
-                >
-                    {!! $initialContent !!}
-                </div>
+            <!-- A4 Document Multi-Page Sheets Container -->
+            <div id="document-pages-wrapper" class="w-full flex flex-col items-center">
+                <!-- Initial / SSR Document Page Sheet -->
+                <article id="document-page-canvas" class="document-page-sheet page-a4 relative flex flex-col justify-between" data-page-index="1">
+                    <!-- Page Sheet Header -->
+                    <header class="page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print">
+                        <span class="header-doc-title truncate max-w-[60%] font-medium">{{ $initialTitle }}</span>
+                        <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]"></span>
+                    </header>
 
-                <!-- Page Footer Simulation (Print Layout) -->
-                <footer class="mt-12 pt-4 border-t border-gray-200 text-xs text-gray-400 flex items-center justify-between no-print select-none">
-                    <span>Dokumen VelScribe Wordcraft</span>
-                    <span>Halaman 1</span>
-                </footer>
-            </article>
+                    <!-- Page Content Area (Editable) -->
+                    <div
+                        id="document-editor"
+                        class="page-sheet-body flex-1 outline-none"
+                        contenteditable="true"
+                        spellcheck="true"
+                        role="textbox"
+                        aria-multiline="true"
+                    >
+                        {!! $initialContent !!}
+                    </div>
+
+                    <!-- Page Footer Simulation (Print Layout) -->
+                    <footer class="page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print">
+                        <span class="text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
+                        <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono">Halaman 1 dari 1</span>
+                    </footer>
+                </article>
+            </div>
 
         </section>
 

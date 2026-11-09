@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Document Engine
     const engine = new DocumentEngine({
+        pagesWrapper: document.getElementById('document-pages-wrapper'),
         editorEl,
         canvasEl: document.getElementById('document-page-canvas'),
         titleInput,
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statWords) statWords.textContent = `${stats.wordCount} kata`;
             if (statChars) statChars.textContent = `${stats.charCount} karakter`;
             if (statReadingTime) statReadingTime.textContent = stats.readingTime;
-            if (statPages) statPages.textContent = `Halaman 1 dari ${stats.pageCount}`;
+            if (statPages) statPages.textContent = `Halaman ${stats.activePage || 1} dari ${stats.pageCount}`;
         },
         onOutlineChange: (headings) => {
             if (!outlineList) return;

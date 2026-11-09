@@ -37,6 +37,7 @@
         padding: 0 !important;
         margin: 0 !important;
     }
+    .page-sheet-gap,
     .no-print,
     header,
     nav,
@@ -52,19 +53,22 @@
     .toast-container {
         display: none !important;
     }
-    #document-canvas-container {
+    #document-canvas-container,
+    #document-pages-wrapper {
         padding: 0 !important;
         margin: 0 !important;
         background: transparent !important;
         box-shadow: none !important;
+        width: 100% !important;
     }
-    .document-page {
+    .document-page,
+    .document-page-sheet {
         margin: 0 !important;
         box-shadow: none !important;
         border: none !important;
         width: 100% !important;
         min-height: auto !important;
-        page-break-after: always;
-        break-after: page;
+        page-break-after: always !important;
+        break-after: page !important;
     }
 }

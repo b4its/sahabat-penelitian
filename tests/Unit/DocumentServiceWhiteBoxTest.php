@@ -236,3 +236,31 @@ HTML;
             'text' => 'BAB II LANDASAN TEORI',
         ]);
 });
+
+test('white-box: adaptDocumentStructure separates academic preliminaries like THESIS, LEMBAR PERSETUJUAN, and PERNYATAAN KEASLIAN with page breaks', function () {
+    $inputHtml = <<<HTML
+        <p>SKRIPSI</p>
+        <p>SAMPUL DEPAN</p>
+        <p>2026</p>
+        <p>THESIS</p>
+        <p>IMPLEMENTATION OF COLOR SENSORS</p>
+        <p>PERNYATAAN KEASLIAN SKRIPSI</p>
+        <p>Saya menyatakan bahwa karya ini adalah asli.</p>
+        <p>LEMBAR PERSETUJUAN PEMBIMBING</p>
+        <p>Disetujui untuk diujikan.</p>
+        <p>BAB 1 PENDAHULUAN</p>
+        <p>1.1 Latar Belakang Masalah</p>
+        <p>Latar belakang skripsi.</p>
+        <p>BAB 2 TINJAUAN PUSTAKA</p>
+        <p>2.1 Kajian Pustaka</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($inputHtml, 'SKRIPSI 236651071 BAITS RIKA SAPUTRA.docx');
+
+    expect($result['adapted_html'])->toContain('THESIS')
+        ->and($result['adapted_html'])->toContain('PERNYATAAN KEASLIAN SKRIPSI')
+        ->and($result['adapted_html'])->toContain('LEMBAR PERSETUJUAN PEMBIMBING')
+        ->and($result['adapted_html'])->toContain('BAB 1 PENDAHULUAN')
+        ->and($result['adapted_html'])->toContain('BAB 2 TINJAUAN PUSTAKA')
+        ->and(substr_count($result['adapted_html'], 'data-page-break="true"'))->toBeGreaterThanOrEqual(4);
+});

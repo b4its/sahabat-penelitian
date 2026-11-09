@@ -4,6 +4,7 @@
  * Features:
  * - Intelligent local file ingestion (.docx, .md, .html, .txt, .json)
  * - Automatic document structure adaptation (Academic/Skripsi 4-4-3-3 margins, Times New Roman 12pt, justified text)
+ * - True multi-page A4 physical sheet pagination with headers, footers (Halaman X dari Y), and page gaps
  * - Semantic chapter & heading promotion (BAB I-V, Preliminaries, 1.1 subheadings)
  * - Cover page centering and auto page-break
  * - Dynamic Left Outline synchronization
@@ -15,6 +16,7 @@
 
 export class DocumentEngine {
     constructor(options = {}) {
+        this.pagesWrapper = options.pagesWrapper || document.getElementById('document-pages-wrapper') || document.getElementById('document-canvas-container');
         this.editorEl = options.editorEl;
         this.canvasEl = options.canvasEl || document.getElementById('document-page-canvas');
         this.titleInput = options.titleInput;
@@ -27,11 +29,15 @@ export class DocumentEngine {
 
         this.currentFormat = 'docx';
         this.currentMarginPreset = 'normal';
+        this.currentPaperSize = 'a4';
+        this.currentOrientation = 'portrait';
+        this.activePageIndex = 1;
         this.history = [];
         this.historyIndex = -1;
         this.maxHistory = 50;
         this.autoSaveTimer = null;
         this.isTyping = false;
+        this.isPaginating = false;
         this.activeTable = null;
         this.activeImage = null;
 
@@ -39,52 +45,98 @@ export class DocumentEngine {
     }
 
     init() {
-        if (!this.editorEl) return;
+        if (!this.pagesWrapper && !this.editorEl) return;
+
+        // Check if initial content should be paginated into multiple sheets
+        const initialHtml = this.getContent();
+        if (initialHtml && (
+            initialHtml.includes('heading-chapter') ||
+            initialHtml.includes('page-break') ||
+            initialHtml.includes('data-page-break') ||
+            initialHtml.length > 1500
+        )) {
+            this.renderPaginatedDocument(initialHtml);
+        } else {
+            this.renumberPages();
+        }
 
         // Record initial state
         this.recordHistory();
 
-        // Editor input listeners
-        this.editorEl.addEventListener('input', () => {
-            this.handleInput();
-        });
+        // Event delegation on pages wrapper
+        const targetContainer = this.pagesWrapper || this.editorEl;
+        if (targetContainer) {
+            targetContainer.addEventListener('input', (e) => {
+                if (e.target.closest('.page-sheet-body') || e.target.id === 'document-editor') {
+                    this.handleInput();
+                }
+            });
+
+            targetContainer.addEventListener('click', (e) => {
+                const table = e.target.closest('table');
+                const img = e.target.closest('img');
+
+                if (table) {
+                    this.activeTable = table;
+                    this.showTableToolbar(table, e);
+                } else {
+                    this.hideTableToolbar();
+                }
+
+                if (img) {
+                    this.activeImage = img;
+                    this.showImageToolbar(img, e);
+                } else {
+                    this.hideImageToolbar();
+                }
+
+                // Update active page index on click
+                const clickedSheet = e.target.closest('.document-page-sheet');
+                if (clickedSheet) {
+                    const pageNum = parseInt(clickedSheet.getAttribute('data-page-index') || '1', 10);
+                    if (pageNum !== this.activePageIndex) {
+                        this.activePageIndex = pageNum;
+                        this.updateStats();
+                    }
+                }
+            });
+
+            targetContainer.addEventListener('paste', (e) => {
+                this.handlePaste(e);
+            });
+
+            targetContainer.addEventListener('keydown', (e) => {
+                this.handleKeydown(e);
+            });
+        }
 
         // Selection listeners
         document.addEventListener('selectionchange', () => {
             if (this.isEditorFocused()) {
+                const activeEditor = this.getActiveEditor();
+                const sheet = activeEditor?.closest('.document-page-sheet');
+                if (sheet) {
+                    const pageNum = parseInt(sheet.getAttribute('data-page-index') || '1', 10);
+                    if (pageNum !== this.activePageIndex) {
+                        this.activePageIndex = pageNum;
+                        this.updateStats();
+                    }
+                }
                 this.onSelectionChange(this.getSelectionState());
             }
         });
 
-        // Click listeners for tables and images to show context toolbars
-        this.editorEl.addEventListener('click', (e) => {
-            const table = e.target.closest('table');
-            const img = e.target.closest('img');
-
-            if (table) {
-                this.activeTable = table;
-                this.showTableToolbar(table, e);
-            } else {
-                this.hideTableToolbar();
-            }
-
-            if (img) {
-                this.activeImage = img;
-                this.showImageToolbar(img, e);
-            } else {
-                this.hideImageToolbar();
-            }
-        });
-
-        // Paste handler
-        this.editorEl.addEventListener('paste', (e) => {
-            this.handlePaste(e);
-        });
-
-        // Keyboard shortcuts
-        this.editorEl.addEventListener('keydown', (e) => {
-            this.handleKeydown(e);
-        });
+        // Scroll listener on container for tracking active page
+        const scrollContainer = document.getElementById('document-canvas-container');
+        if (scrollContainer) {
+            let scrollTimer = null;
+            scrollContainer.addEventListener('scroll', () => {
+                clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(() => {
+                    this.updateActivePageOnScroll();
+                }, 80);
+            }, { passive: true });
+        }
 
         // Initial stats and outline
         this.updateStats();
@@ -94,7 +146,68 @@ export class DocumentEngine {
     isEditorFocused() {
         const sel = window.getSelection();
         if (!sel || sel.rangeCount === 0) return false;
-        return this.editorEl.contains(sel.anchorNode);
+        const node = sel.anchorNode;
+        if (!node) return false;
+        if (this.pagesWrapper && this.pagesWrapper.contains(node)) return true;
+        if (this.editorEl && this.editorEl.contains(node)) return true;
+        return false;
+    }
+
+    getActiveEditor() {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const el = sel.anchorNode?.nodeType === Node.ELEMENT_NODE
+                ? sel.anchorNode
+                : sel.anchorNode?.parentElement;
+            const body = el?.closest('.page-sheet-body');
+            if (body) return body;
+        }
+        const bodies = this.getAllEditorBodies();
+        return bodies[0] || this.editorEl;
+    }
+
+    getAllEditorBodies() {
+        if (this.pagesWrapper) {
+            const bodies = this.pagesWrapper.querySelectorAll('.page-sheet-body');
+            if (bodies.length > 0) return Array.from(bodies);
+        }
+        return this.editorEl ? [this.editorEl] : [];
+    }
+
+    getAllPageSheets() {
+        if (this.pagesWrapper) {
+            const sheets = this.pagesWrapper.querySelectorAll('.document-page-sheet');
+            if (sheets.length > 0) return Array.from(sheets);
+        }
+        const canvas = document.getElementById('document-page-canvas');
+        return canvas ? [canvas] : [];
+    }
+
+    updateActivePageOnScroll() {
+        const container = document.getElementById('document-canvas-container');
+        if (!container) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const midY = containerRect.top + containerRect.height / 3;
+
+        const sheets = this.getAllPageSheets();
+        let closestPage = this.activePageIndex;
+        let minDistance = Infinity;
+
+        sheets.forEach(sheet => {
+            const rect = sheet.getBoundingClientRect();
+            const sheetMidY = rect.top + rect.height / 2;
+            const dist = Math.abs(sheetMidY - midY);
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestPage = parseInt(sheet.getAttribute('data-page-index') || '1', 10);
+            }
+        });
+
+        if (closestPage !== this.activePageIndex) {
+            this.activePageIndex = closestPage;
+            this.updateStats();
+        }
     }
 
     handleInput() {
@@ -150,12 +263,342 @@ export class DocumentEngine {
     }
 
     /* -------------------------------------------------------------
-     * Local File Ingestion & Intelligent Auto-Adaptation
+     * True Multi-Page A4 Pagination Engine
      * ------------------------------------------------------------- */
 
     /**
-     * Ingest local file, detect format, and adapt layout, headings, and margins automatically.
+     * Intelligently partition HTML content into individual A4 page sheets.
+     * Takes into account explicit page breaks, chapter headings, academic preliminaries,
+     * and vertical content block height budgets.
      */
+    paginateHtml(html) {
+        if (!html || !html.trim()) {
+            return [{
+                pageNumber: 1,
+                chapterName: '',
+                contentHtml: '<p><br></p>',
+            }];
+        }
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+        const container = doc.body.firstElementChild;
+
+        const children = Array.from(container.children);
+        if (children.length === 0 && container.textContent.trim()) {
+            return [{
+                pageNumber: 1,
+                chapterName: '',
+                contentHtml: `<p>${container.innerHTML}</p>`,
+            }];
+        }
+
+        const pages = [];
+        let currentBlocks = [];
+        let currentWeight = 0;
+        let currentChapter = '';
+        const MAX_PAGE_WEIGHT = 740; // Printable A4 body height budget in px (approx 220mm at 96dpi)
+
+        const finalizeCurrentPage = () => {
+            if (currentBlocks.length === 0) return;
+            pages.push({
+                pageNumber: pages.length + 1,
+                chapterName: currentChapter,
+                contentHtml: currentBlocks.map(b => b.outerHTML || b).join('\n'),
+            });
+            currentBlocks = [];
+            currentWeight = 0;
+        };
+
+        const estimateElementWeight = (el) => {
+            const tag = el.tagName ? el.tagName.toUpperCase() : '';
+            const text = el.textContent || '';
+            const textLen = text.trim().length;
+
+            if (tag === 'H1') return 80;
+            if (tag === 'H2') return 55;
+            if (tag === 'H3') return 45;
+            if (tag === 'H4' || tag === 'H5' || tag === 'H6') return 35;
+            if (tag === 'TABLE') {
+                const rowCount = el.querySelectorAll('tr').length || 3;
+                return Math.min(600, rowCount * 36 + 28);
+            }
+            if (tag === 'FIGURE' || tag === 'IMG' || el.querySelector('img')) return 220;
+            if (tag === 'UL' || tag === 'OL') {
+                const liCount = el.querySelectorAll('li').length || 3;
+                return liCount * 28 + 20;
+            }
+            if (tag === 'P') {
+                if (textLen === 0) return 24;
+                const lines = Math.max(1, Math.ceil(textLen / 70));
+                return lines * 22 + 16;
+            }
+            if (tag === 'PRE' || tag === 'BLOCKQUOTE') {
+                const lines = Math.max(2, (text.match(/\n/g) || []).length + 1);
+                return lines * 20 + 30;
+            }
+            return Math.max(30, Math.ceil(textLen / 70) * 22 + 16);
+        };
+
+        const isChapterHeading = (el) => {
+            const tag = (el.tagName || '').toUpperCase();
+            const text = (el.textContent || '').trim();
+            const isHeadingTag = /^H[1-6]$/.test(tag) || el.classList?.contains('heading-chapter');
+            const isShortTitle = text.length <= 80 && !/[.!?]$/.test(text);
+            if (!isHeadingTag && !isShortTitle) return false;
+
+            return /^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i.test(text);
+        };
+
+        const isPreliminaryHeading = (el) => {
+            const tag = (el.tagName || '').toUpperCase();
+            const text = (el.textContent || '').trim();
+            const isHeadingTag = /^H[1-6]$/.test(tag) || el.classList?.contains('heading-preliminary');
+            const isShortTitle = text.length <= 60 && !/[.!?]$/.test(text);
+            if (!isHeadingTag && !isShortTitle) return false;
+
+            return /^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text);
+        };
+
+        const isExplicitPageBreak = (el) => {
+            if (!el.tagName) return false;
+            return el.classList?.contains('page-break') ||
+                   el.hasAttribute('data-page-break') ||
+                   el.getAttribute('style')?.includes('page-break-after: always') ||
+                   el.getAttribute('style')?.includes('break-after: page');
+        };
+
+        for (let i = 0; i < children.length; i++) {
+            const el = children[i];
+
+            // 1. Explicit Page Break
+            if (isExplicitPageBreak(el)) {
+                finalizeCurrentPage();
+                continue;
+            }
+
+            // 2. Chapter Heading
+            if (isChapterHeading(el)) {
+                if (currentBlocks.length > 0) {
+                    finalizeCurrentPage();
+                }
+                currentChapter = el.textContent.trim().toUpperCase();
+                currentBlocks.push(el);
+                currentWeight += estimateElementWeight(el);
+                continue;
+            }
+
+            // 3. Academic Preliminary Heading (ABSTRAK, LEMBAR PENGESAHAN, DAFTAR ISI, etc.)
+            if (isPreliminaryHeading(el)) {
+                if (currentBlocks.length > 0) {
+                    finalizeCurrentPage();
+                }
+                currentChapter = el.textContent.trim().toUpperCase();
+                currentBlocks.push(el);
+                currentWeight += estimateElementWeight(el);
+                continue;
+            }
+
+            // 4. Regular Element (p, table, image, list, etc.)
+            const weight = estimateElementWeight(el);
+
+            // Check if adding this element overflows the page budget
+            if (currentWeight + weight > MAX_PAGE_WEIGHT && currentBlocks.length > 0) {
+                // If element is a massive paragraph (>700 chars), split gracefully at sentence boundary
+                if (el.tagName === 'P' && el.textContent.length > 700) {
+                    const text = el.textContent;
+                    const sentences = text.match(/[^.!?]+[.!?]+(\s+|$)/g) || [text];
+                    if (sentences.length >= 2) {
+                        let halfway = Math.floor(sentences.length / 2);
+                        const part1 = sentences.slice(0, halfway).join('').trim();
+                        const part2 = sentences.slice(halfway).join('').trim();
+
+                        const p1 = el.cloneNode(true);
+                        p1.innerHTML = part1;
+                        currentBlocks.push(p1);
+                        finalizeCurrentPage();
+
+                        const p2 = el.cloneNode(true);
+                        p2.innerHTML = part2;
+                        currentBlocks.push(p2);
+                        currentWeight += estimateElementWeight(p2);
+                        continue;
+                    }
+                }
+
+                // Normal element overflow: finish page and put on next page
+                finalizeCurrentPage();
+            }
+
+            currentBlocks.push(el);
+            currentWeight += weight;
+        }
+
+        finalizeCurrentPage();
+
+        if (pages.length === 0) {
+            pages.push({
+                pageNumber: 1,
+                chapterName: '',
+                contentHtml: '<p><br></p>',
+            });
+        }
+
+        return pages;
+    }
+
+    /**
+     * Render paginated pages into this.pagesWrapper.
+     * Each page is a physical A4 sheet with header, editable body, footer, and page gaps.
+     */
+    renderPaginatedDocument(html) {
+        if (!this.pagesWrapper) return;
+        this.isPaginating = true;
+
+        const pages = this.paginateHtml(html);
+        const totalPages = pages.length;
+
+        // Clear existing sheets and gaps
+        this.pagesWrapper.innerHTML = '';
+
+        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
+
+        pages.forEach((p, idx) => {
+            const pageNum = idx + 1;
+            const sheet = document.createElement('article');
+            sheet.className = 'document-page-sheet page-a4 relative flex flex-col justify-between shadow-2xl';
+            sheet.setAttribute('data-page-index', pageNum);
+            sheet.setAttribute('id', pageNum === 1 ? 'document-page-canvas' : `document-page-${pageNum}`);
+
+            // Apply margin preset
+            this.applyMarginsToSheet(sheet, this.currentMarginPreset);
+
+            // Apply dark mode sheet if active
+            const isDark = document.getElementById('btn-toggle-dark-sheet')?.classList.contains('active-dark') || false;
+            if (isDark) {
+                sheet.classList.add('canvas-dark-sheet');
+            }
+
+            // Header
+            const header = document.createElement('header');
+            header.className = 'page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print';
+            header.innerHTML = `
+                <span class="header-doc-title truncate max-w-[60%] font-medium">${this.escapeHtml(docTitle)}</span>
+                <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]">${this.escapeHtml(p.chapterName || '')}</span>
+            `;
+            sheet.appendChild(header);
+
+            // Body
+            const body = document.createElement('div');
+            body.className = 'page-sheet-body flex-1 outline-none';
+            body.setAttribute('contenteditable', 'true');
+            body.setAttribute('spellcheck', 'true');
+            body.setAttribute('role', 'textbox');
+            body.setAttribute('aria-multiline', 'true');
+            body.setAttribute('data-page-number', pageNum);
+            if (pageNum === 1) {
+                body.setAttribute('id', 'document-editor');
+                this.editorEl = body;
+                this.canvasEl = sheet;
+            }
+            body.innerHTML = p.contentHtml;
+            sheet.appendChild(body);
+
+            // Footer
+            const footer = document.createElement('footer');
+            footer.className = 'page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print';
+            footer.innerHTML = `
+                <span class="text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
+                <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono">Halaman ${pageNum} dari ${totalPages}</span>
+            `;
+            sheet.appendChild(footer);
+
+            this.pagesWrapper.appendChild(sheet);
+
+            // Page gap between sheets
+            if (pageNum < totalPages) {
+                const gap = document.createElement('div');
+                gap.className = 'page-sheet-gap select-none no-print';
+                gap.innerHTML = `<span class="page-gap-indicator">Pemisah Lembar A4 (Halaman ${pageNum + 1})</span>`;
+                this.pagesWrapper.appendChild(gap);
+            }
+        });
+
+        // Ensure ruler markers match preset
+        this.updateRulerMarkersForPreset(this.currentMarginPreset);
+
+        this.isPaginating = false;
+
+        // Update stats and outline
+        this.updateStats();
+        this.updateOutline();
+    }
+
+    renumberPages() {
+        const sheets = this.getAllPageSheets();
+        const total = sheets.length;
+        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
+
+        sheets.forEach((sheet, idx) => {
+            const pageNum = idx + 1;
+            sheet.setAttribute('data-page-index', pageNum);
+            if (pageNum === 1) {
+                sheet.setAttribute('id', 'document-page-canvas');
+            } else {
+                sheet.setAttribute('id', `document-page-${pageNum}`);
+            }
+
+            const headerTitle = sheet.querySelector('.header-doc-title');
+            if (headerTitle) {
+                headerTitle.textContent = docTitle;
+            }
+
+            const footerNum = sheet.querySelector('.footer-page-num');
+            if (footerNum) {
+                footerNum.textContent = `Halaman ${pageNum} dari ${total}`;
+            }
+
+            const body = sheet.querySelector('.page-sheet-body');
+            if (body) {
+                body.setAttribute('data-page-number', pageNum);
+            }
+        });
+
+        if (this.pagesWrapper) {
+            const gaps = this.pagesWrapper.querySelectorAll('.page-sheet-gap');
+            gaps.forEach((gap, idx) => {
+                const indicator = gap.querySelector('.page-gap-indicator');
+                if (indicator) {
+                    indicator.textContent = `Pemisah Lembar A4 (Halaman ${idx + 2})`;
+                }
+            });
+        }
+    }
+
+    applyMarginsToSheet(sheet, preset) {
+        if (!sheet) return;
+        if (preset === 'skripsi') {
+            // Skripsi standard: Top 4cm, Left 4cm, Right 3cm, Bottom 3cm
+            sheet.style.paddingTop = '40mm';
+            sheet.style.paddingLeft = '40mm';
+            sheet.style.paddingRight = '30mm';
+            sheet.style.paddingBottom = '30mm';
+        } else if (preset === 'narrow') {
+            sheet.style.padding = '12.7mm';
+        } else if (preset === 'wide') {
+            sheet.style.paddingTop = '25.4mm';
+            sheet.style.paddingBottom = '25.4mm';
+            sheet.style.paddingLeft = '38.1mm';
+            sheet.style.paddingRight = '38.1mm';
+        } else {
+            sheet.style.padding = '25.4mm';
+        }
+    }
+
+    /* -------------------------------------------------------------
+     * Local File Ingestion & Intelligent Auto-Adaptation
+     * ------------------------------------------------------------- */
+
     async loadLocalFile(file) {
         const filename = file.name;
         const extension = filename.split('.').pop().toLowerCase();
@@ -240,13 +683,13 @@ export class DocumentEngine {
                 this.setLineSpacing('1.5');
                 this.onAdaptationNotice({
                     type: 'academic',
-                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font Times New Roman 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil diselaraskan.`,
+                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font Times New Roman 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.`,
                 });
             } else {
                 this.setMarginPreset('normal');
                 this.onAdaptationNotice({
                     type: 'normal',
-                    message: `Format ${detectedFormat.toUpperCase()} berhasil dimuat dan diselaraskan ke dalam kanvas A4.`,
+                    message: `Format ${detectedFormat.toUpperCase()} berhasil dimuat dan diselaraskan ke dalam lembar halaman A4.`,
                 });
             }
 
@@ -277,11 +720,6 @@ export class DocumentEngine {
         }
     }
 
-    /**
-     * Semantic document structure & formatting adapter.
-     * Identifies academic skripsi patterns, centers cover page, promotes chapters/subheadings,
-     * and splits pages cleanly.
-     */
     adaptDocumentStructure(html, filename = '') {
         const parser = new DOMParser();
         const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
@@ -291,6 +729,7 @@ export class DocumentEngine {
         const isAcademic =
             allText.includes('skripsi') ||
             allText.includes('tesis') ||
+            allText.includes('thesis') ||
             allText.includes('disertasi') ||
             allText.includes('politeknik') ||
             allText.includes('universitas') ||
@@ -302,15 +741,14 @@ export class DocumentEngine {
         let coverCount = 0;
         let headingCount = 0;
 
-        // Process all direct children
         const children = Array.from(container.children);
         for (let el of children) {
             const text = el.textContent.trim();
 
-            // Check if we hit a chapter heading or preliminary section, which ends cover page immediately
+            // End cover page immediately when chapter or preliminary section begins
             if (inCover && (
                 /^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i.test(text) ||
-                /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)/i.test(text)
+                /^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)/i.test(text)
             )) {
                 inCover = false;
                 const pb = doc.createElement('div');
@@ -323,8 +761,6 @@ export class DocumentEngine {
             // Cover Page centering
             if (inCover) {
                 coverCount++;
-
-                // If image in cover (e.g. university logo), center and size nicely
                 const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
                 if (img) {
                     img.className = 'mx-auto block my-6 max-h-44 object-contain';
@@ -333,7 +769,6 @@ export class DocumentEngine {
                     el.className = 'text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
                 }
 
-                // Year detection or cover length limit: end cover page
                 if (/\b(19|20)\d{2}\b/.test(text) || coverCount > 14) {
                     inCover = false;
                     const pb = doc.createElement('div');
@@ -345,13 +780,12 @@ export class DocumentEngine {
                 continue;
             }
 
-            // Chapter Headings: BAB I, BAB II, etc. (Handles single line and two-line chapter title)
+            // Chapter Headings: BAB I, BAB II, etc.
             const babMatch = text.match(/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i);
             if (babMatch) {
                 headingCount++;
                 let titleText = text;
                 const nextEl = el.nextElementSibling;
-                // If chapter title is on the next line (e.g. BAB I followed by PENDAHULUAN)
                 if ((!babMatch[2] || babMatch[2].trim() === '') && nextEl) {
                     const nextText = nextEl.textContent.trim();
                     if (nextText && nextText.length < 100 && !/^\d+\.\d+/.test(nextText)) {
@@ -364,7 +798,6 @@ export class DocumentEngine {
                 h1.className = 'heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
                 h1.textContent = titleText;
 
-                // Add page break before chapter if not already at page break
                 const pb = doc.createElement('div');
                 pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
                 pb.setAttribute('data-page-break', 'true');
@@ -375,8 +808,8 @@ export class DocumentEngine {
                 continue;
             }
 
-            // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, LEMBAR PENGESAHAN, etc.
-            if (/^(SKRIPSI|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)$/i.test(text)) {
+            // Academic Preliminaries: ABSTRAK, DAFTAR ISI, LEMBAR PENGESAHAN, etc.
+            if (/^(SKRIPSI|THESIS|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text)) {
                 headingCount++;
                 const h1 = doc.createElement('h1');
                 h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
@@ -479,38 +912,25 @@ export class DocumentEngine {
 
     setMarginPreset(preset) {
         this.currentMarginPreset = preset;
-        const canvas = this.canvasEl || document.getElementById('document-page-canvas');
-        if (!canvas) return;
+        const sheets = this.getAllPageSheets();
+        sheets.forEach(sheet => this.applyMarginsToSheet(sheet, preset));
+        this.updateRulerMarkersForPreset(preset);
 
-        // Apply margins to canvas container
-        if (preset === 'skripsi') {
-            // Skripsi standard: Top 4cm, Left 4cm, Right 3cm, Bottom 3cm
-            canvas.style.paddingTop = '40mm';
-            canvas.style.paddingLeft = '40mm';
-            canvas.style.paddingRight = '30mm';
-            canvas.style.paddingBottom = '30mm';
-            this.updateRulerMarkers(4, 18);
-        } else if (preset === 'narrow') {
-            // Sempit: 1.27cm
-            canvas.style.padding = '12.7mm';
-            this.updateRulerMarkers(1.3, 19.7);
-        } else if (preset === 'wide') {
-            // Lebar: 3.81cm left/right, 2.54cm top/bottom
-            canvas.style.paddingTop = '25.4mm';
-            canvas.style.paddingBottom = '25.4mm';
-            canvas.style.paddingLeft = '38.1mm';
-            canvas.style.paddingRight = '38.1mm';
-            this.updateRulerMarkers(3.8, 17.2);
-        } else {
-            // Standar Normal: 2.54cm (1 inch)
-            canvas.style.padding = '25.4mm';
-            this.updateRulerMarkers(2.5, 18.5);
-        }
-
-        // Sync with layout margin dropdown if present
         const marginSelect = document.getElementById('layout-margins');
         if (marginSelect) {
             marginSelect.value = preset;
+        }
+    }
+
+    updateRulerMarkersForPreset(preset) {
+        if (preset === 'skripsi') {
+            this.updateRulerMarkers(4, 18);
+        } else if (preset === 'narrow') {
+            this.updateRulerMarkers(1.3, 19.7);
+        } else if (preset === 'wide') {
+            this.updateRulerMarkers(3.8, 17.2);
+        } else {
+            this.updateRulerMarkers(2.5, 18.5);
         }
     }
 
@@ -518,7 +938,6 @@ export class DocumentEngine {
         const leftMarker = document.getElementById('ruler-left-margin');
         const rightMarker = document.getElementById('ruler-right-margin');
 
-        // A4 width = 21cm
         if (leftMarker) {
             leftMarker.style.left = `${(leftCm / 21) * 100}%`;
         }
@@ -528,22 +947,29 @@ export class DocumentEngine {
     }
 
     setFontFamily(fontName) {
-        this.editorEl.style.fontFamily = fontName;
-        this.execute('fontName', fontName);
+        this.getAllEditorBodies().forEach(b => {
+            b.style.fontFamily = fontName;
+        });
+
+        const active = this.getActiveEditor();
+        if (active) active.focus();
+        document.execCommand('fontName', false, fontName);
 
         const fontSelect = document.getElementById('font-family-select');
         if (fontSelect) {
             for (let i = 0; i < fontSelect.options.length; i++) {
-                if (fontSelect.options[i].value.includes(fontName) || fontName.includes(fontSelect.options[i].text) || fontName.includes('Times') && fontSelect.options[i].value.includes('Times')) {
+                if (fontSelect.options[i].value.includes(fontName) || fontName.includes(fontSelect.options[i].text) || (fontName.includes('Times') && fontSelect.options[i].value.includes('Times'))) {
                     fontSelect.selectedIndex = i;
                     break;
                 }
             }
         }
+        this.handleInput();
     }
 
     setFontSize(ptSize) {
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
             const span = document.createElement('span');
@@ -552,7 +978,9 @@ export class DocumentEngine {
             sel.getRangeAt(0).insertNode(span);
             this.handleInput();
         } else {
-            this.editorEl.style.fontSize = ptSize;
+            this.getAllEditorBodies().forEach(b => {
+                b.style.fontSize = ptSize;
+            });
         }
 
         const sizeSelect = document.getElementById('font-size-select');
@@ -562,9 +990,11 @@ export class DocumentEngine {
     }
 
     setLineSpacing(val) {
-        this.editorEl.style.lineHeight = val;
-        this.editorEl.querySelectorAll('p').forEach(p => {
-            p.style.lineHeight = val;
+        this.getAllEditorBodies().forEach(b => {
+            b.style.lineHeight = val;
+            b.querySelectorAll('p').forEach(p => {
+                p.style.lineHeight = val;
+            });
         });
 
         const lineSelect = document.getElementById('line-spacing-select');
@@ -575,7 +1005,8 @@ export class DocumentEngine {
     }
 
     setTextAlignment(align) {
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
         if (align === 'justify') {
             document.execCommand('justifyFull');
         } else if (align === 'center') {
@@ -593,34 +1024,40 @@ export class DocumentEngine {
      * ------------------------------------------------------------- */
 
     generateTableOfContents() {
-        const headings = this.editorEl.querySelectorAll('h1, h2, h3');
+        const headings = [];
+        const bodies = this.getAllEditorBodies();
+        let pageCounter = 1;
+
+        bodies.forEach((body, bodyIdx) => {
+            const hElements = body.querySelectorAll('h1, h2, h3');
+            hElements.forEach(h => {
+                headings.push({
+                    el: h,
+                    page: bodyIdx + 1,
+                    text: h.textContent.trim(),
+                    level: h.tagName.toLowerCase(),
+                });
+            });
+        });
+
         if (headings.length === 0) {
             return false;
         }
 
-        let pageCounter = 1;
         const tocEntries = [];
+        headings.forEach((item, index) => {
+            const id = item.el.id || `heading-${index}`;
+            item.el.id = id;
 
-        headings.forEach((h, index) => {
-            const text = h.textContent.trim();
-            const level = h.tagName.toLowerCase();
-            const id = h.id || `heading-${index}`;
-            h.id = id;
-
-            // Simple heuristic page count estimate based on DOM position
-            if (h.classList.contains('heading-chapter') || h.textContent.toLowerCase().includes('bab')) {
-                pageCounter = Math.max(pageCounter + 1, index * 2 + 1);
-            }
-
-            const indentClass = level === 'h1' ? 'font-bold mt-2' :
-                                level === 'h2' ? 'pl-4 text-sm' :
+            const indentClass = item.level === 'h1' ? 'font-bold mt-2' :
+                                item.level === 'h2' ? 'pl-4 text-sm' :
                                 'pl-8 text-xs text-gray-600 dark:text-gray-400';
 
             tocEntries.push(`
                 <div class="flex items-baseline justify-between py-1 ${indentClass}">
-                    <a href="#${id}" class="hover:text-indigo-600 hover:underline truncate max-w-[80%]">${text}</a>
+                    <a href="#${id}" class="hover:text-indigo-600 hover:underline truncate max-w-[80%]">${item.text}</a>
                     <span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span>
-                    <span class="font-mono text-xs">${pageCounter}</span>
+                    <span class="font-mono text-xs">${item.page}</span>
                 </div>
             `);
         });
@@ -782,7 +1219,8 @@ export class DocumentEngine {
      * ------------------------------------------------------------- */
 
     execute(command, value = null) {
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
         document.execCommand(command, false, value);
         this.handleInput();
     }
@@ -812,24 +1250,96 @@ export class DocumentEngine {
     }
 
     insertPageBreak() {
-        this.editorEl.focus();
-        const pb = document.createElement('div');
-        pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-xs text-gray-500 select-none';
-        pb.setAttribute('data-page-break', 'true');
-        pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase tracking-wider font-mono">Pemisah Halaman (Page Break)</span>';
+        const activeEditor = this.getActiveEditor();
+        const currentSheet = activeEditor?.closest('.document-page-sheet');
 
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            sel.getRangeAt(0).insertNode(pb);
-        } else {
-            this.editorEl.appendChild(pb);
+        if (!currentSheet || !this.pagesWrapper) {
+            if (this.editorEl) {
+                const pb = document.createElement('div');
+                pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-xs text-gray-500 select-none';
+                pb.setAttribute('data-page-break', 'true');
+                pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase tracking-wider font-mono">Pemisah Halaman</span>';
+                this.insertAtCursor(pb.outerHTML);
+            }
+            return;
         }
+
+        // Extract content after cursor
+        let nextContent = '<p><br></p>';
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && activeEditor.contains(sel.anchorNode)) {
+            const range = sel.getRangeAt(0);
+            const afterRange = document.createRange();
+            afterRange.setStart(range.endContainer, range.endOffset);
+            afterRange.setEnd(activeEditor, activeEditor.childNodes.length);
+            const extracted = afterRange.extractContents();
+            const temp = document.createElement('div');
+            temp.appendChild(extracted);
+            if (temp.innerHTML.trim()) {
+                nextContent = temp.innerHTML;
+            }
+        }
+
+        const newSheet = document.createElement('article');
+        newSheet.className = 'document-page-sheet page-a4 relative flex flex-col justify-between shadow-2xl';
+        this.applyMarginsToSheet(newSheet, this.currentMarginPreset);
+
+        const header = document.createElement('header');
+        header.className = 'page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print';
+        header.innerHTML = `
+            <span class="header-doc-title truncate max-w-[60%] font-medium">${this.escapeHtml(this.getTitle())}</span>
+            <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]"></span>
+        `;
+        newSheet.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'page-sheet-body flex-1 outline-none';
+        body.setAttribute('contenteditable', 'true');
+        body.setAttribute('spellcheck', 'true');
+        body.setAttribute('role', 'textbox');
+        body.setAttribute('aria-multiline', 'true');
+        body.innerHTML = nextContent;
+        newSheet.appendChild(body);
+
+        const footer = document.createElement('footer');
+        footer.className = 'page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print';
+        footer.innerHTML = `
+            <span class="text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
+            <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono"></span>
+        `;
+        newSheet.appendChild(footer);
+
+        const gap = document.createElement('div');
+        gap.className = 'page-sheet-gap select-none no-print';
+        gap.innerHTML = '<span class="page-gap-indicator">Pemisah Lembar A4</span>';
+
+        const nextEl = currentSheet.nextElementSibling;
+        if (nextEl && nextEl.classList.contains('page-sheet-gap')) {
+            nextEl.after(newSheet);
+            newSheet.before(gap);
+        } else {
+            currentSheet.after(newSheet);
+            currentSheet.after(gap);
+        }
+
+        this.renumberPages();
+
+        body.focus();
+        const r = document.createRange();
+        r.selectNodeContents(body);
+        r.collapse(true);
+        const s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+
         this.handleInput();
     }
 
     insertImage(src, alt = '') {
         if (!src) return;
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
+
         const figure = document.createElement('figure');
         figure.className = 'my-6 text-center';
 
@@ -847,16 +1357,18 @@ export class DocumentEngine {
         }
 
         const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
+        if (sel && sel.rangeCount > 0 && active?.contains(sel.anchorNode)) {
             sel.getRangeAt(0).insertNode(figure);
-        } else {
-            this.editorEl.appendChild(figure);
+        } else if (active) {
+            active.appendChild(figure);
         }
         this.handleInput();
     }
 
     insertTable(rows = 3, cols = 3) {
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
+
         const table = document.createElement('table');
         table.className = 'w-full border-collapse my-4 border border-gray-300 dark:border-gray-700 text-sm';
 
@@ -885,19 +1397,20 @@ export class DocumentEngine {
         table.appendChild(tbody);
 
         const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
+        if (sel && sel.rangeCount > 0 && active?.contains(sel.anchorNode)) {
             sel.getRangeAt(0).insertNode(table);
-        } else {
-            this.editorEl.appendChild(table);
+        } else if (active) {
+            active.appendChild(table);
         }
         this.handleInput();
     }
 
     insertLink(url, text = null) {
         if (!url) return;
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
         const sel = window.getSelection();
-        if (sel && sel.isCollapsed && text) {
+        if (sel && sel.isCollapsed && text && active) {
             const a = document.createElement('a');
             a.href = url;
             a.textContent = text;
@@ -911,9 +1424,10 @@ export class DocumentEngine {
     }
 
     insertAtCursor(htmlText) {
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
         const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
+        if (sel && sel.rangeCount > 0 && active?.contains(sel.anchorNode)) {
             const range = sel.getRangeAt(0);
             const temp = document.createElement('div');
             temp.innerHTML = htmlText;
@@ -922,16 +1436,17 @@ export class DocumentEngine {
                 frag.appendChild(temp.firstChild);
             }
             range.insertNode(frag);
-        } else {
-            this.editorEl.innerHTML += htmlText;
+        } else if (active) {
+            active.innerHTML += htmlText;
         }
         this.handleInput();
     }
 
     replaceSelectedText(newText) {
-        this.editorEl.focus();
+        const active = this.getActiveEditor();
+        if (active) active.focus();
         const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+        if (!sel || sel.rangeCount === 0 || !active?.contains(sel.anchorNode)) return;
         const range = sel.getRangeAt(0);
         range.deleteContents();
         const frag = document.createDocumentFragment();
@@ -1004,9 +1519,13 @@ export class DocumentEngine {
     }
 
     updateStats() {
-        const text = this.editorEl.innerText || '';
-        const cleanText = text.trim();
+        const bodies = this.getAllEditorBodies();
+        let fullText = '';
+        bodies.forEach(b => {
+            fullText += (b.innerText || b.textContent || '') + '\n\n';
+        });
 
+        const cleanText = fullText.trim();
         const charCount = cleanText.length;
         const words = cleanText ? cleanText.split(/\s+/).filter(Boolean) : [];
         const wordCount = words.length;
@@ -1014,15 +1533,13 @@ export class DocumentEngine {
         const paragraphs = cleanText ? cleanText.split(/\n\s*\n/).filter(Boolean) : [];
         const paragraphCount = paragraphs.length;
 
-        // Sentences count
         const sentences = cleanText ? cleanText.split(/[.!?]+/).filter(Boolean) : [];
         const sentenceCount = sentences.length;
 
         const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
-        // Count real page breaks or calculate based on words
-        const pageBreaks = this.editorEl.querySelectorAll('[data-page-break]').length;
-        const pageCount = Math.max(pageBreaks + 1, Math.max(1, Math.ceil(wordCount / 300)));
+        const pageSheets = this.getAllPageSheets();
+        const pageCount = Math.max(pageSheets.length, 1);
 
         this.onStatsChange({
             wordCount,
@@ -1032,20 +1549,26 @@ export class DocumentEngine {
             readingTimeMinutes,
             readingTime: `${readingTimeMinutes} min baca`,
             pageCount,
+            activePage: this.activePageIndex || 1,
         });
     }
 
     updateOutline() {
         const headings = [];
-        const headingEls = this.editorEl.querySelectorAll('h1, h2, h3, h4');
+        const bodies = this.getAllEditorBodies();
+        let headingIndex = 0;
 
-        headingEls.forEach((el, index) => {
-            const id = el.id || `heading-${index}`;
-            el.id = id;
-            headings.push({
-                id,
-                level: parseInt(el.tagName.replace('H', ''), 10),
-                text: el.innerText.trim(),
+        bodies.forEach((body, bodyIdx) => {
+            const headingEls = body.querySelectorAll('h1, h2, h3, h4');
+            headingEls.forEach(el => {
+                const id = el.id || `heading-${headingIndex++}`;
+                el.id = id;
+                headings.push({
+                    id,
+                    level: parseInt(el.tagName.replace('H', ''), 10),
+                    text: (el.innerText || el.textContent || '').trim(),
+                    pageNumber: bodyIdx + 1,
+                });
             });
         });
 
@@ -1125,7 +1648,12 @@ export class DocumentEngine {
         } else if (format === 'txt') {
             mime = 'text/plain; charset=utf-8';
             ext = 'txt';
-            content = `${title}\n\n${this.editorEl.innerText}`;
+            const bodies = this.getAllEditorBodies();
+            let allText = '';
+            bodies.forEach(b => {
+                allText += (b.innerText || b.textContent || '') + '\n\n';
+            });
+            content = `${title}\n\n${allText.trim()}`;
         } else {
             mime = 'application/msword; charset=utf-8';
             ext = 'doc';
@@ -1184,14 +1712,36 @@ export class DocumentEngine {
         if (this.titleInput) {
             this.titleInput.value = title;
         }
+        // Also update headers across sheets
+        const sheets = this.getAllPageSheets();
+        sheets.forEach(sheet => {
+            const hTitle = sheet.querySelector('.header-doc-title');
+            if (hTitle) hTitle.textContent = title;
+        });
     }
 
     getContent() {
-        return this.editorEl ? this.editorEl.innerHTML : '';
+        const bodies = this.getAllEditorBodies();
+        if (bodies.length === 0) {
+            return this.editorEl ? this.editorEl.innerHTML : '';
+        }
+        if (bodies.length === 1) {
+            return bodies[0].innerHTML;
+        }
+
+        return bodies
+            .map(body => body.innerHTML.trim())
+            .filter(Boolean)
+            .join('\n<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>\n');
     }
 
     setContent(html, record = true) {
-        if (this.editorEl) {
+        if (this.pagesWrapper) {
+            this.renderPaginatedDocument(html);
+            if (record) this.recordHistory();
+            this.updateStats();
+            this.updateOutline();
+        } else if (this.editorEl) {
             this.editorEl.innerHTML = html;
             if (record) this.recordHistory();
             this.updateStats();
@@ -1208,5 +1758,14 @@ export class DocumentEngine {
 
     capitalizeWords(str) {
         return str.replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 }

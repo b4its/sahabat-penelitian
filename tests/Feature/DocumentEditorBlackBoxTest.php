@@ -159,6 +159,52 @@ HTML;
         ->and($html)->toContain('data-page-break');
 });
 
+test('black-box: user can import a multi-page skripsi with preliminaries and receive partitioned page breaks', function () {
+    $thesisDoc = <<<HTML
+        <p>SKRIPSI</p>
+        <p>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</p>
+        <p>Oleh : BAITS RIKA SAPUTRA</p>
+        <p>NIM. 23.6651.071</p>
+        <p>POLITEKNIK NEGERI SAMARINDA</p>
+        <p>2026</p>
+        <p>THESIS</p>
+        <p>IMPLEMENTATION OF ENSEMBLE LEARNING FOR TEXTILE LIQUID WASTE</p>
+        <p>PERNYATAAN KEASLIAN SKRIPSI</p>
+        <p>Saya menyatakan bahwa karya ini adalah asli dan bebas plagiasi.</p>
+        <p>LEMBAR PERSETUJUAN</p>
+        <p>Disetujui oleh pembimbing akademik.</p>
+        <p>ABSTRAK</p>
+        <p>Limbah cair industri tekstil berpotensi mencemari ekosistem perairan jika tidak dipantau secara ketat.</p>
+        <p>BAB 1 PENDAHULUAN</p>
+        <p>1.1 Latar Belakang</p>
+        <p>Latar belakang riset otomasi pemantauan limbah berbasis sensor dan mikrokontroler.</p>
+        <p>BAB 2 TINJAUAN PUSTAKA</p>
+        <p>2.1 Sensor Warna TCS34725</p>
+        <p>Penjelasan teknis fotometri dan kalibrasi sensor.</p>
+        <p>BAB 3 METODE PENELITIAN</p>
+        <p>3.1 Tahapan Riset</p>
+        <p>Metode pengumpulan data limbah dan pelatihan model ensemble.</p>
+HTML;
+
+    $file = UploadedFile::fake()->createWithContent('SKRIPSI 236651071 BAITS RIKA SAPUTRA.docx', $thesisDoc);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+
+    expect($html)->toContain('THESIS')
+        ->and($html)->toContain('PERNYATAAN KEASLIAN SKRIPSI')
+        ->and($html)->toContain('LEMBAR PERSETUJUAN')
+        ->and($html)->toContain('ABSTRAK')
+        ->and($html)->toContain('BAB 1 PENDAHULUAN')
+        ->and($html)->toContain('BAB 2 TINJAUAN PUSTAKA')
+        ->and($html)->toContain('BAB 3 METODE PENELITIAN')
+        ->and(substr_count($html, 'data-page-break="true"'))->toBeGreaterThanOrEqual(6);
+});
+
 test('black-box: user can import a local json backup file and restore document state', function () {
     $jsonContent = json_encode([
         'title' => 'Naskah Proyek JSON',
