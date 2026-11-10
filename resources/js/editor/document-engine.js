@@ -284,9 +284,11 @@ export class DocumentEngine {
             if (!str) return false;
             const clean = str.trim();
             if (!clean) return false;
+            if (/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i.test(clean)) {
+                return false;
+            }
             if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
-            if (/[\s.\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
-            if (/\.\s*(\d+|[ivxlcdm]+)$/i.test(clean) && !/^\d+(\.\d+)+$/.test(clean)) return true;
+            if (/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
             return false;
         };
 
@@ -311,10 +313,19 @@ export class DocumentEngine {
 
         const finalizeCurrentPage = () => {
             if (currentBlocks.length === 0) return;
+            const pageNum = pages.length + 1;
+            const hasPreliminary = currentBlocks.some(b => {
+                if (!b.classList && !b.tagName) return false;
+                return b.classList?.contains('heading-preliminary') ||
+                       b.classList?.contains('heading-chapter') ||
+                       /^H[1-6]$/.test(b.tagName || '');
+            });
+            const isCover = !currentChapter && !hasPreliminary && pageNum <= 3;
             pages.push({
-                pageNumber: pages.length + 1,
+                pageNumber: pageNum,
                 chapterName: currentChapter,
                 contentHtml: currentBlocks.map(b => b.outerHTML || b).join('\n'),
+                isCover: isCover,
             });
             currentBlocks = [];
             currentWeight = 0;
@@ -359,7 +370,7 @@ export class DocumentEngine {
             const isShortTitle = text.length <= 80 && !/[.!?]$/.test(text);
             if (!isHeadingTag && !isShortTitle) return false;
 
-            return /^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i.test(text);
+            return /^BAB\s*(?:[IVXLCDM]+|\d+)/i.test(text);
         };
 
         const isPreliminaryHeading = (el) => {
@@ -495,7 +506,7 @@ export class DocumentEngine {
             }
 
             // Header (Cover page has no running header, just like Word's "Different First Page")
-            const isCoverPage = pageNum === 1;
+            const isCoverPage = p.isCover || (pageNum <= 3 && !p.chapterName);
             const header = document.createElement('header');
             header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print ${isCoverPage ? 'invisible' : ''}`;
             header.innerHTML = `
@@ -646,11 +657,27 @@ export class DocumentEngine {
                         "p:has(w:jc[w:val='both']) => p.text-justify:fresh",
                     ];
 
+                    const transformElement = (element) => {
+                        if (element.children) {
+                            element.children = element.children.map(transformElement);
+                        }
+                        if (element.type === 'break' && element.breakType === 'page') {
+                            return {
+                                type: 'text',
+                                value: '[[WORD_PAGE_BREAK]]'
+                            };
+                        }
+                        return element;
+                    };
+
                     const result = await window.mammoth.convertToHtml({
                         arrayBuffer,
                         styleMap,
+                        transformDocument: transformElement,
                     });
-                    contentHtml = result.value;
+                    contentHtml = result.value
+                        .replace(/<p>\s*\[\[WORD_PAGE_BREAK\]\]\s*<\/p>/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>')
+                        .replace(/\[\[WORD_PAGE_BREAK\]\]/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>');
                 } else {
                     const backendResult = await this.uploadToBackend(file);
                     contentHtml = backendResult.content_html;
@@ -694,6 +721,9 @@ export class DocumentEngine {
 
             this.setContent(adapted.html);
             this.setFormatBadge(detectedFormat);
+
+            const restoreBtn = document.getElementById('btn-restore-draft');
+            if (restoreBtn) restoreBtn.classList.add('hidden');
 
             // Apply adapted typography and margins
             if (adapted.isAcademic) {
@@ -749,9 +779,11 @@ export class DocumentEngine {
             if (!str) return false;
             const clean = str.trim();
             if (!clean) return false;
+            if (/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i.test(clean)) {
+                return false;
+            }
             if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
-            if (/[\s.\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
-            if (/\.\s*(\d+|[ivxlcdm]+)$/i.test(clean) && !/^\d+(\.\d+)+$/.test(clean)) return true;
+            if (/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
             return false;
         };
 
@@ -772,12 +804,35 @@ export class DocumentEngine {
         let headingCount = 0;
         let consecutiveEmpty = 0;
 
+        const getCleanText = (node) => {
+            if (!node) return '';
+            if (typeof node === 'string') return node.trim();
+            const clone = node.cloneNode(true);
+            clone.querySelectorAll('br').forEach(br => br.replaceWith(' '));
+            return clone.textContent.trim().replace(/\s+/g, ' ');
+        };
+
         const children = Array.from(container.children);
         for (let el of children) {
-            const text = el.textContent.trim();
+            // 1. Explicit Page Break: Preserve it immediately and continue
+            if (
+                el.classList?.contains('page-break') ||
+                el.hasAttribute('data-page-break') ||
+                el.getAttribute('style')?.includes('page-break-after: always') ||
+                el.getAttribute('style')?.includes('break-after: page') ||
+                el.textContent.trim() === 'Pemisah Halaman' ||
+                el.textContent.trim() === 'Pemisah Halaman (Akhir Sampul)'
+            ) {
+                el.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
+                el.setAttribute('data-page-break', 'true');
+                el.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span>';
+                continue;
+            }
+
+            const cleanText = getCleanText(el);
 
             // Collapse excessive empty paragraphs
-            if (text === '' && !el.querySelector('img')) {
+            if (cleanText === '' && !el.querySelector('img')) {
                 consecutiveEmpty++;
                 if (consecutiveEmpty > 1) {
                     el.remove();
@@ -787,9 +842,42 @@ export class DocumentEngine {
                 consecutiveEmpty = 0;
             }
 
-            // Table of Contents entries: format as clean dot-leader rows (never headings or page breaks)
-            if (isTableOfContentsLine(text)) {
-                const match = text.match(/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i);
+            const isChapter = /^(BAB\s*(?:\d+|[IVXLCDM]+))\b/i.test(cleanText);
+            const isPreliminary = /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(cleanText);
+
+            // End cover page when next section begins
+            if (inCover && (isChapter || isPreliminary)) {
+                inCover = false;
+            }
+
+            // Cover Page centering & typography
+            if (inCover) {
+                coverCount++;
+                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
+                if (img) {
+                    img.className = 'cover-logo mx-auto block my-6 max-h-40 object-contain';
+                    el.className = 'text-center my-4';
+                } else if (cleanText) {
+                    if (/^(OLEH|DISUSUN\s+OLEH|BY)\s*:/i.test(cleanText)) {
+                        el.className = 'cover-author-label text-center text-sm font-medium text-gray-700 dark:text-gray-300 my-2 leading-relaxed';
+                    } else if (/^NIM\b/i.test(cleanText)) {
+                        el.className = 'cover-author-nim text-center font-bold text-base text-gray-900 dark:text-gray-100 my-1 leading-relaxed';
+                    } else if (/^(PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM)/i.test(cleanText)) {
+                        el.className = 'cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-relaxed';
+                    } else if (/^(Sebagai salah satu syarat|Submitted as a partial)/i.test(cleanText)) {
+                        el.className = 'cover-subtitle text-center text-sm italic text-gray-700 dark:text-gray-300 my-3 max-w-xl mx-auto leading-relaxed';
+                    } else if (/^(SKRIPSI|THESIS|TESIS|DISERTASI|PROPOSAL|LAPORAN|TUGAS\s+AKHIR)$/i.test(cleanText)) {
+                        el.className = 'cover-badge text-center font-bold text-xl uppercase tracking-widest text-gray-900 dark:text-gray-100 my-2';
+                    } else {
+                        el.className = 'cover-title text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
+                    }
+                }
+                continue;
+            }
+
+            // Table of Contents entries: format as clean dot-leader rows (outside cover)
+            if (isTableOfContentsLine(cleanText)) {
+                const match = cleanText.match(/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i);
                 if (match) {
                     const itemTitle = match[1].trim();
                     const itemPage = match[2].trim();
@@ -799,7 +887,7 @@ export class DocumentEngine {
                     el.replaceWith(tocDiv);
                     continue;
                 } else {
-                    const cleanTitle = text.replace(/[\s.·…]+$/, '').trim();
+                    const cleanTitle = cleanText.replace(/[\s.·…]+$/, '').trim();
                     const tocDiv = doc.createElement('div');
                     tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200';
                     tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(cleanTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span>`;
@@ -808,61 +896,18 @@ export class DocumentEngine {
                 }
             }
 
-            // End cover page when next section begins
-            if (inCover && (
-                /^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)/i.test(text) ||
-                /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA)(\s+.*)?$/i.test(text)
-            )) {
-                inCover = false;
-                if (coverCount > 0) {
-                    const pb = doc.createElement('div');
-                    pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
-                    pb.setAttribute('data-page-break', 'true');
-                    pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span>';
-                    el.before(pb);
-                }
-            }
-
-            // Cover Page centering
-            if (inCover) {
-                coverCount++;
-                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
-                if (img) {
-                    img.className = 'cover-logo mx-auto block my-6 max-h-40 object-contain';
-                    el.className = 'text-center my-4';
-                } else if (text) {
-                    if (/^(OLEH|DISUSUN\s+OLEH|BY)\s*:/i.test(text)) {
-                        el.className = 'cover-author-label text-center text-sm font-medium text-gray-600 dark:text-gray-400 my-2';
-                    } else if (/^NIM\b/i.test(text)) {
-                        el.className = 'cover-author-nim text-center font-bold text-base text-gray-900 dark:text-gray-100 my-1';
-                    } else if (/^(PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM)/i.test(text)) {
-                        el.className = 'cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-snug';
-                    } else {
-                        el.className = 'cover-title text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
-                    }
-                }
-
-                if (/\b(19|20)\d{2}\b/.test(text) && coverCount >= 4) {
-                    inCover = false;
-                    const pb = doc.createElement('div');
-                    pb.className = 'page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none';
-                    pb.setAttribute('data-page-break', 'true');
-                    pb.innerHTML = '<span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span>';
-                    el.after(pb);
-                }
-                continue;
-            }
-
-            // Chapter Headings: BAB I, BAB II, etc.
-            const babMatch = text.match(/^(BAB\s+[IVXLCDM]+|\bBAB\s+\d+)(.*)$/i);
-            if (!isTableOfContentsLine(text) && babMatch) {
+            // Chapter Headings: BAB I, BAB II, BAB 1, etc.
+            const babMatch = cleanText.match(/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*(.*)$/i);
+            if (!isTableOfContentsLine(cleanText) && babMatch && cleanText.length <= 80 && !/[.!?]$/.test(cleanText)) {
                 headingCount++;
-                let titleText = text;
+                let titleText = `${babMatch[1]} ${babMatch[2]}`.trim();
+                // Normalize BAB 1PENDAHULUAN -> BAB 1 PENDAHULUAN
+                titleText = titleText.replace(/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*([A-Za-z])/i, '$1 $2');
                 const nextEl = el.nextElementSibling;
                 if ((!babMatch[2] || babMatch[2].trim() === '') && nextEl) {
-                    const nextText = nextEl.textContent.trim();
-                    if (nextText && nextText.length < 100 && !/^\d+\.\d+/.test(nextText)) {
-                        titleText = `${babMatch[1]} ${nextText}`;
+                    const nextClean = getCleanText(nextEl);
+                    if (nextClean && nextClean.length < 100 && !/^\d+\.\d+/.test(nextClean)) {
+                        titleText = `${titleText} ${nextClean}`;
                         nextEl.remove();
                     }
                 }
@@ -871,40 +916,48 @@ export class DocumentEngine {
                 h1.className = 'heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
                 h1.textContent = titleText;
 
-                const pb = doc.createElement('div');
-                pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
-                pb.setAttribute('data-page-break', 'true');
-                pb.innerHTML = '<span class="text-[10px] text-gray-400 font-mono">Awal Bab Baru</span>';
+                const prevEl = el.previousElementSibling;
+                const hasPageBreakBefore = prevEl && (prevEl.classList?.contains('page-break') || prevEl.hasAttribute('data-page-break'));
+                if (!hasPageBreakBefore) {
+                    const pb = doc.createElement('div');
+                    pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
+                    pb.setAttribute('data-page-break', 'true');
+                    pb.innerHTML = '<span class="text-[10px] text-gray-400 font-mono">Awal Bab Baru</span>';
+                    el.before(pb);
+                }
 
-                el.before(pb);
                 el.replaceWith(h1);
                 continue;
             }
 
             // Academic Preliminaries: ABSTRAK, DAFTAR ISI, LEMBAR PENGESAHAN, etc.
             if (
-                !isTableOfContentsLine(text) &&
-                /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text) &&
-                text.length <= 60 &&
-                !/[.!?]$/.test(text)
+                !isTableOfContentsLine(cleanText) &&
+                isPreliminary &&
+                cleanText.length <= 60 &&
+                !/[.!?]$/.test(cleanText)
             ) {
                 headingCount++;
                 const h1 = doc.createElement('h1');
                 h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
-                h1.textContent = text.toUpperCase();
+                h1.textContent = cleanText.toUpperCase();
 
-                const pb = doc.createElement('div');
-                pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
-                pb.setAttribute('data-page-break', 'true');
-                pb.innerHTML = '<span class="text-[10px] text-gray-400 font-mono">Halaman Baru</span>';
+                const prevEl = el.previousElementSibling;
+                const hasPageBreakBefore = prevEl && (prevEl.classList?.contains('page-break') || prevEl.hasAttribute('data-page-break'));
+                if (!hasPageBreakBefore) {
+                    const pb = doc.createElement('div');
+                    pb.className = 'page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none';
+                    pb.setAttribute('data-page-break', 'true');
+                    pb.innerHTML = '<span class="text-[10px] text-gray-400 font-mono">Halaman Baru</span>';
+                    el.before(pb);
+                }
 
-                el.before(pb);
                 el.replaceWith(h1);
                 continue;
             }
 
             // Subsections: 1.1 Latar Belakang, 2.1 Teori
-            if (!isTableOfContentsLine(text) && /^(\d+\.\d+)\s+(.+)$/.test(text)) {
+            if (!isTableOfContentsLine(cleanText) && /^(\d+\.\d+)\s+(.+)$/.test(cleanText)) {
                 headingCount++;
                 const h2 = doc.createElement('h2');
                 h2.className = 'heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100';
@@ -914,7 +967,7 @@ export class DocumentEngine {
             }
 
             // Sub-subsections: 1.1.1, 2.3.1
-            if (!isTableOfContentsLine(text) && /^(\d+\.\d+\.\d+)\s+(.+)$/.test(text)) {
+            if (!isTableOfContentsLine(cleanText) && /^(\d+\.\d+\.\d+)\s+(.+)$/.test(cleanText)) {
                 headingCount++;
                 const h3 = doc.createElement('h3');
                 h3.className = 'heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200';
@@ -926,18 +979,20 @@ export class DocumentEngine {
             // Standalone short uppercase lines
             if (
                 !inCover &&
-                !isTableOfContentsLine(text) &&
-                text.length > 5 &&
-                text.length < 60 &&
-                text === text.toUpperCase() &&
-                !/[.,;!?]$/.test(text) &&
-                !/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i.test(text) &&
+                !isTableOfContentsLine(cleanText) &&
+                cleanText.length > 5 &&
+                cleanText.length < 60 &&
+                cleanText === cleanText.toUpperCase() &&
+                /[a-zA-Z]{3,}/.test(cleanText) &&
+                !/^[\d\s.,:%–=+\/-]+$/.test(cleanText) &&
+                !/[.,;!?]$/.test(cleanText) &&
+                !/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i.test(cleanText) &&
                 !el.querySelector('img')
             ) {
                 headingCount++;
                 const h2 = doc.createElement('h2');
                 h2.className = 'heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase';
-                h2.innerHTML = text;
+                h2.innerHTML = cleanText;
                 el.replaceWith(h2);
                 continue;
             }
@@ -1648,25 +1703,39 @@ export class DocumentEngine {
         const isTOC = (text) => {
             if (!text) return true;
             const clean = text.trim();
+            if (/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i.test(clean)) {
+                return false;
+            }
             if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
-            if (/[\s.\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
-            if (/\.\s*(\d+|[ivxlcdm]+)$/i.test(clean) && !/^\d+(\.\d+)+$/.test(clean)) return true;
+            if (/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
             return false;
         };
 
         const isCoverMetadata = (text) => {
             if (!text) return true;
-            return /^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i.test(text.trim());
+            const clean = text.trim();
+            if (/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i.test(clean)) {
+                return true;
+            }
+            if (/^(SKRIPSI|THESIS|TESIS|DISERTASI|PROPOSAL|LAPORAN|TUGAS\s+AKHIR)$/i.test(clean)) {
+                return true;
+            }
+            return false;
         };
 
         bodies.forEach((body, bodyIdx) => {
+            const pageNum = bodyIdx + 1;
             const headingEls = body.querySelectorAll('h1, h2, h3, h4');
             headingEls.forEach(el => {
                 if (el.classList?.contains('toc-entry') || el.closest('.toc-entry')) return;
+                if (el.classList?.contains('cover-title') || el.classList?.contains('cover-badge') || el.classList?.contains('doc-title')) return;
 
-                const text = (el.innerText || el.textContent || '').trim();
+                let text = (el.innerText || el.textContent || '').trim();
                 if (!text || text.length < 2 || text.length > 120) return;
                 if (isTOC(text) || isCoverMetadata(text)) return;
+
+                // Normalize BAB chapter text (BAB 1PENDAHULUAN -> BAB 1 PENDAHULUAN)
+                text = text.replace(/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*([A-Za-z])/i, '$1 $2');
 
                 const id = el.id || `heading-${headingIndex++}`;
                 el.id = id;
@@ -1674,7 +1743,7 @@ export class DocumentEngine {
                     id,
                     level: parseInt(el.tagName.replace('H', ''), 10),
                     text,
-                    pageNumber: bodyIdx + 1,
+                    pageNumber: pageNum,
                 });
             });
         });

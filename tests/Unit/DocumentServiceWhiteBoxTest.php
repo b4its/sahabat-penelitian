@@ -303,3 +303,90 @@ HTML;
         ->and($headingTexts)->toContain('BAB 1 PENDAHULUAN')
         ->and($headingTexts)->toContain('1.1 Latar Belakang');
 });
+
+test('white-box: adaptDocumentStructure separates multi-cover pages with explicit page breaks and preserves <br> lines without squishing', function () {
+    $multiCoverHtml = <<<HTML
+        <p><strong>SKRIPSI</strong></p>
+        <p><strong>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</strong></p>
+        <figure><img src="data:image/png;base64,abc" /></figure>
+        <p>Oleh :<br />BAITS RIKA SAPUTRA<br />NIM. 23.6651.071</p>
+        <p>PROGRAM STUDI SARJANA TERAPAN TEKNIK INFORMATIKA MULTIMEDIA<br />POLITEKNIK NEGERI SAMARINDA<br />2026</p>
+        <div class="page-break" data-page-break="true"><span class="page-break-tag">Pemisah Halaman</span></div>
+        <p><strong>SKRIPSI</strong></p>
+        <p><strong>PENERAPAN ENSEMBLE LEARNING</strong></p>
+        <p>Sebagai salah satu syarat untuk menyelesaikan Program Studi Diploma IV<br />Jurusan Teknologi Informasi Politeknik Negeri Samarinda</p>
+        <p>Oleh :<br />BAITS RIKA SAPUTRA<br />NIM. 23.6651.071</p>
+        <p>POLITEKNIK NEGERI SAMARINDA<br />2026</p>
+        <div class="page-break" data-page-break="true"><span class="page-break-tag">Pemisah Halaman</span></div>
+        <p><strong>THESIS</strong></p>
+        <p><strong>IMPLEMENTATION OF ENSEMBLE LEARNING</strong></p>
+        <p>Submitted as a partial fulfillment of the requirements<br />Samarinda State Polytechnic</p>
+        <p>By :<br />BAITS RIKA SAPUTRA<br />NIM. 23.6651.071</p>
+        <p>STATE POLYTECHNIC<br />2026</p>
+        <div class="page-break" data-page-break="true"><span class="page-break-tag">Pemisah Halaman</span></div>
+        <p><strong>PERNYATAAN KEASLIAN SKRIPSI</strong></p>
+        <p>Saya menyatakan dengan sesungguhnya bahwa Skripsi ini adalah asli karya saya.</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($multiCoverHtml, 'skripsi.docx');
+
+    // Page breaks must be preserved between the covers
+    expect(substr_count($result['adapted_html'], 'data-page-break="true"'))->toBeGreaterThanOrEqual(3)
+        // Must contain cover styling
+        ->and($result['adapted_html'])->toContain('cover-badge')
+        ->and($result['adapted_html'])->toContain('cover-title')
+        ->and($result['adapted_html'])->toContain('cover-subtitle')
+        ->and($result['adapted_html'])->toContain('cover-author-label')
+        ->and($result['adapted_html'])->toContain('cover-institution')
+        // Lines with <br /> must preserve <br /> and NOT squish into "BAITS RIKA SAPUTRANIM"
+        ->and($result['adapted_html'])->not->toContain('BAITS RIKA SAPUTRANIM')
+        ->and($result['adapted_html'])->toContain('NIM. 23.6651.071')
+        ->and($result['adapted_html'])->toContain('heading-preliminary');
+
+    // Headings list must NOT contain the 3 covers as headings
+    $headingTexts = array_column($result['headings'], 'text');
+    expect($headingTexts)->not->toContain('SKRIPSI')
+        ->and($headingTexts)->not->toContain('THESIS')
+        ->and($headingTexts)->toContain('PERNYATAAN KEASLIAN SKRIPSI');
+});
+
+test('white-box: adaptDocumentStructure normalizes chapter titles with <br> or missing spacing', function () {
+    $inputHtml = <<<HTML
+        <p>SKRIPSI</p>
+        <p>JUDUL PENELITIAN</p>
+        <p>2026</p>
+        <p><strong>BAB 1<br />PENDAHULUAN</strong></p>
+        <p>1.1 Latar Belakang</p>
+        <p>Isi bab 1.</p>
+        <p><strong>BAB 2TINJAUAN PUSTAKA</strong></p>
+        <p>2.1 Kajian Teori</p>
+        <p>Isi bab 2.</p>
+        <p><strong>BAB 3METODE PENELITIAN</strong></p>
+        <p>3.1 Metode</p>
+        <p>Isi bab 3.</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($inputHtml, 'skripsi.docx');
+    $headingTexts = array_column($result['headings'], 'text');
+
+    expect($headingTexts)->toContain('BAB 1 PENDAHULUAN')
+        ->and($headingTexts)->toContain('BAB 2 TINJAUAN PUSTAKA')
+        ->and($headingTexts)->toContain('BAB 3 METODE PENELITIAN')
+        ->and($headingTexts)->not->toContain('BAB 2TINJAUAN PUSTAKA')
+        ->and($headingTexts)->not->toContain('BAB 3METODE PENELITIAN');
+});
+
+test('white-box: extractDocxText extracts explicit page breaks and line breaks from real docx file', function () {
+    if (!file_exists('storage/test.docx')) {
+        $this->markTestSkipped('storage/test.docx not present');
+    }
+
+    $reflector = new \ReflectionClass($this->service);
+    $method = $reflector->getMethod('extractDocxText');
+    $method->setAccessible(true);
+    $html = $method->invoke($this->service, 'storage/test.docx');
+
+    expect($html)->toContain('data-page-break="true"')
+        ->and($html)->toContain('<br />')
+        ->and(substr_count($html, 'data-page-break="true"'))->toBeGreaterThanOrEqual(15);
+});

@@ -382,3 +382,56 @@ test('black-box: wordcraft ai assistant rejects invalid action with 422', functi
     $response->assertStatus(422)
         ->assertJsonValidationErrors(['action']);
 });
+
+test('black-box: user can import multi-cover academic document with NIM and verify page breaks and no false TOC', function () {
+    $multiCoverDoc = <<<HTML
+        <p><strong>SKRIPSI</strong></p>
+        <p><strong>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL BERBASIS SENSOR WARNA</strong></p>
+        <figure><img src="data:image/png;base64,sample" /></figure>
+        <p>Oleh :<br />BAITS RIKA SAPUTRA<br />NIM. 23.6651.071</p>
+        <p>POLITEKNIK NEGERI SAMARINDA<br />2026</p>
+        <div class="page-break" data-page-break="true"><span class="page-break-tag">Pemisah Halaman</span></div>
+        <p><strong>SKRIPSI</strong></p>
+        <p><strong>PENERAPAN ENSEMBLE LEARNING</strong></p>
+        <p>Sebagai salah satu syarat untuk menyelesaikan Program Studi Diploma IV (Sarjana Terapan)<br />Jurusan Teknologi Informasi Politeknik Negeri Samarinda</p>
+        <p>Oleh :<br />BAITS RIKA SAPUTRA<br />NIM. 23.6651.071</p>
+        <p>POLITEKNIK NEGERI SAMARINDA<br />2026</p>
+        <div class="page-break" data-page-break="true"><span class="page-break-tag">Pemisah Halaman</span></div>
+        <p><strong>THESIS</strong></p>
+        <p><strong>IMPLEMENTATION OF ENSEMBLE LEARNING FOR TEXTILE LIQUID WASTE</strong></p>
+        <p>Submitted as a partial fulfillment of the requirements for Applied Bachelor Degree<br />Department of Information Technology Samarinda State Polytechnic</p>
+        <p>By :<br />BAITS RIKA SAPUTRA<br />NIM. 23.6651.071</p>
+        <p>STATE POLYTECHNIC<br />2026</p>
+        <div class="page-break" data-page-break="true"><span class="page-break-tag">Pemisah Halaman</span></div>
+        <p><strong>PERNYATAAN KEASLIAN SKRIPSI</strong></p>
+        <p>Saya menyatakan dengan sesungguhnya bahwa Skripsi ini adalah asli karya saya.</p>
+        <p><strong>BAB 1<br />PENDAHULUAN</strong></p>
+        <p>1.1 Latar Belakang</p>
+        <p>Limbah tekstil memiliki bahaya lingkungan.</p>
+HTML;
+
+    $file = UploadedFile::fake()->createWithContent('SKRIPSI_236651071_BAITS_RIKA_SAPUTRA.docx', $multiCoverDoc);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+
+    // NIM must NOT be converted to a Table of Contents dot leader entry
+    expect($html)->not->toContain('toc-entry flex items-baseline justify-between')
+        ->and($html)->toContain('NIM. 23.6651.071')
+        ->and($html)->not->toContain('BAITS RIKA SAPUTRANIM')
+        ->and($html)->toContain('cover-author-label')
+        ->and($html)->toContain('cover-subtitle')
+        ->and($html)->toContain('PERNYATAAN KEASLIAN SKRIPSI')
+        ->and(substr_count($html, 'data-page-break="true"'))->toBeGreaterThanOrEqual(3);
+
+    $headings = array_column($response->json('headings'), 'text');
+    expect($headings)->toContain('PERNYATAAN KEASLIAN SKRIPSI')
+        ->and($headings)->toContain('BAB 1 PENDAHULUAN')
+        ->and($headings)->toContain('1.1 Latar Belakang')
+        ->and($headings)->not->toContain('SKRIPSI')
+        ->and($headings)->not->toContain('THESIS');
+});
