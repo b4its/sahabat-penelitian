@@ -23,11 +23,22 @@ export class UiController {
     init() {
         this.bindRibbonTabs();
         this.bindRibbonTools();
+        this.bindFormatPainter();
+        this.bindFontSteppers();
+        this.bindQuickStyles();
+        this.bindChecklist();
+        this.bindNewDocument();
+        this.bindReadAloud();
+        this.bindDocumentAdaptationBanner();
+        this.bindOutlineSearch();
         this.bindBubbleMenu();
         this.bindContextToolbars();
         this.bindZoomControls();
         this.bindLayoutModeSwitchers();
         this.bindModals();
+        this.bindCoverPageModal();
+        this.bindSymbolsModal();
+        this.bindCitationModal();
         this.bindDragAndDrop();
         this.bindGlobalKeyboardShortcuts();
         this.renderRuler();
@@ -252,6 +263,217 @@ export class UiController {
     }
 
     /* -------------------------------------------------------------
+     * Advanced Formatting & Styling Tools
+     * ------------------------------------------------------------- */
+
+    bindFormatPainter() {
+        const btn = document.getElementById('btn-format-painter');
+        if (!btn) return;
+
+        btn.addEventListener('click', () => {
+            const fmt = this.engine.copyFormat();
+            if (fmt) {
+                btn.classList.add('bg-indigo-100', 'text-indigo-700', 'dark:bg-indigo-950', 'dark:text-indigo-300');
+                this.showToast('Format disalin! Pilih teks lain untuk menerapkan gaya yang disalin.', 'info');
+
+                const applyHandler = () => {
+                    this.engine.applyCopiedFormat();
+                    btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'dark:bg-indigo-950', 'dark:text-indigo-300');
+                    document.removeEventListener('mouseup', applyHandler);
+                };
+                setTimeout(() => {
+                    document.addEventListener('mouseup', applyHandler, { once: true });
+                }, 120);
+            } else {
+                this.showToast('Pilih teks terlebih dahulu untuk menyalin format.', 'warning');
+            }
+        });
+    }
+
+    bindFontSteppers() {
+        const btnGrow = document.getElementById('btn-font-grow');
+        const btnShrink = document.getElementById('btn-font-shrink');
+        if (btnGrow) btnGrow.addEventListener('click', () => this.engine.growFontSize());
+        if (btnShrink) btnShrink.addEventListener('click', () => this.engine.shrinkFontSize());
+    }
+
+    bindQuickStyles() {
+        document.querySelectorAll('[data-quick-style]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const style = btn.getAttribute('data-quick-style');
+                this.engine.setHeading(style);
+                this.showToast(`Gaya teks diatur: ${btn.textContent.trim()}`);
+            });
+        });
+    }
+
+    bindChecklist() {
+        document.querySelectorAll('[data-cmd="insertChecklist"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.engine.insertChecklist();
+                this.showToast('Item checklist disisipkan!');
+            });
+        });
+    }
+
+    bindNewDocument() {
+        document.querySelectorAll('[data-action="new-document"]').forEach(b => {
+            b.addEventListener('click', () => {
+                if (confirm('Buat dokumen baru yang kosong? Pastikan dokumen yang sedang aktif sudah tersimpan.')) {
+                    this.engine.newBlankDocument();
+                    this.showToast('Lembar dokumen baru siap digunakan!');
+                }
+            });
+        });
+    }
+
+    bindReadAloud() {
+        const btn = document.getElementById('btn-read-aloud');
+        if (!btn) return;
+
+        btn.addEventListener('click', () => {
+            if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                this.engine.stopReadAloud();
+                btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'dark:bg-indigo-950', 'dark:text-indigo-300');
+                this.showToast('Pembacaan naskah dihentikan.');
+            } else {
+                const ok = this.engine.readAloud();
+                if (ok) {
+                    btn.classList.add('bg-indigo-100', 'text-indigo-700', 'dark:bg-indigo-950', 'dark:text-indigo-300');
+                    this.showToast('Membacakan isi naskah...');
+                    const checkInterval = setInterval(() => {
+                        if (!window.speechSynthesis.speaking) {
+                            btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'dark:bg-indigo-950', 'dark:text-indigo-300');
+                            clearInterval(checkInterval);
+                        }
+                    }, 500);
+                } else {
+                    this.showToast('Pilih teks atau buka dokumen untuk mendengarkan naskah.', 'warning');
+                }
+            }
+        });
+    }
+
+    bindDocumentAdaptationBanner() {
+        const banner = document.getElementById('document-adaptation-banner');
+        const btnSkripsi = document.getElementById('banner-btn-skripsi');
+        const btnNormal = document.getElementById('banner-btn-normal');
+        const btnClose = document.getElementById('banner-btn-close');
+
+        if (btnSkripsi) {
+            btnSkripsi.addEventListener('click', () => {
+                this.engine.setMarginPreset('skripsi');
+                this.engine.setFontFamily("'Times New Roman', serif");
+                this.engine.setFontSize('12pt');
+                this.engine.setLineSpacing('1.5');
+                this.showToast('Format Skripsi (Margin 4-4-3-3 cm, Times New Roman 12pt, Spasi 1.5) berhasil diterapkan!');
+            });
+        }
+
+        if (btnNormal) {
+            btnNormal.addEventListener('click', () => {
+                this.engine.setMarginPreset('normal');
+                this.engine.setFontFamily("'Instrument Sans', sans-serif");
+                this.engine.setFontSize('11pt');
+                this.engine.setLineSpacing('1.15');
+                this.showToast('Format Normal (Margin 2.54 cm, Instrument Sans 11pt, Spasi 1.15) berhasil diterapkan!');
+            });
+        }
+
+        if (btnClose && banner) {
+            btnClose.addEventListener('click', () => {
+                banner.classList.add('hidden');
+            });
+        }
+    }
+
+    updateAdaptationBanner(notice) {
+        const banner = document.getElementById('document-adaptation-banner');
+        const titleEl = document.getElementById('adaptation-banner-title');
+        const descEl = document.getElementById('adaptation-banner-desc');
+        if (!banner || !descEl) return;
+
+        if (titleEl) {
+            titleEl.textContent = notice.type === 'academic' ? '🎓 Format Skripsi/Akademik Otomatis Disesuaikan:' : '📄 Format Dokumen Otomatis Disesuaikan:';
+        }
+        descEl.textContent = notice.message;
+        banner.classList.remove('hidden');
+    }
+
+    bindOutlineSearch() {
+        const searchInput = document.getElementById('outline-search-input');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const outlineList = document.getElementById('outline-list');
+            if (!outlineList) return;
+
+            const items = outlineList.querySelectorAll('li');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (!query || text.includes(query)) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+        });
+    }
+
+    bindCoverPageModal() {
+        const modal = document.getElementById('modal-cover-page');
+        document.querySelectorAll('[data-action="insert-cover-modal"]').forEach(b => {
+            b.addEventListener('click', () => this.openModal(modal));
+        });
+
+        document.querySelectorAll('[data-insert-cover]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.getAttribute('data-insert-cover');
+                this.engine.insertCoverPage(type);
+                this.closeModal(modal);
+                this.showToast(`Halaman Sampul (${type.toUpperCase()}) berhasil disisipkan di awal naskah!`);
+            });
+        });
+    }
+
+    bindSymbolsModal() {
+        const modal = document.getElementById('modal-symbols');
+        document.querySelectorAll('[data-action="insert-symbols-modal"]').forEach(b => {
+            b.addEventListener('click', () => this.openModal(modal));
+        });
+
+        document.querySelectorAll('[data-insert-symbol]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const char = btn.getAttribute('data-insert-symbol');
+                this.engine.insertSymbol(char);
+                this.closeModal(modal);
+                this.showToast(`Simbol ${char} berhasil disisipkan!`);
+            });
+        });
+    }
+
+    bindCitationModal() {
+        const modal = document.getElementById('modal-citation');
+        document.querySelectorAll('[data-action="insert-citation-modal"]').forEach(b => {
+            b.addEventListener('click', () => this.openModal(modal));
+        });
+
+        const btnConfirm = document.getElementById('btn-confirm-citation');
+        if (btnConfirm) {
+            btnConfirm.addEventListener('click', () => {
+                const author = document.getElementById('citation-author')?.value.trim() || 'Penulis';
+                const year = document.getElementById('citation-year')?.value.trim() || '2026';
+                const title = document.getElementById('citation-title')?.value.trim() || 'Judul Referensi';
+                const source = document.getElementById('citation-source')?.value.trim() || 'Jurnal / Penerbit';
+                this.engine.insertCitation(author, year, title, source);
+                this.closeModal(modal);
+                this.showToast('Sitasi & Entri Daftar Pustaka berhasil disisipkan!');
+            });
+        }
+    }
+
+    /* -------------------------------------------------------------
      * Interactive Table & Image Context Toolbars
      * ------------------------------------------------------------- */
 
@@ -302,12 +524,12 @@ export class UiController {
             }
         };
 
-        const bubbleAiBtn = bubble.querySelector('#bubble-ask-ai');
+        const bubbleAiBtn = bubble.querySelector('#bubble-ask-ai') || bubble.querySelector('#bubble-btn-ai-rewrite');
         if (bubbleAiBtn) {
             bubbleAiBtn.addEventListener('click', () => {
                 this.toggleWordcraftSidebar(true);
                 if (this.wordcraft) {
-                    this.wordcraft.executeAction('elaborate');
+                    this.wordcraft.executeAction('rewrite');
                 }
             });
         }

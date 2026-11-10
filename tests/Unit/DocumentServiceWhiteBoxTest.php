@@ -594,3 +594,42 @@ HTML;
         ->and($result['headings'][3]['text'])->toBe('BAB 2 KAJIAN PUSTAKA')
         ->and($result['headings'][3]['level'])->toBe(1);
 });
+
+test('white-box: sanitizeHtml and format conversion faithfully preserves mathematical, scientific, and typography symbols', function () {
+    $rawSymbolsHtml = '<p>Formula: ∑ x_i ≈ 3.14 (π) ± 0.05, temp: 25℃, rights: © 2026, arrow: &rarr; &le; &ge; &ne;</p>';
+    $sanitized = $this->service->sanitizeHtml($rawSymbolsHtml);
+
+    expect($sanitized)->toContain('∑')
+        ->and($sanitized)->toContain('≈')
+        ->and($sanitized)->toContain('π')
+        ->and($sanitized)->toContain('±')
+        ->and($sanitized)->toContain('℃')
+        ->and($sanitized)->toContain('©');
+
+    $plainText = $this->service->convertToPlainText($sanitized);
+    expect($plainText)->toContain('∑')
+        ->and($plainText)->toContain('π')
+        ->and($plainText)->toContain('±');
+});
+
+test('white-box: calculateStats handles complex academic citations and nested lists accurately', function () {
+    $academicHtml = <<<'HTML'
+        <h1>BAB I PENDAHULUAN</h1>
+        <p>Berdasarkan penelitian sebelumnya (Sugiyono, 2024), metodologi ini sangat efektif.</p>
+        <p>Berikut adalah poin-poin utama:</p>
+        <ul>
+            <li>Analisis data kuantitatif</li>
+            <li>Pengujian validitas instrumen</li>
+            <li>Evaluasi model machine learning</li>
+        </ul>
+        <h3>Daftar Pustaka</h3>
+        <p>Sugiyono. (2024). Metode Penelitian Kualitatif, Kuantitatif, dan R&D. Bandung: Alfabeta.</p>
+HTML;
+
+    $stats = $this->service->calculateStats($academicHtml);
+
+    expect($stats['word_count'])->toBeGreaterThan(20)
+        ->and($stats['char_count'])->toBeGreaterThan(150)
+        ->and($stats['paragraph_count'])->toBeGreaterThanOrEqual(4)
+        ->and($stats['reading_time_minutes'])->toBeGreaterThanOrEqual(1);
+});

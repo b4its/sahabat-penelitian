@@ -44,6 +44,7 @@ export class DocumentEngine {
         this.activeImage = null;
         this.customHeaderText = '';
         this.customFooterText = '';
+        this.copiedFormat = null;
 
         this.init();
     }
@@ -1499,6 +1500,185 @@ export class DocumentEngine {
 
     clearFormatting() {
         this.execute('removeFormat');
+    }
+
+    growFontSize() {
+        const sizes = ['8pt', '9pt', '10pt', '11pt', '12pt', '14pt', '16pt', '18pt', '20pt', '24pt', '28pt', '32pt', '36pt', '48pt', '72pt'];
+        const fontSelect = document.getElementById('font-size-select');
+        let current = fontSelect?.value || '12pt';
+        let idx = sizes.indexOf(current);
+        if (idx === -1) idx = 4;
+        if (idx < sizes.length - 1) {
+            const next = sizes[idx + 1];
+            if (fontSelect) fontSelect.value = next;
+            this.setFontSize(next);
+        }
+    }
+
+    shrinkFontSize() {
+        const sizes = ['8pt', '9pt', '10pt', '11pt', '12pt', '14pt', '16pt', '18pt', '20pt', '24pt', '28pt', '32pt', '36pt', '48pt', '72pt'];
+        const fontSelect = document.getElementById('font-size-select');
+        let current = fontSelect?.value || '12pt';
+        let idx = sizes.indexOf(current);
+        if (idx === -1) idx = 4;
+        if (idx > 0) {
+            const prev = sizes[idx - 1];
+            if (fontSelect) fontSelect.value = prev;
+            this.setFontSize(prev);
+        }
+    }
+
+    copyFormat() {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return null;
+        const node = sel.anchorNode?.nodeType === Node.ELEMENT_NODE ? sel.anchorNode : sel.anchorNode?.parentElement;
+        if (!node) return null;
+        const computed = window.getComputedStyle(node);
+        this.copiedFormat = {
+            fontFamily: computed.fontFamily,
+            fontSize: computed.fontSize,
+            fontWeight: computed.fontWeight,
+            fontStyle: computed.fontStyle,
+            textDecoration: computed.textDecoration,
+            color: computed.color,
+            backgroundColor: computed.backgroundColor,
+        };
+        return this.copiedFormat;
+    }
+
+    applyCopiedFormat() {
+        if (!this.copiedFormat) return;
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+        const range = sel.getRangeAt(0);
+        const span = document.createElement('span');
+        if (this.copiedFormat.fontFamily) span.style.fontFamily = this.copiedFormat.fontFamily;
+        if (this.copiedFormat.fontSize) span.style.fontSize = this.copiedFormat.fontSize;
+        if (this.copiedFormat.fontWeight) span.style.fontWeight = this.copiedFormat.fontWeight;
+        if (this.copiedFormat.fontStyle) span.style.fontStyle = this.copiedFormat.fontStyle;
+        if (this.copiedFormat.textDecoration) span.style.textDecoration = this.copiedFormat.textDecoration;
+        if (this.copiedFormat.color) span.style.color = this.copiedFormat.color;
+        if (this.copiedFormat.backgroundColor && this.copiedFormat.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+            span.style.backgroundColor = this.copiedFormat.backgroundColor;
+        }
+
+        try {
+            range.surroundContents(span);
+        } catch (e) {
+            this.execute('fontName', this.copiedFormat.fontFamily);
+            this.execute('foreColor', this.copiedFormat.color);
+        }
+        this.copiedFormat = null;
+        this.handleInput();
+    }
+
+    newBlankDocument() {
+        this.setTitle('Dokumen Baru Tanpa Judul.docx');
+        this.customHeaderText = '';
+        this.customFooterText = '';
+        this.setContent('<p><br></p>');
+        this.setFormatBadge('docx');
+        this.setMarginPreset('normal');
+        this.handleInput();
+    }
+
+    insertCoverPage(type = 'skripsi') {
+        const title = this.getTitle() || 'JUDUL NASKAH DOKUMEN';
+        let coverHtml = '';
+        if (type === 'skripsi') {
+            coverHtml = `
+<div class="academic-cover text-center my-8 p-6">
+    <h1 class="cover-badge text-xl font-bold tracking-widest uppercase my-4">SKRIPSI / TUGAS AKHIR</h1>
+    <h2 class="cover-title text-2xl font-bold my-6 uppercase max-w-xl mx-auto leading-snug">${this.escapeHtml(title)}</h2>
+    <p class="cover-subtitle italic text-sm text-gray-600 dark:text-gray-400 my-4 max-w-md mx-auto">Diajukan sebagai salah satu syarat untuk memperoleh gelar sarjana</p>
+    <div class="my-8 py-4">
+        <div class="w-24 h-24 mx-auto rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 font-bold border-2 border-dashed border-indigo-400">LOGO</div>
+    </div>
+    <div class="my-6">
+        <p class="cover-author-label text-sm font-medium">Disusun Oleh:</p>
+        <p class="font-bold text-base text-gray-900 dark:text-gray-100">NAMA PENYUSUN DOKUMEN</p>
+        <p class="cover-author-nim font-mono text-sm">NIM. 2026101001</p>
+    </div>
+    <div class="my-8">
+        <p class="cover-institution font-bold text-sm uppercase">PROGRAM STUDI TEKNIK INFORMATIKA</p>
+        <p class="cover-institution font-bold text-sm uppercase">FAKULTAS TEKNOLOGI INFORMASI</p>
+        <p class="cover-institution font-bold text-sm uppercase">UNIVERSITAS PENELITIAN INDONESIA</p>
+        <p class="cover-institution font-bold text-sm my-2">2026</p>
+    </div>
+</div>
+<div class="page-break my-8 border-b-2 border-dashed border-gray-400 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman (Akhir Sampul)</span></div>
+`;
+        } else {
+            coverHtml = `
+<div class="business-cover text-center my-8 p-8 border-b-4 border-indigo-600">
+    <p class="text-xs uppercase tracking-widest text-indigo-600 font-bold mb-2">LAPORAN RESMI PERUSAHAAN</p>
+    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 my-4">${this.escapeHtml(title)}</h1>
+    <p class="text-base text-gray-600 dark:text-gray-400 max-w-xl mx-auto my-3">Dokumen evaluasi strategis, metodologi riset, dan analisis implementasi sistem 2026.</p>
+    <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center text-xs text-gray-500">
+        <span>Disiapkan oleh: Tim Pengembang VelScribe</span>
+        <span>Tanggal: ${new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+    </div>
+</div>
+<div class="page-break my-8 border-b-2 border-dashed border-gray-400 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>
+`;
+        }
+
+        const currentContent = this.getContent();
+        this.setContent(coverHtml + '\n' + currentContent);
+        this.handleInput();
+    }
+
+    insertSymbol(char) {
+        if (!char) return;
+        this.insertAtCursor(char);
+    }
+
+    insertChecklist(itemText = 'Poin tugas / tindak lanjut...') {
+        const active = this.getActiveEditor();
+        if (active) active.focus();
+        const html = `<div class="task-item flex items-center gap-2 my-1.5"><input type="checkbox" class="task-checkbox rounded border-gray-400 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"> <span>${this.escapeHtml(itemText)}</span></div><p><br></p>`;
+        this.insertAtCursor(html);
+    }
+
+    insertCitation(author, year, title, source) {
+        const biblioEntry = `<p class="citation-entry my-2 pl-8 -indent-8 text-sm text-gray-800 dark:text-gray-200">${this.escapeHtml(author)} (${this.escapeHtml(year)}). <em>${this.escapeHtml(title)}</em>. ${this.escapeHtml(source)}.</p>`;
+        this.insertAtCursor(biblioEntry);
+    }
+
+    readAloud() {
+        if (!('speechSynthesis' in window)) {
+            return false;
+        }
+
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            return false;
+        }
+
+        const sel = window.getSelection();
+        let textToRead = sel && sel.toString().trim() ? sel.toString().trim() : '';
+
+        if (!textToRead) {
+            const activeEditor = this.getActiveEditor();
+            textToRead = (activeEditor?.innerText || activeEditor?.textContent || '').trim();
+        }
+
+        if (!textToRead) {
+            return false;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(textToRead.slice(0, 4000));
+        utterance.lang = 'id-ID';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+        return true;
+    }
+
+    stopReadAloud() {
+        if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
     }
 
     setHeading(tag) {

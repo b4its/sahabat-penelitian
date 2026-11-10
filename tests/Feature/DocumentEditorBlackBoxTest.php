@@ -587,3 +587,91 @@ test('black-box: editor view renders running header and footer structure without
         ->and($content)->not->toMatch('/class="page-sheet-header[^"]*no-print/')
         ->and($content)->not->toMatch('/class="page-sheet-footer[^"]*no-print/');
 });
+
+test('black-box: editor view contains all Microsoft Word ribbon tabs including Berkas and Tinjau', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // All Ribbon Tabs (Berkas, Beranda, Sisipkan, Tata Letak, Tinjau, Tampilan, Wordcraft)
+    $response->assertSee('data-ribbon-tab="file"', false);
+    $response->assertSee('data-ribbon-tab="home"', false);
+    $response->assertSee('data-ribbon-tab="insert"', false);
+    $response->assertSee('data-ribbon-tab="layout"', false);
+    $response->assertSee('data-ribbon-tab="review"', false);
+    $response->assertSee('data-ribbon-tab="view"', false);
+    $response->assertSee('data-ribbon-tab="ai"', false);
+
+    // Microsoft Word specific tools
+    $response->assertSee('btn-format-painter', false);
+    $response->assertSee('btn-font-grow', false);
+    $response->assertSee('btn-font-shrink', false);
+    $response->assertSee('btn-checklist', false);
+    $response->assertSee('quick-style-btn', false);
+    $response->assertSee('btn-read-aloud', false);
+    $response->assertSee('btn-word-stats', false);
+    $response->assertSee('btn-puebi-check', false);
+    $response->assertSee('id="layout-margins"', false);
+    $response->assertSee('value="skripsi"', false);
+    $response->assertSee('data-load-sample="skripsi"', false);
+    $response->assertSee('data-load-sample="report"', false);
+});
+
+test('black-box: editor view renders Google Docs style outline search and adaptation banner', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Google Docs Outline search & tree
+    $response->assertSee('outline-sidebar', false);
+    $response->assertSee('outline-search-input', false);
+    $response->assertSee('outline-headings-list', false);
+
+    // Local Document Adaptation Banner
+    $response->assertSee('document-adaptation-banner', false);
+    $response->assertSee('adaptation-banner-title', false);
+    $response->assertSee('adaptation-banner-desc', false);
+    $response->assertSee('banner-btn-skripsi', false);
+    $response->assertSee('banner-btn-normal', false);
+    $response->assertSee('banner-btn-close', false);
+});
+
+test('black-box: editor view renders Wordcraft and academic modals for covers, symbols, and citations', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Cover Page Modal
+    $response->assertSee('modal-cover-page', false);
+    $response->assertSee('data-insert-cover="skripsi"', false);
+    $response->assertSee('data-insert-cover="corporate"', false);
+
+    // Symbols Modal
+    $response->assertSee('modal-symbols', false);
+    $response->assertSee('data-insert-symbol="±"', false);
+    $response->assertSee('data-insert-symbol="π"', false);
+    $response->assertSee('data-insert-symbol="∑"', false);
+
+    // Citation Modal
+    $response->assertSee('modal-citation', false);
+    $response->assertSee('btn-confirm-citation', false);
+    $response->assertSee('citation-author', false);
+    $response->assertSee('citation-year', false);
+    $response->assertSee('citation-title', false);
+    $response->assertSee('citation-source', false);
+});
+
+test('black-box: user can export document to docx, markdown, html, txt, and json formats', function () {
+    $formats = ['docx', 'markdown', 'html', 'txt', 'json'];
+    $sampleHtml = '<h1>BAB I PENDAHULUAN</h1><p>Penelitian komprehensif sistem dokumen.</p>';
+
+    foreach ($formats as $fmt) {
+        $response = $this->postJson('/api/documents/export', [
+            'content' => $sampleHtml,
+            'title' => 'Naskah Uji Coba',
+            'format' => $fmt,
+        ]);
+
+        $response->assertStatus(200);
+        $disposition = $response->headers->get('content-disposition');
+        expect($disposition)->toContain('attachment');
+        expect($disposition)->toContain('Naskah_Uji_Coba');
+    }
+});

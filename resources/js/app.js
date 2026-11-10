@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onAdaptationNotice: (notice) => {
             if (window.uiController) {
                 window.uiController.showToast(notice.message, notice.type === 'academic' ? 'success' : 'info');
+                window.uiController.updateAdaptationBanner(notice);
             }
         },
     });

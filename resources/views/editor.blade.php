@@ -414,7 +414,11 @@
     <!-- ========================================================================= -->
     <div id="ribbon-bar" class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 no-print z-20 shadow-xs">
         <!-- Ribbon Tab Bar -->
-        <div class="flex items-center px-4 border-b border-gray-100 dark:border-gray-800/80 gap-1 text-xs">
+        <div class="flex items-center px-4 border-b border-gray-100 dark:border-gray-800/80 gap-1 text-xs overflow-x-auto">
+            <button data-ribbon-tab="file" class="ribbon-tab-btn px-3 py-1.5 font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 rounded-t transition cursor-pointer flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                <span>Berkas (File)</span>
+            </button>
             <button data-ribbon-tab="home" class="ribbon-tab-btn active px-3.5 py-1.5 font-medium transition cursor-pointer">
                 Beranda (Home)
             </button>
@@ -423,6 +427,9 @@
             </button>
             <button data-ribbon-tab="layout" class="ribbon-tab-btn px-3.5 py-1.5 font-medium text-gray-600 dark:text-gray-400 transition cursor-pointer">
                 Tata Letak (Layout)
+            </button>
+            <button data-ribbon-tab="review" class="ribbon-tab-btn px-3.5 py-1.5 font-medium text-gray-600 dark:text-gray-400 transition cursor-pointer">
+                Tinjau & Referensi (Review)
             </button>
             <button data-ribbon-tab="view" class="ribbon-tab-btn px-3.5 py-1.5 font-medium text-gray-600 dark:text-gray-400 transition cursor-pointer">
                 Tampilan (View)
@@ -433,9 +440,54 @@
             </button>
         </div>
 
+        <!-- Ribbon Panel 0: BERKAS (FILE) -->
+        <div data-ribbon-panel="file" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs bg-indigo-50/40 dark:bg-indigo-950/20">
+            <!-- Dokumen Lokal CTA -->
+            <div class="flex items-center gap-1.5 pr-3 border-r border-indigo-200 dark:border-indigo-900">
+                <button data-action="open-file-modal" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold shadow-xs flex items-center gap-1.5 transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span>Buka Dokumen Lokal</span>
+                </button>
+                <button data-action="new-document" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 rounded font-medium flex items-center gap-1 transition cursor-pointer" title="Buat Lembar Dokumen Kosong Baru">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Dokumen Baru</span>
+                </button>
+            </div>
+
+            <!-- Template Cepat -->
+            <div class="flex items-center gap-1.5 pr-3 border-r border-indigo-200 dark:border-indigo-900">
+                <span class="text-gray-500 font-semibold">Pilih Template:</span>
+                <button data-load-sample="skripsi" class="px-2.5 py-1 rounded bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 font-medium transition">
+                    🎓 Skripsi (4-4-3-3 cm)
+                </button>
+                <button data-load-sample="report" class="px-2.5 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 font-medium transition">
+                    📑 Laporan Riset
+                </button>
+                <button data-load-sample="wordcraft" class="px-2.5 py-1 rounded bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 font-medium transition">
+                    ✍️ Naskah Kreatif
+                </button>
+            </div>
+
+            <!-- Simpan & Ekspor -->
+            <div class="flex items-center gap-1.5">
+                <button onclick="window.documentEngine.saveToLocalStorage(); window.uiController.showToast('Tersimpan di lokal!');" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 rounded flex items-center gap-1 transition">
+                    <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l6-6a1 1 0 00-1.414-1.414l-5.293 5.293-2.293-2.293z"></path></svg>
+                    <span>Simpan (Ctrl+S)</span>
+                </button>
+                <button data-action="export-modal" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 rounded flex items-center gap-1 transition">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Unduh / Ekspor</span>
+                </button>
+                <button onclick="window.print()" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 rounded flex items-center gap-1 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    <span>Cetak PDF</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Ribbon Panel 1: BERANDA (HOME) -->
         <div data-ribbon-panel="home" class="flex flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs">
-            <!-- Riwayat (History) -->
+            <!-- Riwayat (History) & Format Painter -->
             <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button data-action="undo" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Urungkan (Undo Ctrl+Z)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2m-15-7l4-4m-4 4l4 4"></path></svg>
@@ -443,10 +495,13 @@
                 <button data-action="redo" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Ulangi (Redo Ctrl+Y)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a5 5 0 00-5 5v2m15-7l-4-4m4 4l-4 4"></path></svg>
                 </button>
+                <button id="btn-format-painter" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Salin Format (Format Painter)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                </button>
             </div>
 
-            <!-- Font Family, Size & Line Spacing -->
-            <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
+            <!-- Font Family, Size, Stepper & Spacing -->
+            <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <select id="font-family-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-36">
                     <option value="'Times New Roman', serif" selected>Times New Roman</option>
                     <option value="'Instrument Sans', sans-serif">Instrument Sans</option>
@@ -457,19 +512,27 @@
                 </select>
 
                 <select id="font-size-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-16">
+                    <option value="8pt">8 pt</option>
+                    <option value="9pt">9 pt</option>
                     <option value="10pt">10 pt</option>
                     <option value="11pt">11 pt</option>
-                    <option value="12pt" selected>12 pt (Skripsi)</option>
-                    <option value="14pt">14 pt (Judul)</option>
+                    <option value="12pt" selected>12 pt</option>
+                    <option value="14pt">14 pt</option>
                     <option value="16pt">16 pt</option>
                     <option value="18pt">18 pt</option>
+                    <option value="20pt">20 pt</option>
                     <option value="24pt">24 pt</option>
+                    <option value="28pt">28 pt</option>
+                    <option value="36pt">36 pt</option>
                 </select>
+
+                <button id="btn-font-grow" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded font-bold text-gray-700 dark:text-gray-300 text-xs" title="Perbesar Huruf (A+)">A⁺</button>
+                <button id="btn-font-shrink" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded font-bold text-gray-700 dark:text-gray-300 text-xs" title="Perkecil Huruf (A-)">A⁻</button>
 
                 <select id="line-spacing-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-22" title="Spasi Baris Paragraf">
                     <option value="1.0">Spasi 1.0</option>
                     <option value="1.15">Spasi 1.15</option>
-                    <option value="1.5" selected>Spasi 1.5 (Skripsi)</option>
+                    <option value="1.5" selected>Spasi 1.5</option>
                     <option value="2.0">Spasi 2.0</option>
                 </select>
             </div>
@@ -531,6 +594,9 @@
                 <button data-cmd="insertOrderedList" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Daftar Bernomor (Numbered List)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 6h13M7 12h13M7 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
                 </button>
+                <button id="btn-checklist" data-cmd="insertChecklist" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Daftar Centang / Tugas (Checklist)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
                 <button data-cmd="outdent" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Kurangi Indentasi">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
                 </button>
@@ -539,16 +605,20 @@
                 </button>
             </div>
 
-            <!-- Heading Presets -->
-            <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
-                <select id="heading-preset-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-32 font-medium">
-                    <option value="" disabled selected>Gaya Teks...</option>
-                    <option value="p">Paragraf Normal</option>
-                    <option value="h1">Judul Utama / Bab (H1)</option>
-                    <option value="h2">Subjudul / Subbab (H2)</option>
-                    <option value="h3">Bagian (H3)</option>
-                    <option value="blockquote">Kutipan Blok</option>
-                </select>
+            <!-- Quick Styles Gallery (Word Style Bar) -->
+            <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <button data-quick-style="p" class="quick-style-btn px-2 py-1 rounded bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 text-xs">
+                    Normal
+                </button>
+                <button data-quick-style="h1" class="quick-style-btn px-2 py-1 rounded bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 font-bold text-xs">
+                    Judul 1 (Bab)
+                </button>
+                <button data-quick-style="h2" class="quick-style-btn px-2 py-1 rounded bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-semibold text-xs">
+                    Judul 2
+                </button>
+                <button data-quick-style="blockquote" class="quick-style-btn px-2 py-1 rounded bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 italic text-xs">
+                    Kutipan
+                </button>
             </div>
 
             <!-- Search / Find & Replace -->
@@ -567,6 +637,15 @@
                 <span>Buka Dokumen Lokal</span>
             </button>
 
+            <!-- Halaman Sampul & Pemisah -->
+            <button data-action="insert-cover-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
+                <span>📘 Halaman Sampul</span>
+            </button>
+
+            <button onclick="window.documentEngine.insertPageBreak()" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition">
+                <span>📄 Pemisah Halaman</span>
+            </button>
+
             <!-- Insert Table of Contents -->
             <button id="btn-insert-toc" class="px-3 py-1.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-200 transition">
                 <span>📑 Daftar Isi Otomatis</span>
@@ -574,12 +653,12 @@
 
             <button data-action="insert-table-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                <span>Sisipkan Tabel</span>
+                <span>Tabel</span>
             </button>
 
             <button data-action="insert-image-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <span>Sisipkan Gambar</span>
+                <span>Gambar</span>
             </button>
 
             <button data-action="insert-link-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
@@ -587,17 +666,16 @@
                 <span>Tautan (Link)</span>
             </button>
 
-            <button onclick="window.documentEngine.insertHorizontalRule()" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
-                <span>Garis Pemisah</span>
-            </button>
-
-            <button onclick="window.documentEngine.insertPageBreak()" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition">
-                <span>📄 Pemisah Halaman (Page Break)</span>
+            <button data-action="insert-symbols-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
+                <span>Ω Simbol Khusus</span>
             </button>
 
             <button onclick="window.documentEngine.insertCallout('info', 'Catatan Penelitian', 'Informasi terverifikasi untuk analisis bab selanjutnya.')" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
                 <span>💬 Callout Box</span>
+            </button>
+
+            <button onclick="window.documentEngine.insertHorizontalRule()" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
+                <span>— Garis Pemisah</span>
             </button>
         </div>
 
@@ -629,9 +707,39 @@
                     <option value="landscape">Lanskap (Landscape)</option>
                 </select>
             </div>
+
+            <div class="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-gray-800">
+                <button onclick="window.documentEngine.setMarginPreset('skripsi'); window.documentEngine.setFontFamily('\'Times New Roman\', serif'); window.documentEngine.setFontSize('12pt'); window.documentEngine.setLineSpacing('1.5'); window.uiController.showToast('Format Skripsi 4-4-3-3 cm diterapkan!');" class="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold hover:bg-indigo-100 transition">
+                    🎓 Terapkan Standar Skripsi
+                </button>
+            </div>
         </div>
 
-        <!-- Ribbon Panel 4: TAMPILAN (VIEW) -->
+        <!-- Ribbon Panel 4: TINJAU & REFERENSI (REVIEW) -->
+        <div data-ribbon-panel="review" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs">
+            <button id="btn-puebi-check" onclick="window.wordcraftAi.executeAction('grammar')" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded font-semibold flex items-center gap-1.5 hover:bg-emerald-100 transition">
+                <span>🛠️ Koreksi Ejaan PUEBI & Tata Bahasa</span>
+            </button>
+
+            <button id="btn-word-stats" data-action="open-stats-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
+                <span>📊 Hitung Kata & Statistik</span>
+            </button>
+
+            <button id="btn-read-aloud" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Bacakan Naskah Dokumen dengan Suara">
+                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                <span>Baca Suara (Read Aloud)</span>
+            </button>
+
+            <button data-action="insert-citation-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
+                <span>📚 Generator Sitasi / Daftar Pustaka</span>
+            </button>
+
+            <button data-layout-mode="zen" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
+                <span>🧘 Mode Fokus (Zen)</span>
+            </button>
+        </div>
+
+        <!-- Ribbon Panel 5: TAMPILAN (VIEW) -->
         <div data-ribbon-panel="view" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs">
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button data-layout-mode="print" class="px-2.5 py-1 text-indigo-600 font-bold bg-indigo-50 dark:bg-indigo-950/40 rounded transition">
@@ -664,7 +772,7 @@
             </button>
         </div>
 
-        <!-- Ribbon Panel 5: ASISTEN AI WORDCRAFT -->
+        <!-- Ribbon Panel 6: ASISTEN AI WORDCRAFT -->
         <div data-ribbon-panel="ai" class="hidden flex-wrap items-center px-4 py-2 gap-2 overflow-x-auto text-xs bg-purple-50/50 dark:bg-purple-950/20">
             <span class="text-xs font-semibold text-purple-700 dark:text-purple-300">Aksi Cepat Wordcraft:</span>
             <button onclick="window.wordcraftAi.executeAction('continue')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
@@ -710,6 +818,20 @@
             <div class="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Struktur Dokumen (Outline)</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold">Bab & Subbab</span>
+            </div>
+            <!-- Search Outline Input -->
+            <div class="p-2 border-b border-gray-100 dark:border-gray-800">
+                <div class="relative flex items-center">
+                    <input
+                        type="text"
+                        id="outline-search-input"
+                        placeholder="Cari bab atau subbab..."
+                        class="w-full text-xs px-2.5 py-1.5 pl-7 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-900 outline-none focus:border-indigo-500 transition"
+                    />
+                    <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
             </div>
             <div class="flex-1 overflow-y-auto p-3">
                 <ul id="outline-headings-list" class="space-y-0.5 text-xs">
@@ -773,6 +895,28 @@
                 <span class="w-px h-3 bg-gray-700"></span>
                 <button data-img-size="50%" class="px-2 py-0.5 hover:bg-gray-800 rounded text-[11px]">50%</button>
                 <button data-img-size="100%" class="px-2 py-0.5 hover:bg-gray-800 rounded text-[11px]">100%</button>
+            </div>
+
+            <!-- Local File Auto-Adaptation Banner -->
+            <div id="document-adaptation-banner" class="hidden w-full max-w-[210mm] mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/60 dark:to-purple-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs no-print transition">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">🪄</span>
+                    <div>
+                        <h4 id="adaptation-banner-title" class="font-bold text-indigo-900 dark:text-indigo-200 text-xs">Penyelarasan Format Otomatis:</h4>
+                        <p id="adaptation-banner-desc" class="text-indigo-700 dark:text-indigo-300 text-[11px] mt-0.5">Dokumen lokal telah diimpor dan diselaraskan.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button id="banner-btn-skripsi" class="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-[11px] shadow-xs transition" title="Terapkan standar format skripsi Indonesia">
+                        Format Skripsi 4-4-3-3
+                    </button>
+                    <button id="banner-btn-normal" class="px-2.5 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 text-gray-700 dark:text-gray-300 font-medium text-[11px] border border-gray-300 dark:border-gray-600 shadow-xs transition" title="Terapkan margin normal">
+                        Format Standar
+                    </button>
+                    <button id="banner-btn-close" class="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" title="Tutup pemberitahuan">
+                        ✕
+                    </button>
+                </div>
             </div>
 
             <!-- A4 Document Multi-Page Sheets Container -->
@@ -1218,6 +1362,126 @@
             </div>
             <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end">
                 <button data-close-modal class="px-4 py-2 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 9: Sisipkan Halaman Sampul (Cover Page) -->
+    <div id="modal-cover-page" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <span>📄</span> Sisipkan Halaman Sampul (Cover Page)
+                </h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <!-- Pilihan 1: Cover Skripsi / Akademik -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-indigo-500 hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl mb-3">🎓</div>
+                        <h4 class="font-bold text-sm text-gray-900 dark:text-white">Sampul Akademik / Skripsi</h4>
+                        <p class="text-gray-500 text-[11px] mt-1">Format baku skripsi, tesis, dan disertasi perguruan tinggi di Indonesia dengan placeholder instansi & NIM.</p>
+                    </div>
+                    <button data-insert-cover="skripsi" class="mt-4 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-xs transition">
+                        Gunakan Sampul Skripsi
+                    </button>
+                </div>
+
+                <!-- Pilihan 2: Cover Laporan Bisnis / Perusahaan -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-indigo-500 hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl mb-3">🏢</div>
+                        <h4 class="font-bold text-sm text-gray-900 dark:text-white">Sampul Laporan Bisnis</h4>
+                        <p class="text-gray-500 text-[11px] mt-1">Gaya modern korporat untuk proposal proyek, laporan keuangan tahunan, dan riset bisnis profesional.</p>
+                    </div>
+                    <button data-insert-cover="corporate" class="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs transition">
+                        Gunakan Sampul Bisnis
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                <button data-close-modal class="px-4 py-2 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 10: Simbol Matematika, Sains, & Tipografi Khusus -->
+    <div id="modal-symbols" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <span>🔣</span> Palet Simbol & Karakter Khusus
+                </h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            <div class="p-6 space-y-4 text-xs">
+                <div>
+                    <h5 class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Simbol Matematika & Logika</h5>
+                    <div class="grid grid-cols-8 gap-2">
+                        @foreach(['±', '×', '÷', '≠', '≈', '≤', '≥', '∑', '∏', '√', '∞', '∫', '∂', '∆', 'µ', 'π'] as $sym)
+                            <button data-insert-symbol="{{ $sym }}" class="p-2 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 font-serif text-sm font-semibold transition text-center">{{ $sym }}</button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Simbol Sains & Yunani</h5>
+                    <div class="grid grid-cols-8 gap-2">
+                        @foreach(['α', 'β', 'γ', 'δ', 'ε', 'θ', 'λ', 'σ', 'ω', 'Ω', '°', '℃', '℉', '‰', 'Å', '§'] as $sym)
+                            <button data-insert-symbol="{{ $sym }}" class="p-2 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 font-serif text-sm font-semibold transition text-center">{{ $sym }}</button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Mata Uang & Tipografi</h5>
+                    <div class="grid grid-cols-8 gap-2">
+                        @foreach(['©', '®', '™', '€', '£', '¥', '₹', '•', '—', '–', '“', '”', '«', '»', '¶', '†'] as $sym)
+                            <button data-insert-symbol="{{ $sym }}" class="p-2 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 font-serif text-sm font-semibold transition text-center">{{ $sym }}</button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                <button data-close-modal class="px-4 py-2 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 11: Sitasi & Daftar Pustaka (APA 7th Edition) -->
+    <div id="modal-citation" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <span>📖</span> Sitasi & Entri Daftar Pustaka
+                </h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            <div class="p-6 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Penulis / Institusi:</label>
+                    <input type="text" id="citation-author" placeholder="Contoh: Sugiyono / Santoso, A." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Tahun Publikasi:</label>
+                    <input type="text" id="citation-year" placeholder="Contoh: 2024" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Judul Karya / Artikel / Buku:</label>
+                    <input type="text" id="citation-title" placeholder="Contoh: Metode Penelitian Kuantitatif, Kualitatif, dan R&D" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Sumber / Penerbit / Jurnal:</label>
+                    <input type="text" id="citation-source" placeholder="Contoh: Alfabeta, Bandung / Jurnal Sistem Informasi, 12(3)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                </div>
+                <div class="p-3 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-[11px] text-indigo-700 dark:text-indigo-300">
+                    Sistem akan menyisipkan <strong>sitasi dalam teks</strong> seperti <em>(Santoso, 2024)</em> serta menambahkan entri terformat ke bagian <strong>Daftar Pustaka</strong> dokumen secara otomatis.
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+                <button data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Batal</button>
+                <button id="btn-confirm-citation" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white">Sisipkan Sitasi</button>
             </div>
         </div>
     </div>
