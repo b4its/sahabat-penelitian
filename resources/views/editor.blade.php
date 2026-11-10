@@ -114,11 +114,6 @@
             font-family: 'Times New Roman', 'Instrument Sans', serif;
             font-size: 12pt;
             line-height: 1.5;
-            color: #111827 !important;
-        }
-
-        #document-editor *,
-        .page-sheet-body * {
             color: #111827;
         }
 
@@ -128,7 +123,6 @@
         .page-sheet-body h1.heading-preliminary {
             font-size: 14pt;
             font-weight: 700;
-            color: #111827 !important;
             text-align: center;
             margin-top: 16pt;
             margin-bottom: 12pt;
@@ -140,7 +134,6 @@
         .page-sheet-body h2.heading-section {
             font-size: 12pt;
             font-weight: 700;
-            color: #1f2937 !important;
             margin-top: 14pt;
             margin-bottom: 6pt;
             line-height: 1.35;
@@ -150,7 +143,6 @@
         .page-sheet-body h3.heading-subsection {
             font-size: 12pt;
             font-weight: 600;
-            color: #374151 !important;
             margin-top: 10pt;
             margin-bottom: 4pt;
         }
@@ -158,15 +150,49 @@
         #document-editor p,
         .page-sheet-body p {
             margin-bottom: 8pt;
-            text-align: justify;
             line-height: 1.5;
-            color: #111827 !important;
         }
 
+        /* Perataan Paragraf & Sel Tabel */
+        #document-editor .text-center,
+        .page-sheet-body .text-center,
         #document-editor p.text-center,
-        .page-sheet-body p.text-center {
+        .page-sheet-body p.text-center,
+        #document-editor td.text-center,
+        .page-sheet-body td.text-center,
+        #document-editor th.text-center,
+        .page-sheet-body th.text-center {
             text-align: center !important;
             text-indent: 0 !important;
+        }
+
+        #document-editor .text-right,
+        .page-sheet-body .text-right,
+        #document-editor p.text-right,
+        .page-sheet-body p.text-right,
+        #document-editor td.text-right,
+        .page-sheet-body td.text-right,
+        #document-editor th.text-right,
+        .page-sheet-body th.text-right {
+            text-align: right !important;
+            text-indent: 0 !important;
+        }
+
+        #document-editor .text-left,
+        .page-sheet-body .text-left,
+        #document-editor p.text-left,
+        .page-sheet-body p.text-left,
+        #document-editor td.text-left,
+        .page-sheet-body td.text-left {
+            text-align: left !important;
+            text-indent: 0 !important;
+        }
+
+        #document-editor .text-justify,
+        .page-sheet-body .text-justify,
+        #document-editor p.text-justify,
+        .page-sheet-body p.text-justify {
+            text-align: justify !important;
         }
 
         #document-editor p.indent-8,
@@ -191,8 +217,7 @@
         #document-editor li,
         .page-sheet-body li {
             margin-bottom: 4pt;
-            text-align: justify;
-            color: #111827 !important;
+            line-height: 1.5;
         }
 
         #document-editor blockquote,
@@ -200,7 +225,7 @@
             border-left: 4px solid #6366f1;
             padding-left: 14pt;
             margin: 12pt 0;
-            color: #4b5563 !important;
+            color: #4b5563;
             font-style: italic;
         }
 
@@ -216,8 +241,6 @@
         .page-sheet-body th, .page-sheet-body td {
             border: 1px solid #9ca3af;
             padding: 6pt 10pt;
-            text-align: left;
-            color: #111827 !important;
         }
 
         #document-editor th,
@@ -225,6 +248,16 @@
             background-color: #f3f4f6;
             font-weight: 600;
             text-align: center;
+        }
+
+        /* Garis Bawah & Garis Coret */
+        #document-editor u, .page-sheet-body u {
+            text-decoration: underline;
+        }
+
+        #document-editor s, .page-sheet-body s,
+        #document-editor del, .page-sheet-body del {
+            text-decoration: line-through;
         }
 
         #document-editor figure,
