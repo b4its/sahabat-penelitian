@@ -675,3 +675,18 @@ test('black-box: user can export document to docx, markdown, html, txt, and json
         expect($disposition)->toContain('Naskah_Uji_Coba');
     }
 });
+
+test('black-box: editor view loads compiled client assets without temporal dead zone initialization errors', function () {
+    $manifestPath = public_path('build/manifest.json');
+    expect(file_exists($manifestPath))->toBeTrue();
+
+    $manifest = json_decode(file_get_contents($manifestPath), true);
+    expect($manifest)->toHaveKey('resources/js/app.js');
+
+    $appJsFile = public_path('build/'.$manifest['resources/js/app.js']['file']);
+    expect(file_exists($appJsFile))->toBeTrue();
+
+    // Verify source code doesn't call engine.escapeHtml before engine assignment
+    $sourceAppJs = file_get_contents(resource_path('js/app.js'));
+    expect($sourceAppJs)->not->toContain('engine.escapeHtml');
+});

@@ -18,6 +18,7 @@ export class WordcraftAi {
         this.activeSelection = '';
         this.isLoading = false;
 
+        window.wordcraftAi = this;
         this.init();
     }
 

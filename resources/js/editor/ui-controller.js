@@ -17,6 +17,7 @@ export class UiController {
         this.findMatches = [];
         this.currentMatchIndex = -1;
 
+        window.uiController = this;
         this.init();
     }
 

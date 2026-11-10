@@ -46,6 +46,7 @@ export class DocumentEngine {
         this.customFooterText = '';
         this.copiedFormat = null;
 
+        window.documentEngine = this;
         this.init();
     }
 
