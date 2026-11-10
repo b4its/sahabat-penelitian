@@ -974,3 +974,28 @@ test('white-box: DocxImporter suppresses near-white low-contrast color #eeece1 o
         ->and(DocxImporter::isNearWhiteColor('#111827'))->toBeFalse()
         ->and(DocxImporter::isNearWhiteColor('#4f81bd'))->toBeFalse();
 });
+
+test('white-box: adaptDocumentStructure strictly differentiates body paragraphs with ellipses from real TOC dot-leaders', function () {
+    $inputHtml = <<<'HTML'
+        <p>BAB 1 PENDAHULUAN</p>
+        <p>1.1 Latar Belakang</p>
+        <p>Penelitian ini dilakukan berdasarkan data yang ada... sehingga diharapkan dapat memberikan solusi yang tepat.</p>
+        <p>Hasil pengujian pendahuluan menunjukkan akurasi yang memuaskan, dst...</p>
+        <p>Jumlah sampel pengujian yang digunakan adalah   45</p>
+        <p>DAFTAR ISI</p>
+        <p>BAB 1 PENDAHULUAN ................................................ 1</p>
+        <p>1.1 Latar Belakang Masalah ........................................ 2</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($inputHtml, 'skripsi.docx');
+    $adaptedHtml = $result['adapted_html'];
+
+    // Paragraphs with ellipses or trailing numbers MUST NOT become .toc-entry
+    expect($adaptedHtml)->toContain('Penelitian ini dilakukan berdasarkan data yang ada... sehingga diharapkan dapat memberikan solusi yang tepat.')
+        ->and($adaptedHtml)->toContain('Hasil pengujian pendahuluan menunjukkan akurasi yang memuaskan, dst...')
+        ->and($adaptedHtml)->toContain('Jumlah sampel pengujian yang digunakan adalah   45');
+
+    // Count occurrences of toc-entry: should be exactly 2 (the 2 TOC lines)
+    $tocCount = substr_count($adaptedHtml, 'toc-entry');
+    expect($tocCount)->toBe(2);
+});

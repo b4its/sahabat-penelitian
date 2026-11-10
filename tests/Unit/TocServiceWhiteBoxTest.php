@@ -204,4 +204,22 @@ HTML;
         $this->assertStringContainsString('BAB II LANDASAN TEORI', $updatedHtml);
         $this->assertStringContainsString('>4</span>', $updatedHtml);
     }
+
+    public function test_generate_toc_html_includes_editable_headings_and_tabindex_for_deletion(): void
+    {
+        $headings = [
+            ['id' => 'heading-bab-1', 'text' => 'BAB I PENDAHULUAN', 'level' => 1, 'page' => 1],
+        ];
+
+        $html = $this->service->generateTocHtml($headings, [
+            'heading' => 'DAFTAR ISI',
+        ]);
+
+        $this->assertStringContainsString('tabindex="0"', $html);
+        $this->assertStringContainsString('contenteditable="false"', $html);
+        $this->assertStringContainsString('<h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif outline-none" contenteditable="true">DAFTAR ISI</h1>', $html);
+        $this->assertStringContainsString('<div class="toc-entries space-y-1 font-serif" contenteditable="true">', $html);
+        $this->assertStringContainsString('contenteditable="true">BAB I PENDAHULUAN</a>', $html);
+        $this->assertStringContainsString('contenteditable="true">1</span>', $html);
+    }
 }

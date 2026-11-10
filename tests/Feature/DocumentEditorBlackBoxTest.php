@@ -1380,3 +1380,67 @@ test('black-box: editor page renders Microsoft Word Table of Contents suite acro
     $response->assertSee('value="entire"', false);
     $response->assertSee('id="btn-confirm-update-toc"', false);
 });
+
+test('black-box: importing document with ellipses does not spam DAFTAR ISI or pollute document structure', function () {
+    $docxContent = <<<'HTML'
+        <p>BAB 1 PENDAHULUAN</p>
+        <p>1.1 Latar Belakang</p>
+        <p>Kajian ini mengeksplorasi penggunaan model pembelajaran mesin... dengan pendekatan terstruktur.</p>
+        <p>Hasil awal menunjukkan tren yang sangat menjanjikan, dsb...</p>
+        <p>Total pengujian yang dilakukan sebanyak   120</p>
+        <p>DAFTAR ISI</p>
+        <p>BAB 1 PENDAHULUAN ................................................ 1</p>
+        <p>1.1 Latar Belakang ................................................ 1</p>
+HTML;
+
+    $file = UploadedFile::fake()->createWithContent('penelitian_ai.docx', $docxContent);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+
+    // Normal paragraphs must remain normal text
+    expect($html)->toContain('Kajian ini mengeksplorasi penggunaan model pembelajaran mesin... dengan pendekatan terstruktur.')
+        ->and($html)->toContain('Hasil awal menunjukkan tren yang sangat menjanjikan, dsb...')
+        ->and($html)->toContain('Total pengujian yang dilakukan sebanyak   120');
+
+    // Only genuine TOC lines become toc-entry
+    $tocCount = substr_count($html, 'toc-entry');
+    expect($tocCount)->toBe(2);
+
+    // Headings list should contain DAFTAR ISI and BAB 1 PENDAHULUAN, not ellipses
+    $headings = $response->json('headings');
+    $texts = array_column($headings, 'text');
+    expect($texts)->toContain('DAFTAR ISI')
+        ->and($texts)->toContain('BAB 1 PENDAHULUAN')
+        ->and($texts)->not->toContain('Kajian ini mengeksplorasi penggunaan model pembelajaran mesin... dengan pendekatan terstruktur.');
+});
+
+test('black-box: generated table of contents provides editable elements and deletion capability', function () {
+    $response = $this->postJson(route('documents.generate-toc'), [
+        'heading' => 'DAFTAR ISI SKRIPSI',
+        'headings' => [
+            ['id' => 'heading-bab-1', 'text' => 'BAB I PENDAHULUAN', 'level' => 1, 'page' => 1],
+            ['id' => 'heading-sub-1', 'text' => '1.1 Latar Belakang', 'level' => 2, 'page' => 2],
+        ],
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('html');
+
+    // Ensure container has tabindex for keyboard backspace/delete focus
+    expect($html)->toContain('tabindex="0"')
+        ->and($html)->toContain('contenteditable="false"')
+        // Ensure header is editable
+        ->and($html)->toContain('<h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif outline-none" contenteditable="true">DAFTAR ISI SKRIPSI</h1>')
+        // Ensure entries container is editable
+        ->and($html)->toContain('<div class="toc-entries space-y-1 font-serif" contenteditable="true">')
+        // Ensure links and pages are editable
+        ->and($html)->toContain('contenteditable="true">BAB I PENDAHULUAN</a>')
+        ->and($html)->toContain('contenteditable="true">1</span>')
+        // Ensure action bar has delete button
+        ->and($html)->toContain('btn-toc-delete');
+});

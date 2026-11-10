@@ -452,8 +452,8 @@ class DocumentService
         if (empty($text)) {
             return false;
         }
-        $clean = trim($text);
-        if (empty($clean)) {
+        $clean = preg_replace('/\s+/', ' ', trim($text));
+        if (empty($clean) || strlen($clean) < 4 || strlen($clean) > 140) {
             return false;
         }
         if ($this->isMetadataOrSignatureLine($clean)) {
@@ -462,10 +462,8 @@ class DocumentService
         if (preg_match('/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i', $clean)) {
             return false;
         }
-        if (preg_match('/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/', $clean)) {
-            return true;
-        }
-        if (preg_match('/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i', $clean)) {
+        // Must match: Title + (at least 3 dot-leaders, bullet-dots, or tabs) + page number at end
+        if (preg_match('/^(.{2,100}?)(?:[\s.·…]{3,}|\t+)([ivxlcdm\d]{1,5})$/i', $clean)) {
             return true;
         }
 
@@ -610,16 +608,12 @@ class DocumentService
 
             // Outside Cover: Check for Table of Contents (Daftar Isi) dot-leader lines
             if ($this->isTableOfContentsLine($cleanText)) {
-                if (preg_match('/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i', $cleanText, $tm)) {
+                if (preg_match('/^(.*?)(?:[\s.·…]{2,}|\t+)([ivxlcdm\d]+)$/i', $cleanText, $tm)) {
                     $itemTitle = trim($tm[1]);
                     $itemPage = trim($tm[2]);
                     $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800\"><span class=\"toc-title truncate max-w-[80%]\">{$itemTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400\"></span><span class=\"toc-page font-mono text-xs text-gray-600\">{$itemPage}</span></div>";
-                } else {
-                    $cleanTitle = trim(preg_replace('/[\s.·…]+$/', '', $cleanText));
-                    $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800\"><span class=\"toc-title truncate max-w-[80%]\">{$cleanTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400\"></span></div>";
+                    continue;
                 }
-
-                continue;
             }
 
             // If it's already an H1, H2, H3, H4, H5, H6 tag, PRESERVE IT and record heading!

@@ -217,19 +217,25 @@ export class DocumentEngine {
                 const btnTocUpdate = e.target.closest('.btn-toc-update');
                 if (btnTocUpdate) {
                     e.preventDefault();
-                    window.dispatchEvent(new CustomEvent('open-update-toc-dialog'));
+                    e.stopPropagation();
+                    this.activeTocBlock = btnTocUpdate.closest('.table-of-contents, [data-toc-block="true"]');
+                    window.dispatchEvent(new CustomEvent('open-update-toc-dialog', { detail: { element: this.activeTocBlock } }));
                     return;
                 }
                 const btnTocCustomize = e.target.closest('.btn-toc-customize');
                 if (btnTocCustomize) {
                     e.preventDefault();
-                    window.dispatchEvent(new CustomEvent('open-custom-toc-dialog'));
+                    e.stopPropagation();
+                    this.activeTocBlock = btnTocCustomize.closest('.table-of-contents, [data-toc-block="true"]');
+                    window.dispatchEvent(new CustomEvent('open-custom-toc-dialog', { detail: { element: this.activeTocBlock } }));
                     return;
                 }
                 const btnTocDelete = e.target.closest('.btn-toc-delete');
                 if (btnTocDelete) {
                     e.preventDefault();
-                    this.removeTableOfContents();
+                    e.stopPropagation();
+                    const tocBlock = btnTocDelete.closest('.table-of-contents, [data-toc-block="true"]');
+                    this.removeTableOfContents(tocBlock);
                     return;
                 }
 
@@ -395,6 +401,16 @@ export class DocumentEngine {
             e.preventDefault();
             this.insertPageBreak();
         }
+
+        // Backspace or Delete on focused or selected Table of Contents block
+        if (e.key === 'Backspace' || e.key === 'Delete') {
+            const activeEl = document.activeElement;
+            if (activeEl && (activeEl.classList?.contains('table-of-contents') || activeEl.hasAttribute('data-toc-block'))) {
+                e.preventDefault();
+                this.removeTableOfContents(activeEl);
+                return;
+            }
+        }
     }
 
     handlePaste(e) {
@@ -437,14 +453,12 @@ export class DocumentEngine {
 
         const isTableOfContentsLine = (str) => {
             if (!str) return false;
-            const clean = str.trim();
-            if (!clean) return false;
+            const clean = str.trim().replace(/\s+/g, ' ');
+            if (!clean || clean.length < 4 || clean.length > 140) return false;
             if (/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i.test(clean)) {
                 return false;
             }
-            if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
-            if (/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
-            return false;
+            return /^(.{2,100}?)(?:[\s.·…]{3,}|\t+)([ivxlcdm\d]{1,5})$/i.test(clean);
         };
 
         const parser = new DOMParser();
@@ -1297,6 +1311,15 @@ export class DocumentEngine {
         const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
         const container = doc.body.firstElementChild;
 
+        // Deduplicate existing TOC blocks if any exist
+        const existingTocs = container.querySelectorAll('.table-of-contents, [data-toc-block="true"]');
+        if (existingTocs.length > 1) {
+            for (let i = 1; i < existingTocs.length; i++) {
+                existingTocs[i].remove();
+            }
+        }
+        let hasCreatedToc = existingTocs.length > 0;
+
         const isMetadataOrSignatureLine = (str) => {
             if (!str) return false;
             const clean = str.trim();
@@ -1314,15 +1337,13 @@ export class DocumentEngine {
 
         const isTableOfContentsLine = (str) => {
             if (!str) return false;
-            const clean = str.trim();
-            if (!clean) return false;
+            const clean = str.trim().replace(/\s+/g, ' ');
+            if (!clean || clean.length < 4 || clean.length > 140) return false;
             if (isMetadataOrSignatureLine(clean)) return false;
             if (/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i.test(clean)) {
                 return false;
             }
-            if (/(\.{2,}|…|·{2,}|\.\s*\.\s*\.)/.test(clean)) return true;
-            if (/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i.test(clean)) return true;
-            return false;
+            return /^(.{2,100}?)(?:[\s.·…]{3,}|\t+)([ivxlcdm\d]{1,5})$/i.test(clean);
         };
 
         const allText = container.textContent.toLowerCase();
@@ -1375,6 +1396,13 @@ export class DocumentEngine {
 
         const children = Array.from(container.children);
         for (let el of children) {
+            if (!container.contains(el)) continue;
+
+            if (el.classList?.contains('table-of-contents') && hasCreatedToc) {
+                el.remove();
+                continue;
+            }
+
             // 1. Explicit Page Break: Preserve it immediately and continue
             if (
                 el.classList?.contains('page-break') ||
@@ -1449,23 +1477,42 @@ export class DocumentEngine {
             }
 
             // Table of Contents entries: Group contiguous TOC lines into a single seamless table-of-contents block
-            if (isTableOfContentsLine(cleanText) || el.classList?.contains('toc-entry')) {
+            if ((isTableOfContentsLine(cleanText) || el.classList?.contains('toc-entry')) && !hasCreatedToc) {
                 let prevEl = el.previousElementSibling;
                 let tocHeading = 'DAFTAR ISI';
+                let hasExplicitTocHeading = false;
                 if (prevEl && /^(DAFTAR\s+ISI|TABLE\s+OF\s+CONTENTS|KONTEN)$/i.test(getCleanText(prevEl))) {
                     tocHeading = getCleanText(prevEl).toUpperCase();
+                    hasExplicitTocHeading = true;
+                }
+
+                // Check how many contiguous entries follow
+                let entryCount = 0;
+                let testEl = el;
+                while (testEl && (isTableOfContentsLine(getCleanText(testEl)) || testEl.classList?.contains('toc-entry'))) {
+                    entryCount++;
+                    testEl = testEl.nextElementSibling;
+                }
+
+                // Only create a TOC block if we have an explicit TOC heading, OR at least 2 entries, OR existing .toc-entry
+                if (!hasExplicitTocHeading && entryCount < 2 && !el.classList?.contains('toc-entry')) {
+                    continue;
+                }
+
+                if (hasExplicitTocHeading && prevEl) {
                     prevEl.remove();
                 }
 
                 const tocGroupDiv = doc.createElement('div');
-                tocGroupDiv.className = 'table-of-contents w-full my-6 select-none relative group';
+                tocGroupDiv.className = 'table-of-contents w-full my-6 relative group';
                 tocGroupDiv.setAttribute('data-toc-block', 'true');
                 tocGroupDiv.setAttribute('data-toc-style', 'template');
                 tocGroupDiv.setAttribute('data-toc-leader', 'dots');
                 tocGroupDiv.setAttribute('contenteditable', 'false');
+                tocGroupDiv.setAttribute('tabindex', '0');
 
                 tocGroupDiv.innerHTML = `
-                    <div class="toc-toolbar absolute -top-4 right-0 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-3 py-1 rounded-md shadow-lg flex items-center gap-2 text-xs opacity-0 group-hover:opacity-100 transition duration-150 z-30 no-print">
+                    <div class="toc-toolbar absolute -top-4 right-0 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-3 py-1 rounded-md shadow-lg flex items-center gap-2 text-xs opacity-0 group-hover:opacity-100 transition duration-150 z-30 no-print select-none" contenteditable="false">
                         <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
                             <span>🔄 Perbarui Tabel...</span>
                         </button>
@@ -1478,8 +1525,8 @@ export class DocumentEngine {
                             <span>🗑️ Hapus</span>
                         </button>
                     </div>
-                    <h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif">${this.escapeHtml(tocHeading)}</h1>
-                    <div class="toc-entries space-y-1 font-serif"></div>
+                    <h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif outline-none" contenteditable="true">${this.escapeHtml(tocHeading)}</h1>
+                    <div class="toc-entries space-y-1 font-serif" contenteditable="true"></div>
                 `;
 
                 const entriesContainer = tocGroupDiv.querySelector('.toc-entries');
@@ -1487,7 +1534,7 @@ export class DocumentEngine {
 
                 while (currEl && (isTableOfContentsLine(getCleanText(currEl)) || currEl.classList?.contains('toc-entry'))) {
                     const lineText = getCleanText(currEl);
-                    const match = lineText.match(/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i);
+                    const match = lineText.match(/^(.{2,100}?)(?:[\s.·…]{2,}|\t+)([ivxlcdm\d]+)$/i);
                     let itemTitle = lineText.replace(/[\s.·…]+$/, '').trim();
                     let itemPage = '1';
 
@@ -1514,9 +1561,9 @@ export class DocumentEngine {
                     itemDiv.setAttribute('data-level', String(lvl));
                     itemDiv.setAttribute('data-target', targetId);
                     itemDiv.innerHTML = `
-                        <a href="#${targetId}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%] select-none">${this.escapeHtml(itemTitle)}</a>
-                        <span class="toc-leader flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-500"></span>
-                        <span class="toc-page font-mono text-sm font-semibold text-gray-800 dark:text-gray-200 shrink-0 text-right min-w-[24px]">${this.escapeHtml(itemPage)}</span>
+                        <a href="#${targetId}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%]" contenteditable="true">${this.escapeHtml(itemTitle)}</a>
+                        <span class="toc-leader flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-500 select-none" contenteditable="false"></span>
+                        <span class="toc-page font-mono text-sm font-semibold text-gray-800 dark:text-gray-200 shrink-0 text-right min-w-[24px]" contenteditable="true">${this.escapeHtml(itemPage)}</span>
                     `;
 
                     entriesContainer.appendChild(itemDiv);
@@ -1532,6 +1579,7 @@ export class DocumentEngine {
                     container.appendChild(tocGroupDiv);
                 }
 
+                hasCreatedToc = true;
                 continue;
             }
 
@@ -2359,19 +2407,19 @@ export class DocumentEngine {
             let pageHtml = '';
             if (showPageNumbers) {
                 const alignClass = rightAlignPageNumbers ? 'font-mono text-xs font-semibold shrink-0 text-right min-w-[20px]' : 'font-mono text-xs font-semibold ml-2';
-                pageHtml = `<span class="toc-page ${alignClass} text-gray-800 dark:text-gray-200">${page}</span>`;
+                pageHtml = `<span class="toc-page ${alignClass} text-gray-800 dark:text-gray-200" contenteditable="true">${page}</span>`;
             }
 
             let leaderHtml = '';
             if (showPageNumbers && rightAlignPageNumbers && leader !== 'none') {
-                leaderHtml = `<span class="toc-leader flex-1 mx-2 ${leaderClass}"></span>`;
+                leaderHtml = `<span class="toc-leader flex-1 mx-2 ${leaderClass} select-none" contenteditable="false"></span>`;
             } else if (showPageNumbers && !rightAlignPageNumbers) {
                 leaderHtml = '&nbsp;';
             }
 
             tocEntries.push(`
                 <div class="toc-entry toc-item flex items-baseline justify-between py-1 ${levelIndent}" data-level="${lvl}" data-target="${id}">
-                    <a href="#${id}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%] select-none">${text}</a>
+                    <a href="#${id}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%]" contenteditable="true">${text}</a>
                     ${leaderHtml}
                     ${pageHtml}
                 </div>
@@ -2383,14 +2431,14 @@ export class DocumentEngine {
             entriesHtml = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada judul bab atau subbab terdeteksi. Tambahkan Heading (Bab / Subbab) di naskah lalu klik "Perbarui Tabel".</p>';
         }
 
-        let containerClass = 'w-full my-6 select-none relative group';
-        if (style === 'modern') containerClass = 'w-full my-6 select-none relative group';
-        else if (style === 'formal') containerClass = 'w-full my-6 select-none relative group border-t border-b border-gray-400 dark:border-gray-600 py-4';
-        else if (style === 'simple') containerClass = 'w-full my-4 select-none relative group';
+        let containerClass = 'w-full my-6 relative group';
+        if (style === 'modern') containerClass = 'w-full my-6 relative group';
+        else if (style === 'formal') containerClass = 'w-full my-6 relative group border-t border-b border-gray-400 dark:border-gray-600 py-4';
+        else if (style === 'simple') containerClass = 'w-full my-4 relative group';
 
         return `
-            <div class="table-of-contents my-6 ${containerClass} relative shadow-2xs group" data-toc-block="true" data-toc-style="${this.escapeHtml(style)}" data-toc-leader="${this.escapeHtml(leader)}" data-toc-levels="${levels}" data-toc-shownum="${showPageNumbers}" data-toc-rightalign="${rightAlignPageNumbers}" contenteditable="false">
-                <div class="toc-toolbar absolute -top-3 right-4 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2.5 py-1 rounded-md shadow-md flex items-center gap-2 text-[11px] opacity-0 group-hover:opacity-100 transition duration-150 z-20 no-print">
+            <div class="table-of-contents my-6 ${containerClass} relative shadow-2xs group" data-toc-block="true" data-toc-style="${this.escapeHtml(style)}" data-toc-leader="${this.escapeHtml(leader)}" data-toc-levels="${levels}" data-toc-shownum="${showPageNumbers}" data-toc-rightalign="${rightAlignPageNumbers}" contenteditable="false" tabindex="0">
+                <div class="toc-toolbar absolute -top-3 right-4 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2.5 py-1 rounded-md shadow-md flex items-center gap-2 text-[11px] opacity-0 group-hover:opacity-100 transition duration-150 z-20 no-print select-none" contenteditable="false">
                     <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
                         <span>🔄 Perbarui Tabel...</span>
                     </button>
@@ -2404,9 +2452,9 @@ export class DocumentEngine {
                     </button>
                 </div>
 
-                <h2 class="toc-header text-center font-bold text-lg mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif">${this.escapeHtml(headingTitle)}</h2>
+                <h2 class="toc-header text-center font-bold text-lg mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif outline-none" contenteditable="true">${this.escapeHtml(headingTitle)}</h2>
 
-                <div class="toc-entries space-y-1 font-serif">
+                <div class="toc-entries space-y-1 font-serif" contenteditable="true">
                     ${entriesHtml}
                 </div>
             </div>
@@ -2446,9 +2494,9 @@ export class DocumentEngine {
         return true;
     }
 
-    updateTableOfContents(updateType = 'entire') {
+    updateTableOfContents(updateType = 'entire', targetToc = null) {
         const activeContainer = this.pagesWrapper || this.canvasEl || document;
-        const existingToc = activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
+        const existingToc = targetToc || this.activeTocBlock || activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
         if (!existingToc) {
             return this.generateTableOfContents();
         }
@@ -2458,7 +2506,7 @@ export class DocumentEngine {
         const levels = parseInt(existingToc.getAttribute('data-toc-levels') || '3', 10);
         const showPageNumbers = existingToc.getAttribute('data-toc-shownum') !== 'false';
         const rightAlignPageNumbers = existingToc.getAttribute('data-toc-rightalign') !== 'false';
-        const headingEl = existingToc.querySelector('.toc-header, h2');
+        const headingEl = existingToc.querySelector('.toc-header, h2, h1');
         const heading = headingEl ? headingEl.textContent.trim() : 'DAFTAR ISI';
 
         const headings = this.extractHeadings(levels);
@@ -2481,6 +2529,7 @@ export class DocumentEngine {
                     if (pageSpan) pageSpan.textContent = String(newPage);
                 }
             });
+            this.activeTocBlock = null;
             this.handleInput();
             return true;
         }
@@ -2500,17 +2549,34 @@ export class DocumentEngine {
         temp.innerHTML = updatedHtml.trim();
         const newToc = temp.firstElementChild;
         existingToc.replaceWith(newToc);
+        this.activeTocBlock = null;
 
         this.handleInput();
+        const content = this.getContent();
+        this.renderPaginatedDocument(content);
         return true;
     }
 
-    removeTableOfContents() {
+    removeTableOfContents(targetToc = null) {
         const activeContainer = this.pagesWrapper || this.canvasEl || document;
-        const existingToc = activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
-        if (existingToc) {
-            existingToc.remove();
+        let removed = false;
+
+        if (targetToc && targetToc.isConnected) {
+            targetToc.remove();
+            removed = true;
+        } else {
+            const existingTocs = activeContainer.querySelectorAll('.table-of-contents, [data-toc-block="true"]');
+            existingTocs.forEach(toc => {
+                toc.remove();
+                removed = true;
+            });
+        }
+
+        if (removed) {
+            this.activeTocBlock = null;
             this.handleInput();
+            const content = this.getContent();
+            this.renderPaginatedDocument(content);
             return true;
         }
         return false;

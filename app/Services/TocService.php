@@ -185,19 +185,19 @@ class TocService
             $pageHtml = '';
             if ($showPageNumbers) {
                 $alignClass = $rightAlignPages ? 'font-mono text-xs font-semibold shrink-0 text-right min-w-[20px]' : 'font-mono text-xs font-semibold ml-2';
-                $pageHtml = "<span class=\"toc-page {$alignClass} text-gray-800 dark:text-gray-200\">{$page}</span>";
+                $pageHtml = "<span class=\"toc-page {$alignClass} text-gray-800 dark:text-gray-200\" contenteditable=\"true\">{$page}</span>";
             }
 
             $leaderHtml = '';
             if ($showPageNumbers && $rightAlignPages && $leader !== 'none') {
-                $leaderHtml = "<span class=\"toc-leader flex-1 mx-2 {$leaderClass}\"></span>";
+                $leaderHtml = "<span class=\"toc-leader flex-1 mx-2 {$leaderClass} select-none\" contenteditable=\"false\"></span>";
             } elseif ($showPageNumbers && ! $rightAlignPages) {
                 $leaderHtml = '&nbsp;';
             }
 
             $entriesHtml .= <<<HTML
         <div class="toc-entry toc-item flex items-baseline justify-between py-1 {$levelIndent}" data-level="{$lvl}" data-target="{$id}">
-            <a href="#{$id}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%] select-none">{$text}</a>
+            <a href="#{$id}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%]" contenteditable="true">{$text}</a>
             {$leaderHtml}
             {$pageHtml}
         </div>\n
@@ -212,13 +212,13 @@ HTML;
             'modern' => 'bg-gray-50/70 dark:bg-gray-800/50 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 p-6',
             'formal' => 'bg-white dark:bg-gray-900 border-2 border-double border-gray-300 dark:border-gray-700 p-8',
             'simple' => 'bg-transparent py-4 border-b border-gray-200 dark:border-gray-800',
-            default => 'w-full my-6 relative group select-none',
+            default => 'w-full my-6 relative group',
         };
 
         return <<<HTML
-<div class="table-of-contents {$containerStyleClass}" data-toc-block="true" data-toc-style="{$style}" data-toc-leader="{$leader}" data-toc-levels="{$maxLevel}" data-toc-shownum="{$showPageNumbers}" data-toc-rightalign="{$rightAlignPages}" contenteditable="false">
+<div class="table-of-contents {$containerStyleClass}" data-toc-block="true" data-toc-style="{$style}" data-toc-leader="{$leader}" data-toc-levels="{$maxLevel}" data-toc-shownum="{$showPageNumbers}" data-toc-rightalign="{$rightAlignPages}" contenteditable="false" tabindex="0">
     <!-- Microsoft Word TOC Field Action Bar -->
-    <div class="toc-toolbar absolute -top-4 right-0 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2.5 py-1 rounded-md shadow-md flex items-center gap-2 text-[11px] opacity-0 group-hover:opacity-100 transition duration-150 z-20 no-print">
+    <div class="toc-toolbar absolute -top-4 right-0 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2.5 py-1 rounded-md shadow-md flex items-center gap-2 text-[11px] opacity-0 group-hover:opacity-100 transition duration-150 z-20 no-print select-none" contenteditable="false">
         <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
             <span>🔄 Perbarui Tabel...</span>
         </button>
@@ -233,10 +233,10 @@ HTML;
     </div>
 
     <!-- Title / Heading of TOC (Centered Academic Typography) -->
-    <h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif">{$headingTitle}</h1>
+    <h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif outline-none" contenteditable="true">{$headingTitle}</h1>
 
     <!-- Entries List -->
-    <div class="toc-entries space-y-1 font-serif">
+    <div class="toc-entries space-y-1 font-serif" contenteditable="true">
 {$entriesHtml}    </div>
 </div>
 HTML;
