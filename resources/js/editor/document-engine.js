@@ -81,6 +81,8 @@ export class DocumentEngine {
         this.currentFontFamily = "'Times New Roman', serif";
         this.currentFontSize = '12pt';
         this.currentLineSpacing = '1.5';
+        this.citationStyle = 'apa';
+        this.sources = this.loadSavedSources();
 
         window.documentEngine = this;
         this.init();
@@ -1999,9 +2001,447 @@ export class DocumentEngine {
         this.insertAtCursor(html);
     }
 
+    /* -------------------------------------------------------------
+     * Citations & Bibliography Engine (Microsoft Word Standard)
+     * Supports: APA 7th, IEEE, Harvard, MLA 9th, Chicago 17th, Vancouver
+     * ------------------------------------------------------------- */
+
+    loadSavedSources() {
+        try {
+            const raw = localStorage.getItem('velscribe_citation_sources');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) {}
+
+        return [
+            {
+                id: 'src-sugiyono-2024',
+                type: 'book',
+                title: 'Metode Penelitian Kuantitatif, Kualitatif, dan R&D',
+                author: 'Sugiyono',
+                year: '2024',
+                publisher: 'Alfabeta',
+                city: 'Bandung',
+                journal: '',
+                volume: '',
+                issue: '',
+                pages: '350',
+                doi: '',
+                url: ''
+            },
+            {
+                id: 'src-santoso-2024',
+                type: 'journal',
+                title: 'Implementasi Sistem Kendali Kualitas Air pada Prototipe Pengolahan Limbah Tekstil Berbasis Sensor TCS34725 dan ESP32',
+                author: 'Santoso, Budi & Pratama, Aditya',
+                year: '2024',
+                publisher: '',
+                city: '',
+                journal: 'Jurnal Rekayasa Sistem dan Teknologi Informasi',
+                volume: '8',
+                issue: '2',
+                pages: '112-120',
+                doi: '10.29207/resti.v8i2.5678',
+                url: 'https://doi.org/10.29207/resti.v8i2.5678'
+            },
+            {
+                id: 'src-pressman-2020',
+                type: 'book',
+                title: "Software Engineering: A Practitioner's Approach (9th Edition)",
+                author: 'Pressman, Roger S. & Maxim, Bruce R.',
+                year: '2020',
+                publisher: 'McGraw-Hill Education',
+                city: 'New York',
+                journal: '',
+                volume: '',
+                issue: '',
+                pages: '980',
+                doi: '',
+                url: ''
+            }
+        ];
+    }
+
+    saveSources() {
+        try {
+            localStorage.setItem('velscribe_citation_sources', JSON.stringify(this.sources || []));
+        } catch (e) {}
+    }
+
+    getSources() {
+        return this.sources || [];
+    }
+
+    getSource(id) {
+        return (this.sources || []).find(s => s.id === id) || null;
+    }
+
+    addSource(source) {
+        if (!source || !source.title) return null;
+        if (!this.sources) this.sources = [];
+
+        const normalized = {
+            id: source.id || ('src-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6)),
+            type: source.type || 'journal',
+            title: source.title || 'Judul Referensi',
+            author: source.author || 'Anonim',
+            year: String(source.year || new Date().getFullYear()),
+            journal: source.journal || '',
+            publisher: source.publisher || '',
+            city: source.city || '',
+            volume: String(source.volume || ''),
+            issue: String(source.issue || ''),
+            pages: String(source.pages || ''),
+            doi: source.doi || '',
+            url: source.url || ''
+        };
+
+        const existingIdx = this.sources.findIndex(s => s.id === normalized.id || (s.title.toLowerCase() === normalized.title.toLowerCase() && s.author.toLowerCase() === normalized.author.toLowerCase()));
+        if (existingIdx >= 0) {
+            this.sources[existingIdx] = { ...this.sources[existingIdx], ...normalized };
+            this.saveSources();
+            return this.sources[existingIdx];
+        }
+
+        this.sources.push(normalized);
+        this.saveSources();
+        return normalized;
+    }
+
+    deleteSource(id) {
+        if (!this.sources) return;
+        this.sources = this.sources.filter(s => s.id !== id);
+        this.saveSources();
+        this.updateBibliography();
+    }
+
+    setCitationStyle(style) {
+        const allowed = ['apa', 'ieee', 'harvard', 'mla', 'chicago', 'vancouver'];
+        if (!allowed.includes(style)) return;
+        this.citationStyle = style;
+        this.updateBibliography(style);
+    }
+
+    formatCitationInText(source, style = 'apa', index = 1) {
+        style = (style || this.citationStyle || 'apa').toLowerCase();
+        const author = source.author || 'Anonim';
+        const year = source.year || new Date().getFullYear();
+
+        let authorLabel = author.trim();
+        if (authorLabel.includes(';')) {
+            const first = authorLabel.split(';')[0].trim();
+            const lastName = first.includes(',') ? first.split(',')[0].trim() : first;
+            authorLabel = lastName + ' et al.';
+        } else if (authorLabel.includes('&')) {
+            const parts = authorLabel.split('&').map(p => p.trim());
+            const firstLastName = parts[0].includes(',') ? parts[0].split(',')[0].trim() : parts[0];
+            const secondLastName = parts[1].includes(',') ? parts[1].split(',')[0].trim() : parts[1];
+            authorLabel = `${firstLastName} & ${secondLastName}`;
+        } else if (authorLabel.includes(',')) {
+            authorLabel = authorLabel.split(',')[0].trim();
+        }
+
+        switch (style) {
+            case 'ieee':
+                return `[${index}]`;
+            case 'vancouver':
+                return `(${index})`;
+            case 'mla':
+                return `(${authorLabel})`;
+            case 'chicago':
+                return `(${authorLabel} ${year})`;
+            case 'harvard':
+                return `(${authorLabel}, ${year})`;
+            case 'apa':
+            default:
+                return `(${authorLabel}, ${year})`;
+        }
+    }
+
+    formatBibliographyEntry(source, style = 'apa', index = 1) {
+        style = (style || this.citationStyle || 'apa').toLowerCase();
+        const author = (source.author || 'Anonim').trim();
+        const year = String(source.year || new Date().getFullYear()).trim();
+        const title = (source.title || 'Judul Tidak Diketahui').trim();
+        const journal = (source.journal || '').trim();
+        const publisher = (source.publisher || '').trim();
+        const city = (source.city || '').trim();
+        const volume = (source.volume || '').trim();
+        const issue = (source.issue || '').trim();
+        const pages = (source.pages || '').trim();
+        const doi = (source.doi || '').trim();
+        const url = (source.url || '').trim();
+        const type = (source.type || 'journal').trim();
+
+        const doiUrl = doi ? (doi.startsWith('http') ? doi : `https://doi.org/${doi}`) : url;
+
+        switch (style) {
+            case 'ieee': {
+                let venuePart = '';
+                if (journal) {
+                    venuePart = ` <em>${journal}</em>`;
+                    if (volume) venuePart += `, vol. ${volume}`;
+                    if (issue) venuePart += `, no. ${issue}`;
+                    if (pages) venuePart += `, pp. ${pages}`;
+                } else if (publisher) {
+                    venuePart = (city ? ` ${city}:` : '') + ` <em>${publisher}</em>`;
+                    if (pages) venuePart += `, pp. ${pages}`;
+                }
+                const doiPart = doiUrl ? `, doi: ${doiUrl}` : '';
+                return `[${index}] ${author}, "${title}," ${venuePart}, ${year}${doiPart}.`;
+            }
+            case 'harvard': {
+                let venue = '';
+                if (journal) {
+                    const volIssue = volume + (issue ? `(${issue})` : '');
+                    venue = ` <em>${journal}</em>, ${volIssue}` + (pages ? `, pp. ${pages}` : '');
+                } else if (publisher) {
+                    venue = ` <em>${publisher}</em>` + (city ? `: ${city}` : '');
+                }
+                const online = doiUrl ? ` Available at: ${doiUrl}.` : '';
+                return `${author} (${year}) '${title}',${venue}.${online}`;
+            }
+            case 'mla': {
+                let venue = '';
+                if (journal) {
+                    const volIssue = (volume ? ` vol. ${volume},` : '') + (issue ? ` no. ${issue},` : '');
+                    venue = ` <em>${journal}</em>,${volIssue} ${year}` + (pages ? `, pp. ${pages}` : '');
+                } else if (publisher) {
+                    venue = ` <em>${publisher}</em>, ${year}`;
+                }
+                const loc = doiUrl ? `, ${doiUrl}` : '';
+                return `${author}. "${title}."${venue}${loc}.`;
+            }
+            case 'chicago': {
+                let venue = '';
+                if (journal) {
+                    const volIssue = volume + (issue ? ` (${issue})` : '');
+                    venue = ` <em>${journal}</em> ${volIssue}` + (pages ? `: ${pages}` : '');
+                } else if (publisher) {
+                    venue = (city ? ` ${city}:` : '') + ` ${publisher}`;
+                }
+                const link = doiUrl ? ` ${doiUrl}.` : '';
+                return `${author}. ${year}. "${title}."${venue}.${link}`;
+            }
+            case 'vancouver': {
+                let venue = '';
+                if (journal) {
+                    venue = ` ${journal}. ${year};${volume}` + (issue ? `(${issue})` : '') + (pages ? `:${pages}` : '');
+                } else if (publisher) {
+                    venue = (city ? ` ${city}:` : '') + ` ${publisher}; ${year}`;
+                }
+                return `${index}. ${author}. ${title}.${venue}.`;
+            }
+            case 'apa':
+            default: {
+                const titleStyled = type === 'book' ? `<em>${title}</em>` : title;
+                let venue = '';
+                if (journal) {
+                    const volStyled = volume ? `<em>${volume}</em>` : '';
+                    const issueStyled = issue ? `(${issue})` : '';
+                    const pagesStyled = pages ? `, ${pages}` : '';
+                    venue = ` <em>${journal}</em>, ${volStyled}${issueStyled}${pagesStyled}.`;
+                } else if (publisher) {
+                    const cityPart = city ? `${city}: ` : '';
+                    venue = ` ${cityPart}${publisher}.`;
+                }
+                const doiStyled = doiUrl ? ` ${doiUrl}` : '';
+                return `${author} (${year}). ${titleStyled}.${venue}${doiStyled}`;
+            }
+        }
+    }
+
+    insertInTextCitation(sourceOrData) {
+        let source = sourceOrData;
+        if (typeof sourceOrData === 'string') {
+            source = this.getSource(sourceOrData);
+        }
+        if (!source) return;
+
+        source = this.addSource(source);
+        const style = this.citationStyle || 'apa';
+
+        // Find existing citation marks in document to compute index if numbered style
+        const activeContainer = this.pagesWrapper || this.canvasEl || document;
+        const existingMarks = Array.from(activeContainer.querySelectorAll('.citation-mark'));
+        const markIndexMap = new Map();
+        existingMarks.forEach(m => {
+            const sid = m.getAttribute('data-source-id');
+            if (sid && !markIndexMap.has(sid)) {
+                markIndexMap.set(sid, markIndexMap.size + 1);
+            }
+        });
+        let index = 1;
+        if (markIndexMap.has(source.id)) {
+            index = markIndexMap.get(source.id);
+        } else {
+            index = markIndexMap.size + 1;
+        }
+
+        const citationText = this.formatCitationInText(source, style, index);
+        const safeTitle = this.escapeHtml(source.title || '');
+        const safeAuthor = this.escapeHtml(source.author || '');
+
+        const citationHtml = `<span class="citation-mark inline-block font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 px-1 py-0.5 rounded cursor-pointer select-none hover:underline" data-source-id="${this.escapeHtml(source.id)}" data-author="${safeAuthor}" data-year="${this.escapeHtml(source.year)}" contenteditable="false" title="Sitasi: ${safeTitle} (${source.year}) - Klik untuk opsi sitasi">${this.escapeHtml(citationText)}</span>&nbsp;`;
+
+        this.insertAtCursor(citationHtml);
+        this.updateBibliography();
+        this.handleInput();
+    }
+
     insertCitation(author, year, title, source) {
-        const biblioEntry = `<p class="citation-entry my-2 pl-8 -indent-8 text-sm text-gray-800 dark:text-gray-200">${this.escapeHtml(author)} (${this.escapeHtml(year)}). <em>${this.escapeHtml(title)}</em>. ${this.escapeHtml(source)}.</p>`;
+        // Backwards compatible method
+        const src = {
+            id: 'src-' + Date.now(),
+            type: 'journal',
+            title: title || 'Judul Referensi',
+            author: author || 'Penulis',
+            year: year || '2026',
+            journal: source || 'Jurnal / Penerbit',
+            publisher: source || ''
+        };
+        this.addSource(src);
+
+        const biblioEntry = `<p class="citation-entry bibliography-entry my-2 pl-8 -indent-8 text-sm text-gray-800 dark:text-gray-200" data-source-id="${src.id}">${this.escapeHtml(author)} (${this.escapeHtml(year)}). <em>${this.escapeHtml(title)}</em>. ${this.escapeHtml(source)}.</p>`;
         this.insertAtCursor(biblioEntry);
+        this.handleInput();
+    }
+
+    generateBibliographyHtml(style = null, heading = 'DAFTAR PUSTAKA') {
+        style = (style || this.citationStyle || 'apa').toLowerCase();
+        heading = (heading || 'DAFTAR PUSTAKA').trim().toUpperCase();
+
+        const sources = this.getSources();
+        let sorted = [...sources];
+
+        if (['ieee', 'vancouver'].includes(style)) {
+            const activeContainer = this.pagesWrapper || this.canvasEl || document;
+            const marks = Array.from(activeContainer.querySelectorAll('.citation-mark'));
+            const orderedIds = [];
+            marks.forEach(m => {
+                const sid = m.getAttribute('data-source-id');
+                if (sid && !orderedIds.includes(sid)) orderedIds.push(sid);
+            });
+
+            sorted.sort((a, b) => {
+                const idxA = orderedIds.indexOf(a.id);
+                const idxB = orderedIds.indexOf(b.id);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return 0;
+            });
+        } else {
+            sorted.sort((a, b) => (a.author || '').localeCompare(b.author || ''));
+        }
+
+        let entriesHtml = '';
+        sorted.forEach((src, idx) => {
+            const num = idx + 1;
+            const entryText = this.formatBibliographyEntry(src, style, num);
+            const sid = this.escapeHtml(src.id);
+
+            if (['ieee', 'vancouver'].includes(style)) {
+                entriesHtml += `        <div class="citation-entry bibliography-entry flex items-start gap-2 text-sm leading-relaxed my-2 text-gray-900 dark:text-gray-100" data-source-id="${sid}">
+            <span class="font-bold text-indigo-600 dark:text-indigo-400 shrink-0">[${num}]</span>
+            <div class="flex-1">${entryText}</div>
+        </div>\n`;
+            } else {
+                entriesHtml += `        <p class="citation-entry bibliography-entry pl-8 -indent-8 text-sm leading-relaxed my-2.5 text-gray-900 dark:text-gray-100" data-source-id="${sid}">${entryText}</p>\n`;
+            }
+        });
+
+        if (!entriesHtml) {
+            entriesHtml = '        <p class="text-xs text-gray-400 italic text-center py-4">Belum ada sumber referensi. Buka Kelola Sumber untuk menambahkan sumber sitasi.</p>\n';
+        }
+
+        return `<div class="bibliography-container my-8 pt-6 border-t border-gray-200 dark:border-gray-800" data-bibliography-block="true" data-citation-style="${style}">
+    <h1 class="heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-white uppercase">${this.escapeHtml(heading)}</h1>
+    <div class="bibliography-entries space-y-2">
+${entriesHtml}    </div>
+</div>`;
+    }
+
+    insertBibliography(style = null, heading = 'DAFTAR PUSTAKA') {
+        style = style || this.citationStyle || 'apa';
+        this.citationStyle = style;
+
+        const activeContainer = this.pagesWrapper || this.canvasEl || document;
+        const existingBlock = activeContainer.querySelector('.bibliography-container, [data-bibliography-block="true"]');
+
+        const html = this.generateBibliographyHtml(style, heading);
+
+        if (existingBlock) {
+            const temp = document.createElement('div');
+            temp.innerHTML = html.trim();
+            const newBlock = temp.firstElementChild;
+            existingBlock.replaceWith(newBlock);
+            this.handleInput();
+            return newBlock;
+        }
+
+        const active = this.getActiveEditor();
+        if (active) {
+            this.insertAtCursor(html + '<p><br></p>');
+        } else {
+            const pages = activeContainer.querySelectorAll('.document-page-sheet');
+            const lastPage = pages.length > 0 ? pages[pages.length - 1] : this.canvasEl;
+            const body = lastPage ? (lastPage.querySelector('.page-sheet-body') || lastPage) : activeContainer;
+            body.insertAdjacentHTML('beforeend', html);
+        }
+
+        this.handleInput();
+        return activeContainer.querySelector('.bibliography-container');
+    }
+
+    updateBibliography(style = null) {
+        if (style) {
+            this.citationStyle = style;
+        }
+        const activeStyle = this.citationStyle || 'apa';
+        const activeContainer = this.pagesWrapper || this.canvasEl || document;
+
+        const marks = Array.from(activeContainer.querySelectorAll('.citation-mark'));
+        const sourceAppearanceOrder = [];
+
+        marks.forEach(m => {
+            const sid = m.getAttribute('data-source-id');
+            if (sid && !sourceAppearanceOrder.includes(sid)) {
+                sourceAppearanceOrder.push(sid);
+            }
+        });
+
+        marks.forEach(m => {
+            const sid = m.getAttribute('data-source-id');
+            let source = this.getSource(sid);
+            if (!source) {
+                source = {
+                    id: sid,
+                    author: m.getAttribute('data-author') || 'Anonim',
+                    year: m.getAttribute('data-year') || '2024',
+                    title: m.getAttribute('title') || 'Referensi'
+                };
+            }
+            const orderIndex = sourceAppearanceOrder.indexOf(sid) + 1;
+            const newLabel = this.formatCitationInText(source, activeStyle, orderIndex || 1);
+            m.textContent = newLabel;
+        });
+
+        const existingBlock = activeContainer.querySelector('.bibliography-container, [data-bibliography-block="true"]');
+        if (existingBlock) {
+            const headingEl = existingBlock.querySelector('.heading-chapter, h1, h2');
+            const heading = headingEl ? headingEl.textContent.trim() : 'DAFTAR PUSTAKA';
+            const updatedHtml = this.generateBibliographyHtml(activeStyle, heading);
+
+            const temp = document.createElement('div');
+            temp.innerHTML = updatedHtml.trim();
+            const newBlock = temp.firstElementChild;
+            existingBlock.replaceWith(newBlock);
+        }
+
+        this.handleInput();
     }
 
     /* -------------------------------------------------------------

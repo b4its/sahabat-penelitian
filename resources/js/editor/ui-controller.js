@@ -726,22 +726,441 @@ export class UiController {
 
     bindCitationModal() {
         const modal = document.getElementById('modal-citation');
-        document.querySelectorAll('[data-action="insert-citation-modal"]').forEach(b => {
-            b.addEventListener('click', () => this.openModal(modal));
+        if (!modal) return;
+
+        const tabButtons = modal.querySelectorAll('.citation-tab-btn');
+        const tabContents = modal.querySelectorAll('.citation-tab-content');
+        const countBadge = document.getElementById('tab-source-count-badge');
+        const footerStats = document.getElementById('citation-modal-footer-stats');
+        const ribbonStyleSelect = document.getElementById('ribbon-citation-style-select');
+        const modalStyleSelect = document.getElementById('modal-bibliography-style');
+        const modalHeadingInput = document.getElementById('modal-bibliography-heading');
+        const previewBox = document.getElementById('bibliography-preview-box');
+        const previewBadge = document.getElementById('preview-style-badge');
+
+        const updateSourceCountUI = () => {
+            const count = (this.engine.getSources && this.engine.getSources().length) || 0;
+            if (countBadge) countBadge.textContent = String(count);
+            if (footerStats) footerStats.textContent = `${count} sumber aktif di dokumen saat ini.`;
+        };
+
+        const switchTab = (tabKey) => {
+            tabButtons.forEach(btn => {
+                const target = btn.getAttribute('data-citation-nav');
+                if (target === tabKey) {
+                    btn.className = 'citation-tab-btn py-2.5 px-3 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1.5 cursor-pointer';
+                } else {
+                    btn.className = 'citation-tab-btn py-2.5 px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1.5 cursor-pointer';
+                }
+            });
+
+            tabContents.forEach(content => {
+                if (content.id === `citation-tab-${tabKey}`) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+
+            updateSourceCountUI();
+
+            if (tabKey === 'manage') {
+                renderManageSources();
+            } else if (tabKey === 'bibliography') {
+                renderBibliographyPreview();
+            }
+        };
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const nav = btn.getAttribute('data-citation-nav');
+                if (nav) switchTab(nav);
+            });
         });
 
-        const btnConfirm = document.getElementById('btn-confirm-citation');
-        if (btnConfirm) {
-            btnConfirm.addEventListener('click', () => {
-                const author = document.getElementById('citation-author')?.value.trim() || 'Penulis';
-                const year = document.getElementById('citation-year')?.value.trim() || '2026';
-                const title = document.getElementById('citation-title')?.value.trim() || 'Judul Referensi';
-                const source = document.getElementById('citation-source')?.value.trim() || 'Jurnal / Penerbit';
-                this.engine.insertCitation(author, year, title, source);
-                this.closeModal(modal);
-                this.showToast('Sitasi & Entri Daftar Pustaka berhasil disisipkan!');
+        // Ribbon and action triggers
+        document.querySelectorAll('[data-action="insert-citation-modal"]').forEach(b => {
+            b.addEventListener('click', () => {
+                this.openModal(modal);
+                switchTab('add');
+            });
+        });
+
+        document.querySelectorAll('[data-action="open-source-manager"]').forEach(b => {
+            b.addEventListener('click', () => {
+                this.openModal(modal);
+                switchTab('manage');
+            });
+        });
+
+        document.querySelectorAll('[data-action="open-academic-search"]').forEach(b => {
+            b.addEventListener('click', () => {
+                this.openModal(modal);
+                switchTab('search');
+                const searchInput = document.getElementById('search-source-query');
+                if (searchInput) setTimeout(() => searchInput.focus(), 100);
+            });
+        });
+
+        document.querySelectorAll('[data-action="insert-bibliography-quick"]').forEach(b => {
+            b.addEventListener('click', () => {
+                const style = (ribbonStyleSelect ? ribbonStyleSelect.value : null) || this.engine.citationStyle || 'apa';
+                this.engine.insertBibliography(style);
+                this.showToast('Daftar Pustaka berhasil disisipkan sesuai standar Word!');
+            });
+        });
+
+        const btnUpdateBiblio = document.getElementById('btn-update-bibliography');
+        if (btnUpdateBiblio) {
+            btnUpdateBiblio.addEventListener('click', () => {
+                const style = (ribbonStyleSelect ? ribbonStyleSelect.value : null) || this.engine.citationStyle || 'apa';
+                this.engine.updateBibliography(style);
+                this.showToast('Daftar Pustaka & nomor sitasi dalam naskah berhasil diperbarui!');
             });
         }
+
+        if (ribbonStyleSelect) {
+            ribbonStyleSelect.addEventListener('change', (e) => {
+                const style = e.target.value;
+                this.engine.setCitationStyle(style);
+                if (modalStyleSelect) modalStyleSelect.value = style;
+                this.showToast(`Gaya sitasi diubah ke standar: ${style.toUpperCase()}`);
+            });
+        }
+
+        /* ------------------ Tab 1: Mesin Pencari Online ------------------ */
+        const searchInput = document.getElementById('search-source-query');
+        const searchTypeSelect = document.getElementById('search-source-type');
+        const btnExecuteSearch = document.getElementById('btn-execute-source-search');
+        const searchStatus = document.getElementById('search-source-status');
+        const searchResultsList = document.getElementById('search-results-list');
+
+        const executeSearch = async () => {
+            const query = searchInput ? searchInput.value.trim() : '';
+            if (!query) {
+                this.showToast('Masukkan kata kunci pencarian atau DOI terlebih dahulu.', 'warning');
+                if (searchInput) searchInput.focus();
+                return;
+            }
+
+            const type = searchTypeSelect ? searchTypeSelect.value : 'all';
+            if (searchStatus) searchStatus.classList.remove('hidden');
+            if (searchResultsList) searchResultsList.innerHTML = '';
+
+            try {
+                const res = await fetch('/api/documents/search-sources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({ query, type })
+                });
+
+                const data = await res.json();
+                if (searchStatus) searchStatus.classList.add('hidden');
+
+                if (!data.success || !data.results || data.results.length === 0) {
+                    if (searchResultsList) {
+                        searchResultsList.innerHTML = `<div class="p-6 text-center text-gray-500 dark:text-gray-400">
+                            <p class="font-semibold text-xs">Tidak ditemukan referensi untuk "${this.engine.escapeHtml(query)}".</p>
+                            <p class="text-[11px] mt-1">Coba gunakan kata kunci umum, topik teknologi, nama pengarang, atau nomor DOI.</p>
+                        </div>`;
+                    }
+                    return;
+                }
+
+                renderSearchResults(data.results);
+            } catch (err) {
+                if (searchStatus) searchStatus.classList.add('hidden');
+                if (searchResultsList) {
+                    searchResultsList.innerHTML = `<div class="p-4 text-center text-red-600 dark:text-red-400 text-xs">
+                        Gagal menghubungi mesin pencari pustaka: ${this.engine.escapeHtml(err.message)}
+                    </div>`;
+                }
+            }
+        };
+
+        const renderSearchResults = (results) => {
+            if (!searchResultsList) return;
+            searchResultsList.innerHTML = '';
+
+            results.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xs hover:border-indigo-300 dark:hover:border-indigo-700 transition flex flex-col sm:flex-row sm:items-start justify-between gap-3';
+
+                const title = this.engine.escapeHtml(item.title || 'Tanpa Judul');
+                const author = this.engine.escapeHtml(item.author || 'Anonim');
+                const year = this.engine.escapeHtml(String(item.year || ''));
+                const venue = this.engine.escapeHtml(item.journal || item.publisher || '');
+                const typeLabel = (item.type || 'journal').toUpperCase();
+                const doi = item.doi ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-mono">DOI: ${this.engine.escapeHtml(item.doi)}</span>` : '';
+
+                card.innerHTML = `
+                    <div class="flex-1 space-y-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300">${typeLabel}</span>
+                            ${doi}
+                            <span class="text-gray-400 text-[11px]">${year}</span>
+                        </div>
+                        <h4 class="font-bold text-gray-900 dark:text-gray-100 text-xs">${title}</h4>
+                        <p class="text-[11px] text-gray-600 dark:text-gray-300">Penulis: <span class="font-medium">${author}</span></p>
+                        ${venue ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 font-serif italic">${venue}</p>` : ''}
+                    </div>
+                    <div class="flex sm:flex-col gap-1.5 shrink-0 self-end sm:self-start">
+                        <button type="button" class="btn-cite-item px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] shadow-2xs transition cursor-pointer flex items-center justify-center gap-1">
+                            <span>✍️ Sisipkan Sitasi</span>
+                        </button>
+                        <button type="button" class="btn-save-item px-2.5 py-1.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium text-[11px] transition cursor-pointer flex items-center justify-center gap-1">
+                            <span>➕ Simpan Sumber</span>
+                        </button>
+                    </div>
+                `;
+
+                const btnCite = card.querySelector('.btn-cite-item');
+                const btnSave = card.querySelector('.btn-save-item');
+
+                btnCite.addEventListener('click', () => {
+                    this.engine.insertInTextCitation(item);
+                    this.closeModal(modal);
+                    this.showToast(`Sitasi "${item.title.substring(0, 30)}..." berhasil disisipkan di naskah!`);
+                    updateSourceCountUI();
+                });
+
+                btnSave.addEventListener('click', () => {
+                    this.engine.addSource(item);
+                    btnSave.innerHTML = '<span>✓ Tersimpan</span>';
+                    btnSave.classList.add('bg-emerald-100', 'text-emerald-800', 'dark:bg-emerald-950', 'dark:text-emerald-300');
+                    updateSourceCountUI();
+                    this.showToast('Sumber referensi berhasil disimpan ke Pengelola Sumber!');
+                });
+
+                searchResultsList.appendChild(card);
+            });
+        };
+
+        if (btnExecuteSearch) {
+            btnExecuteSearch.addEventListener('click', executeSearch);
+        }
+        if (searchInput) {
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    executeSearch();
+                }
+            });
+        }
+
+        modal.querySelectorAll('.btn-search-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                if (searchInput) {
+                    searchInput.value = chip.textContent.trim();
+                    executeSearch();
+                }
+            });
+        });
+
+        /* ------------------ Tab 2: Tambah Sumber Manual ------------------ */
+        const getManualSourceData = () => {
+            return {
+                id: 'src-' + Date.now(),
+                type: document.getElementById('citation-type')?.value || 'journal',
+                author: document.getElementById('citation-author')?.value.trim() || 'Penulis',
+                year: document.getElementById('citation-year')?.value.trim() || String(new Date().getFullYear()),
+                title: document.getElementById('citation-title')?.value.trim() || 'Judul Referensi',
+                journal: document.getElementById('citation-source')?.value.trim() || 'Jurnal / Penerbit',
+                publisher: document.getElementById('citation-source')?.value.trim() || '',
+                volume: document.getElementById('citation-volume')?.value.trim() || '',
+                issue: document.getElementById('citation-issue')?.value.trim() || '',
+                pages: document.getElementById('citation-pages')?.value.trim() || '',
+                doi: document.getElementById('citation-doi')?.value.trim() || '',
+                url: document.getElementById('citation-doi')?.value.trim() || ''
+            };
+        };
+
+        const clearManualForm = () => {
+            ['citation-author', 'citation-year', 'citation-title', 'citation-source', 'citation-volume', 'citation-issue', 'citation-pages', 'citation-doi'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+        };
+
+        const btnConfirmCitation = document.getElementById('btn-confirm-citation');
+        if (btnConfirmCitation) {
+            btnConfirmCitation.addEventListener('click', () => {
+                const data = getManualSourceData();
+                this.engine.insertCitation(data.author, data.year, data.title, data.journal);
+                this.closeModal(modal);
+                this.showToast('Sitasi & Entri Daftar Pustaka berhasil disisipkan!');
+                updateSourceCountUI();
+            });
+        }
+
+        const btnSaveSourceOnly = document.getElementById('btn-save-source-only');
+        if (btnSaveSourceOnly) {
+            btnSaveSourceOnly.addEventListener('click', () => {
+                const data = getManualSourceData();
+                this.engine.addSource(data);
+                clearManualForm();
+                updateSourceCountUI();
+                this.showToast('Sumber berhasil disimpan ke Pengelola Sumber Word!');
+                switchTab('manage');
+            });
+        }
+
+        /* ------------------ Tab 3: Kelola Sumber (Manage Sources) ------------------ */
+        const sourceManagerContainer = document.getElementById('source-manager-items');
+        const manageSearchFilter = document.getElementById('manage-source-filter');
+        const btnAddSampleSources = document.getElementById('btn-add-sample-sources');
+        const btnClearAllSources = document.getElementById('btn-clear-all-sources');
+
+        const renderManageSources = () => {
+            if (!sourceManagerContainer) return;
+            const filterText = manageSearchFilter ? manageSearchFilter.value.trim().toLowerCase() : '';
+            const allSources = this.engine.getSources ? this.engine.getSources() : [];
+            const sources = allSources.filter(s => {
+                if (!filterText) return true;
+                const hay = `${s.title || ''} ${s.author || ''} ${s.journal || ''} ${s.year || ''}`.toLowerCase();
+                return hay.includes(filterText);
+            });
+
+            updateSourceCountUI();
+
+            if (sources.length === 0) {
+                sourceManagerContainer.innerHTML = `<div class="p-6 text-center text-gray-500 dark:text-gray-400">
+                    <p class="font-semibold text-xs">Belum ada sumber referensi ${filterText ? 'yang cocok dengan filter' : 'terdaftar'}.</p>
+                    <p class="text-[11px] mt-1">Gunakan tab Mesin Pencari atau klik "+ Sampel Sumber Ilmiah" untuk mencoba.</p>
+                </div>`;
+                return;
+            }
+
+            sourceManagerContainer.innerHTML = '';
+            sources.forEach((src, idx) => {
+                const card = document.createElement('div');
+                card.className = 'p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between gap-3 text-xs';
+
+                const author = this.engine.escapeHtml(src.author || 'Anonim');
+                const title = this.engine.escapeHtml(src.title || 'Tanpa Judul');
+                const year = this.engine.escapeHtml(String(src.year || ''));
+                const venue = this.engine.escapeHtml(src.journal || src.publisher || '');
+                const type = (src.type || 'journal').toUpperCase();
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">${type}</span>
+                            <span class="font-bold text-gray-900 dark:text-gray-100 truncate">${title}</span>
+                        </div>
+                        <p class="text-[11px] text-gray-600 dark:text-gray-300 truncate mt-0.5">${author} (${year}) ${venue ? `— ${venue}` : ''}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" class="btn-manage-cite px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] transition cursor-pointer" title="Sisipkan tanda sitasi ke naskah">
+                            Sisipkan
+                        </button>
+                        <button type="button" class="btn-manage-delete p-1 rounded hover:bg-red-100 dark:hover:bg-red-950/60 text-red-600 dark:text-red-400 text-xs transition cursor-pointer" title="Hapus sumber ini">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+
+                card.querySelector('.btn-manage-cite').addEventListener('click', () => {
+                    this.engine.insertInTextCitation(src);
+                    this.closeModal(modal);
+                    this.showToast(`Sitasi "${title.substring(0, 30)}..." berhasil disisipkan di naskah!`);
+                });
+
+                card.querySelector('.btn-manage-delete').addEventListener('click', () => {
+                    this.engine.deleteSource(src.id);
+                    renderManageSources();
+                    this.showToast('Sumber referensi dihapus.');
+                });
+
+                sourceManagerContainer.appendChild(card);
+            });
+        };
+
+        if (manageSearchFilter) {
+            manageSearchFilter.addEventListener('input', renderManageSources);
+        }
+
+        if (btnAddSampleSources) {
+            btnAddSampleSources.addEventListener('click', () => {
+                this.engine.sources = this.engine.loadSavedSources();
+                this.engine.saveSources();
+                renderManageSources();
+                this.showToast('Sampel sumber referensi ilmiah berhasil dimuat!');
+            });
+        }
+
+        if (btnClearAllSources) {
+            btnClearAllSources.addEventListener('click', () => {
+                if (confirm('Apakah Anda yakin ingin mengosongkan semua daftar sumber pustaka?')) {
+                    this.engine.sources = [];
+                    this.engine.saveSources();
+                    this.engine.updateBibliography();
+                    renderManageSources();
+                    this.showToast('Semua sumber pustaka berhasil dikosongkan.');
+                }
+            });
+        }
+
+        /* ------------------ Tab 4: Format & Sisipkan Daftar Pustaka ------------------ */
+        const renderBibliographyPreview = () => {
+            if (!previewBox) return;
+            const style = (modalStyleSelect ? modalStyleSelect.value : null) || this.engine.citationStyle || 'apa';
+            const heading = (modalHeadingInput ? modalHeadingInput.value : 'DAFTAR PUSTAKA') || 'DAFTAR PUSTAKA';
+
+            const styleLabels = {
+                apa: 'Standar APA 7th (Hanging Indent 0.5 in)',
+                ieee: 'Standar IEEE (Numbered [1])',
+                harvard: 'Standar Harvard (Author-Date)',
+                mla: 'Standar MLA 9th (Hanging Indent)',
+                chicago: 'Standar Chicago 17th',
+                vancouver: 'Standar Vancouver (Numbered (1))'
+            };
+            if (previewBadge) {
+                previewBadge.textContent = styleLabels[style] || style.toUpperCase();
+            }
+
+            const html = this.engine.generateBibliographyHtml(style, heading);
+            previewBox.innerHTML = html;
+        };
+
+        if (modalStyleSelect) {
+            modalStyleSelect.addEventListener('change', (e) => {
+                const style = e.target.value;
+                this.engine.citationStyle = style;
+                if (ribbonStyleSelect) ribbonStyleSelect.value = style;
+                renderBibliographyPreview();
+            });
+        }
+
+        if (modalHeadingInput) {
+            modalHeadingInput.addEventListener('input', renderBibliographyPreview);
+        }
+
+        const btnInsertBiblioBlock = document.getElementById('btn-insert-bibliography-block');
+        if (btnInsertBiblioBlock) {
+            btnInsertBiblioBlock.addEventListener('click', () => {
+                const style = (modalStyleSelect ? modalStyleSelect.value : null) || this.engine.citationStyle || 'apa';
+                const heading = (modalHeadingInput ? modalHeadingInput.value : 'DAFTAR PUSTAKA') || 'DAFTAR PUSTAKA';
+                this.engine.insertBibliography(style, heading);
+                this.closeModal(modal);
+                this.showToast('Daftar Pustaka lengkap berhasil disisipkan ke dokumen!');
+            });
+        }
+
+        const btnSyncBiblioBlock = document.getElementById('btn-sync-bibliography-block');
+        if (btnSyncBiblioBlock) {
+            btnSyncBiblioBlock.addEventListener('click', () => {
+                const style = (modalStyleSelect ? modalStyleSelect.value : null) || this.engine.citationStyle || 'apa';
+                this.engine.updateBibliography(style);
+                renderBibliographyPreview();
+                this.showToast('Daftar Pustaka di lembar naskah berhasil disinkronkan!');
+            });
+        }
+
+        updateSourceCountUI();
     }
 
     bindLatexEquationModal() {

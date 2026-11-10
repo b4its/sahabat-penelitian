@@ -1108,3 +1108,148 @@ test('black-box: editor page provides visual dark and light theme switch control
     $response->assertSee('id="floating-theme-toggle"', false);
     $response->assertSee('id="floating-theme-icon"', false);
 });
+
+test('black-box: user can search academic sources via api with query and type', function () {
+    $response = $this->postJson(route('documents.search-sources'), [
+        'query' => 'TCS34725 ESP32',
+        'type' => 'all',
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'query' => 'TCS34725 ESP32',
+        ])
+        ->assertJsonStructure([
+            'success',
+            'query',
+            'count',
+            'results' => [
+                '*' => [
+                    'id',
+                    'title',
+                    'author',
+                    'year',
+                    'preview_apa',
+                    'preview_ieee',
+                    'citation_intext_apa',
+                    'citation_intext_ieee',
+                ],
+            ],
+        ]);
+
+    expect($response->json('count'))->toBeGreaterThan(0);
+});
+
+test('black-box: search sources endpoint validates query and rejects invalid inputs', function () {
+    $this->postJson(route('documents.search-sources'), [
+        'query' => '',
+    ])->assertStatus(422);
+
+    $this->postJson(route('documents.search-sources'), [
+        'query' => 'Test',
+        'type' => 'invalid_type_xyz',
+    ])->assertStatus(422);
+});
+
+test('black-box: user can format bibliography via api in multiple citation styles', function () {
+    $sources = [
+        [
+            'id' => 'src-1',
+            'type' => 'journal',
+            'author' => 'Santoso, Budi & Pratama, Aditya',
+            'year' => '2024',
+            'title' => 'Implementasi Sistem Sensor TCS34725',
+            'journal' => 'Jurnal Rekayasa Sistem',
+            'volume' => '8',
+            'issue' => '2',
+            'pages' => '112-120',
+            'doi' => '10.29207/resti.v8i2.5678',
+        ],
+        [
+            'id' => 'src-2',
+            'type' => 'book',
+            'author' => 'Sugiyono',
+            'year' => '2024',
+            'title' => 'Metode Penelitian Kuantitatif',
+            'publisher' => 'Alfabeta',
+        ],
+    ];
+
+    // 1. APA 7th Edition
+    $resApa = $this->postJson(route('documents.format-bibliography'), [
+        'sources' => $sources,
+        'style' => 'apa',
+        'heading' => 'DAFTAR PUSTAKA',
+    ]);
+
+    $resApa->assertStatus(200)
+        ->assertJson(['success' => true, 'style' => 'apa']);
+    $htmlApa = $resApa->json('html');
+    expect($htmlApa)->toContain('DAFTAR PUSTAKA')
+        ->and($htmlApa)->toContain('pl-8 -indent-8')
+        ->and($htmlApa)->toContain('citation-entry')
+        ->and($htmlApa)->toContain('Santoso, Budi & Pratama, Aditya');
+
+    // 2. IEEE Numbered
+    $resIeee = $this->postJson(route('documents.format-bibliography'), [
+        'sources' => $sources,
+        'style' => 'ieee',
+        'heading' => 'REFERENSI',
+    ]);
+
+    $resIeee->assertStatus(200)
+        ->assertJson(['success' => true, 'style' => 'ieee']);
+    $htmlIeee = $resIeee->json('html');
+    expect($htmlIeee)->toContain('REFERENSI')
+        ->and($htmlIeee)->toContain('[1]')
+        ->and($htmlIeee)->toContain('data-citation-style="ieee"');
+});
+
+test('black-box: editor page renders Microsoft Word style citations and bibliography suite across ribbon and modal', function () {
+    $response = $this->get(route('editor.index'));
+    $response->assertStatus(200);
+
+    // 1. Ribbon References Controls
+    $response->assertSee('data-action="insert-citation-modal"', false);
+    $response->assertSee('data-action="open-source-manager"', false);
+    $response->assertSee('id="ribbon-citation-style-select"', false);
+    $response->assertSee('data-action="insert-bibliography-quick"', false);
+    $response->assertSee('id="btn-update-bibliography"', false);
+    $response->assertSee('data-action="open-academic-search"', false);
+
+    // 2. Studio Modal Controls
+    $response->assertSee('id="modal-citation"', false);
+    $response->assertSee('data-citation-nav="search"', false);
+    $response->assertSee('data-citation-nav="add"', false);
+    $response->assertSee('data-citation-nav="manage"', false);
+    $response->assertSee('data-citation-nav="bibliography"', false);
+
+    // Tab 1 Online Search
+    $response->assertSee('id="search-source-query"', false);
+    $response->assertSee('id="search-source-type"', false);
+    $response->assertSee('id="btn-execute-source-search"', false);
+    $response->assertSee('id="search-results-list"', false);
+
+    // Tab 2 Manual Add
+    $response->assertSee('id="citation-type"', false);
+    $response->assertSee('id="citation-author"', false);
+    $response->assertSee('id="citation-year"', false);
+    $response->assertSee('id="citation-title"', false);
+    $response->assertSee('id="citation-source"', false);
+    $response->assertSee('id="btn-confirm-citation"', false);
+    $response->assertSee('id="btn-save-source-only"', false);
+
+    // Tab 3 Manage Sources
+    $response->assertSee('id="source-manager-items"', false);
+    $response->assertSee('id="manage-source-filter"', false);
+    $response->assertSee('id="btn-add-sample-sources"', false);
+    $response->assertSee('id="btn-clear-all-sources"', false);
+
+    // Tab 4 Bibliography
+    $response->assertSee('id="modal-bibliography-style"', false);
+    $response->assertSee('id="modal-bibliography-heading"', false);
+    $response->assertSee('id="bibliography-preview-box"', false);
+    $response->assertSee('id="btn-insert-bibliography-block"', false);
+    $response->assertSee('id="btn-sync-bibliography-block"', false);
+});

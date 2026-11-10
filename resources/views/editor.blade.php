@@ -854,8 +854,13 @@
             </button>
 
             <!-- Insert Table of Contents -->
-            <button id="btn-insert-toc" class="px-3 py-1.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-200 transition">
+            <button id="btn-insert-toc" class="px-3 py-1.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-200 transition cursor-pointer">
                 <span>📑 Daftar Isi Otomatis</span>
+            </button>
+
+            <!-- Insert Bibliography (Daftar Pustaka) -->
+            <button data-action="insert-bibliography-quick" class="px-3 py-1.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-200 transition cursor-pointer" title="Sisipkan Daftar Pustaka (Bibliography) Otomatis seperti Word">
+                <span>📚 Daftar Pustaka</span>
             </button>
 
             <button data-action="insert-table-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
@@ -938,27 +943,70 @@
             </div>
         </div>
 
-        <!-- Ribbon Panel 4: TINJAU & REFERENSI (REVIEW) -->
-        <div data-ribbon-panel="review" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs">
-            <button id="btn-puebi-check" onclick="window.wordcraftAi.executeAction('grammar')" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded font-semibold flex items-center gap-1.5 hover:bg-emerald-100 transition">
-                <span>🛠️ Koreksi Ejaan PUEBI & Tata Bahasa</span>
-            </button>
+        <!-- Ribbon Panel 4: TINJAU & REFERENSI (REVIEW & REFERENCES) -->
+        <div data-ribbon-panel="review" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs bg-indigo-50/20 dark:bg-indigo-950/10">
+            <!-- PUEBI & Tata Bahasa -->
+            <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <button id="btn-puebi-check" onclick="window.wordcraftAi.executeAction('grammar')" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded font-semibold flex items-center gap-1.5 hover:bg-emerald-100 transition cursor-pointer">
+                    <span>🛠️ Koreksi PUEBI</span>
+                </button>
+                <button id="btn-word-stats" data-action="open-stats-modal" class="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition cursor-pointer" title="Hitung Kata & Statistik">
+                    <span>📊 Statistik</span>
+                </button>
+                <button id="btn-read-aloud" class="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1 hover:bg-gray-100 transition cursor-pointer" title="Bacakan Naskah Dokumen dengan Suara">
+                    <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                    <span>Baca Suara</span>
+                </button>
+            </div>
 
-            <button id="btn-word-stats" data-action="open-stats-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <span>📊 Hitung Kata & Statistik</span>
-            </button>
+            <!-- Citations & Bibliography Group (Microsoft Word References Standard) -->
+            <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Sitasi & Pustaka:</span>
 
-            <button id="btn-read-aloud" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Bacakan Naskah Dokumen dengan Suara">
-                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-                <span>Baca Suara (Read Aloud)</span>
-            </button>
+                <!-- 1. Insert In-text Citation -->
+                <button data-action="insert-citation-modal" class="px-2.5 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-100 transition cursor-pointer shadow-2xs border border-indigo-200 dark:border-indigo-800" title="Sisipkan Kutipan Sumber di Posisi Kursor (Insert Citation)">
+                    <span>➕ Sisipkan Sitasi</span>
+                </button>
 
-            <button data-action="insert-citation-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <span>📚 Generator Sitasi / Daftar Pustaka</span>
-            </button>
+                <!-- 2. Manage Sources -->
+                <button data-action="open-source-manager" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition cursor-pointer border border-gray-200 dark:border-gray-700 shadow-2xs" title="Buka Pengelola Sumber Pustaka (Manage Sources)">
+                    <span>📋 Kelola Sumber</span>
+                </button>
 
-            <button data-layout-mode="zen" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <span>🧘 Mode Fokus (Zen)</span>
+                <!-- 3. Citation Style Selector -->
+                <div class="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 shadow-2xs">
+                    <span class="text-gray-400 text-[11px] font-medium">Gaya:</span>
+                    <select id="ribbon-citation-style-select" class="text-xs bg-transparent text-gray-800 dark:text-gray-200 font-semibold outline-none cursor-pointer">
+                        <option value="apa">APA (Edisi 7)</option>
+                        <option value="ieee">IEEE [1]</option>
+                        <option value="harvard">Harvard</option>
+                        <option value="mla">MLA (Edisi 9)</option>
+                        <option value="chicago">Chicago</option>
+                        <option value="vancouver">Vancouver (1)</option>
+                    </select>
+                </div>
+
+                <!-- 4. Insert Bibliography (Daftar Pustaka) -->
+                <button data-action="insert-bibliography-quick" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Sisipkan Daftar Pustaka Lengkap Sesuai Standar Word">
+                    <span>📚 Sisipkan Daftar Pustaka</span>
+                </button>
+
+                <!-- 5. Update Bibliography -->
+                <button id="btn-update-bibliography" class="px-2.5 py-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded font-medium flex items-center gap-1 hover:bg-emerald-100 transition cursor-pointer border border-emerald-200 dark:border-emerald-800 shadow-2xs" title="Perbarui dan Sinkronkan Seluruh Daftar Pustaka di Dokumen">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Perbarui Pustaka</span>
+                </button>
+
+                <!-- 6. Academic Web Search Engine -->
+                <button data-action="open-academic-search" class="px-2.5 py-1.5 bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 rounded font-medium flex items-center gap-1.5 hover:bg-purple-100 transition cursor-pointer border border-purple-200 dark:border-purple-800 shadow-2xs" title="Cari Jurnal Ilmiah, Buku, dan Artikel Online (CrossRef, Google Scholar, DOI)">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <span>🔍 Mesin Pencari Pustaka</span>
+                </button>
+            </div>
+
+            <!-- Mode Fokus Zen -->
+            <button data-layout-mode="zen" class="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition cursor-pointer">
+                <span>🧘 Mode Fokus</span>
             </button>
         </div>
 
@@ -1718,39 +1766,218 @@
         </div>
     </div>
 
-    <!-- Modal 11: Sitasi & Daftar Pustaka (APA 7th Edition) -->
+    <!-- Modal 11: Sitasi & Daftar Pustaka (Microsoft Word References Standard) -->
     <div id="modal-citation" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>📖</span> Sitasi & Entri Daftar Pustaka
-                </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50/70 to-purple-50/70 dark:from-gray-900 dark:to-gray-800">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-1.5 rounded-lg bg-indigo-600 text-white text-sm">📚</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Sitasi & Pengelola Daftar Pustaka (Word Standard)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Mesin pencari literatur ilmiah, kelola sumber referensi, & format daftar pustaka otomatis</p>
+                    </div>
+                </div>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">✕</button>
             </div>
-            <div class="p-6 space-y-3.5 text-xs">
-                <div>
-                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Penulis / Institusi:</label>
-                    <input type="text" id="citation-author" placeholder="Contoh: Sugiyono / Santoso, A." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+
+            <!-- Tab Navigation (Word References Tabs) -->
+            <div class="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/60 px-4 text-xs font-semibold gap-1 select-none overflow-x-auto">
+                <button type="button" data-citation-nav="search" class="citation-tab-btn py-2.5 px-3 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1.5">
+                    <span>🔍</span> Mesin Pencari Online
+                </button>
+                <button type="button" data-citation-nav="add" class="citation-tab-btn py-2.5 px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1.5">
+                    <span>✍️</span> Tambah Sumber Manual
+                </button>
+                <button type="button" data-citation-nav="manage" class="citation-tab-btn py-2.5 px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1.5">
+                    <span>📋</span> Kelola Sumber (<span id="tab-source-count-badge">0</span>)
+                </button>
+                <button type="button" data-citation-nav="bibliography" class="citation-tab-btn py-2.5 px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1.5">
+                    <span>📖</span> Sisipkan Daftar Pustaka
+                </button>
+            </div>
+
+            <!-- Tab Contents (Scrollable) -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs flex-1">
+                <!-- Tab 1: Mesin Pencari Online -->
+                <div id="citation-tab-search" class="citation-tab-content space-y-3.5">
+                    <div class="bg-indigo-50/60 dark:bg-indigo-950/30 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/50 text-[11px] text-indigo-800 dark:text-indigo-300">
+                        Cari jutaan publikasi ilmiah dari <strong>CrossRef</strong>, <strong>Google Books</strong>, indeks <strong>DOI</strong>, dan repositori akademik. Klik <em>"Tambah ke Sumber"</em> atau <em>"Sisipkan Sitasi"</em> untuk memasukkannya ke naskah Anda.
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <div class="flex-1 relative">
+                            <input type="text" id="search-source-query" placeholder="Ketik kata kunci judul, topik (mis: IoT ESP32), nama penulis, atau DOI (10.xxxx)..." class="w-full px-3 py-2 pl-8 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-indigo-500 shadow-2xs" />
+                            <span class="absolute left-2.5 top-2.5 text-gray-400">🔍</span>
+                        </div>
+                        <select id="search-source-type" class="px-2.5 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-indigo-500">
+                            <option value="all">Semua Tipe</option>
+                            <option value="journal">Jurnal Ilmiah</option>
+                            <option value="book">Buku</option>
+                            <option value="conference">Prosiding</option>
+                            <option value="thesis">Skripsi/Tesis</option>
+                            <option value="website">Website</option>
+                        </select>
+                        <button type="button" id="btn-execute-source-search" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition shrink-0">
+                            <span>Cari</span>
+                        </button>
+                    </div>
+
+                    <!-- Search Suggestions / Quick Chips -->
+                    <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+                        <span class="text-gray-400">Contoh pencarian:</span>
+                        <button type="button" class="btn-search-chip px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">TCS34725 ESP32</button>
+                        <button type="button" class="btn-search-chip px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">Sugiyono Metode Penelitian</button>
+                        <button type="button" class="btn-search-chip px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">Deep Learning Transformers</button>
+                        <button type="button" class="btn-search-chip px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">10.1016/j.procs.2023.01.002</button>
+                    </div>
+
+                    <!-- Search Results State -->
+                    <div id="search-source-status" class="hidden text-xs text-center py-2 text-indigo-600 font-medium">
+                        <span class="inline-block animate-spin mr-1">⏳</span> Mencari literatur di CrossRef dan basis data ilmiah...
+                    </div>
+
+                    <!-- Results List -->
+                    <div id="search-results-list" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                        <p class="text-xs text-gray-400 italic text-center py-6">Ketik kata kunci atau klik salah satu contoh di atas untuk mencari referensi akademik secara langsung.</p>
+                    </div>
                 </div>
-                <div>
-                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Tahun Publikasi:</label>
-                    <input type="text" id="citation-year" placeholder="Contoh: 2024" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+
+                <!-- Tab 2: Tambah Sumber Manual -->
+                <div id="citation-tab-add" class="citation-tab-content hidden space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-1">
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Tipe Sumber (Type):</label>
+                            <select id="citation-type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500">
+                                <option value="journal">Artikel Jurnal Ilmiah</option>
+                                <option value="book">Buku</option>
+                                <option value="conference">Prosiding Konferensi</option>
+                                <option value="thesis">Skripsi / Tesis / Disertasi</option>
+                                <option value="website">Situs Web / Dokumen Online</option>
+                                <option value="report">Laporan Teknis / Standar</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Penulis / Institusi:</label>
+                            <input type="text" id="citation-author" placeholder="Contoh: Sugiyono / Santoso, A. / Smith, John" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div class="sm:col-span-1">
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Tahun Publikasi:</label>
+                            <input type="text" id="citation-year" placeholder="Contoh: 2024" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Judul Karya / Artikel / Buku:</label>
+                            <input type="text" id="citation-title" placeholder="Contoh: Metode Penelitian Kuantitatif, Kualitatif, dan R&D" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Jurnal / Penerbit / Konferensi:</label>
+                        <input type="text" id="citation-source" placeholder="Contoh: Jurnal Teknologi Informasi / Penerbit Alfabeta / IEEE Sensors" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Volume:</label>
+                            <input type="text" id="citation-volume" placeholder="Contoh: 12" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">No / Isu:</label>
+                            <input type="text" id="citation-issue" placeholder="Contoh: 3" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Halaman:</label>
+                            <input type="text" id="citation-pages" placeholder="Contoh: 145-156" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">DOI / Tautan URL:</label>
+                        <input type="text" id="citation-doi" placeholder="Contoh: 10.1016/j.procs.2023.01.002 atau https://..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                    </div>
+
+                    <div class="p-3 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-[11px] text-indigo-700 dark:text-indigo-300">
+                        Klik <strong>"Sisipkan Sitasi di Kursor"</strong> untuk langsung membuat tanda kutipan di naskah dan mendaftarkannya ke Pengelola Sumber Word.
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                        <button type="button" id="btn-save-source-only" class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition cursor-pointer">
+                            💾 Simpan ke Pengelola Sumber
+                        </button>
+                        <button type="button" id="btn-confirm-citation" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer shadow-xs">
+                            ✍️ Sisipkan Sitasi di Kursor
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Judul Karya / Artikel / Buku:</label>
-                    <input type="text" id="citation-title" placeholder="Contoh: Metode Penelitian Kuantitatif, Kualitatif, dan R&D" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+
+                <!-- Tab 3: Kelola Sumber (Manage Sources) -->
+                <div id="citation-tab-manage" class="citation-tab-content hidden space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" id="manage-source-filter" placeholder="Cari dalam daftar sumber naskah..." class="w-full px-3 py-1.5 pl-8 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs outline-none focus:border-indigo-500" />
+                            <span class="absolute left-2.5 top-2 text-gray-400">🔍</span>
+                        </div>
+                        <button type="button" id="btn-add-sample-sources" class="px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded font-semibold text-[11px] hover:bg-indigo-100 transition cursor-pointer border border-indigo-200 dark:border-indigo-800">
+                            + Sampel Sumber Ilmiah
+                        </button>
+                        <button type="button" id="btn-clear-all-sources" class="px-2.5 py-1.5 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded font-medium text-[11px] hover:bg-red-100 transition cursor-pointer border border-red-200 dark:border-red-900">
+                            Kosongkan
+                        </button>
+                    </div>
+
+                    <div id="source-manager-items" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                        <!-- Loaded via JS -->
+                    </div>
                 </div>
-                <div>
-                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Sumber / Penerbit / Jurnal:</label>
-                    <input type="text" id="citation-source" placeholder="Contoh: Alfabeta, Bandung / Jurnal Sistem Informasi, 12(3)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
-                </div>
-                <div class="p-3 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-[11px] text-indigo-700 dark:text-indigo-300">
-                    Sistem akan menyisipkan <strong>sitasi dalam teks</strong> seperti <em>(Santoso, 2024)</em> serta menambahkan entri terformat ke bagian <strong>Daftar Pustaka</strong> dokumen secara otomatis.
+
+                <!-- Tab 4: Sisipkan Daftar Pustaka (Bibliography) -->
+                <div id="citation-tab-bibliography" class="citation-tab-content hidden space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Gaya Referensi / Sitasi:</label>
+                            <select id="modal-bibliography-style" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold outline-none focus:border-indigo-500">
+                                <option value="apa">APA (American Psychological Assoc. - Edisi 7)</option>
+                                <option value="ieee">IEEE (Institute of Electrical and Electronics Engineers)</option>
+                                <option value="harvard">Harvard (Author-Date)</option>
+                                <option value="mla">MLA (Modern Language Assoc. - Edisi 9)</option>
+                                <option value="chicago">Chicago (Author-Date - Edisi 17)</option>
+                                <option value="vancouver">Vancouver (Numbered)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Judul Bab / Heading Daftar Pustaka:</label>
+                            <input type="text" id="modal-bibliography-heading" value="DAFTAR PUSTAKA" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold outline-none focus:border-indigo-500" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-medium text-gray-700 dark:text-gray-300">Pratinjau Format Daftar Pustaka:</span>
+                            <span id="preview-style-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200">Standar APA 7th (Hanging Indent 0.5 in)</span>
+                        </div>
+                        <div id="bibliography-preview-box" class="bg-gray-50 dark:bg-gray-800/80 p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-xs max-h-56 overflow-y-auto font-serif space-y-2">
+                            <!-- Live preview loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                        <button type="button" id="btn-sync-bibliography-block" class="px-3.5 py-2 text-xs font-semibold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 transition cursor-pointer">
+                            🔄 Perbarui Daftar Pustaka Dokumen
+                        </button>
+                        <button type="button" id="btn-insert-bibliography-block" class="px-4 py-2 text-xs font-bold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer flex items-center gap-1.5">
+                            <span>📚 Sisipkan ke Dokumen</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
-                <button data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Batal</button>
-                <button id="btn-confirm-citation" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white">Sisipkan Sitasi</button>
+
+            <!-- Modal Footer -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px] text-gray-500">
+                <span id="citation-modal-footer-stats">0 sumber aktif di dokumen saat ini.</span>
+                <button type="button" data-close-modal class="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">Tutup</button>
             </div>
         </div>
     </div>

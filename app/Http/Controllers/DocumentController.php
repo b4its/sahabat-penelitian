@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AiService;
+use App\Services\CitationService;
 use App\Services\DocumentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class DocumentController extends Controller
     public function __construct(
         protected DocumentService $documentService,
         protected AiService $aiService,
+        protected CitationService $citationService,
     ) {}
 
     /**
@@ -182,5 +184,54 @@ HTML;
         return response()->json(array_merge([
             'success' => true,
         ], $result));
+    }
+
+    /**
+     * Search academic and web sources for citations and bibliography.
+     */
+    public function searchSources(Request $request): JsonResponse
+    {
+        $request->validate([
+            'query' => ['required', 'string', 'min:1', 'max:255'],
+            'type' => ['nullable', 'string', 'in:all,journal,book,conference,website,thesis,report'],
+        ]);
+
+        $query = $request->input('query');
+        $type = $request->input('type');
+
+        $results = $this->citationService->searchSources($query, $type);
+
+        return response()->json([
+            'success' => true,
+            'query' => $query,
+            'count' => count($results),
+            'results' => $results,
+        ]);
+    }
+
+    /**
+     * Format a complete bibliography HTML block.
+     */
+    public function formatBibliography(Request $request): JsonResponse
+    {
+        $request->validate([
+            'sources' => ['required', 'array'],
+            'sources.*.title' => ['required', 'string'],
+            'style' => ['nullable', 'string', 'in:apa,ieee,harvard,mla,chicago,vancouver'],
+            'heading' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $sources = $request->input('sources');
+        $style = $request->input('style', 'apa');
+        $heading = $request->input('heading', 'DAFTAR PUSTAKA');
+
+        $html = $this->citationService->generateBibliographyHtml($sources, $style, $heading);
+
+        return response()->json([
+            'success' => true,
+            'style' => $style,
+            'heading' => $heading,
+            'html' => $html,
+        ]);
     }
 }
