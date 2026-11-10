@@ -17,6 +17,28 @@
 import { DocxImporter } from './docx-importer.js';
 import katex from 'katex';
 
+export const PAPER_DIMENSIONS = {
+    a4: { name: 'A4', width: 210, height: 297 },
+    letter: { name: 'Letter', width: 215.9, height: 279.4 },
+    legal: { name: 'Legal', width: 215.9, height: 355.6 },
+    folio: { name: 'Folio / F4', width: 215, height: 330 },
+    executive: { name: 'Executive', width: 184.1, height: 266.7 },
+    a3: { name: 'A3', width: 297, height: 420 },
+    a5: { name: 'A5', width: 148, height: 210 },
+    b5: { name: 'B5', width: 182, height: 257 },
+    statement: { name: 'Statement', width: 139.7, height: 215.9 },
+    custom: { name: 'Custom', width: 210, height: 297 },
+};
+
+export const MARGIN_PRESETS = {
+    skripsi: { top: 40, bottom: 30, left: 40, right: 30, gutter: 0, gutterPos: 'left' },
+    normal: { top: 25.4, bottom: 25.4, left: 25.4, right: 25.4, gutter: 0, gutterPos: 'left' },
+    narrow: { top: 12.7, bottom: 12.7, left: 12.7, right: 12.7, gutter: 0, gutterPos: 'left' },
+    moderate: { top: 25.4, bottom: 25.4, left: 19.1, right: 19.1, gutter: 0, gutterPos: 'left' },
+    wide: { top: 25.4, bottom: 25.4, left: 50.8, right: 50.8, gutter: 0, gutterPos: 'left' },
+    mirrored: { top: 25.4, bottom: 25.4, inside: 31.8, outside: 25.4, gutter: 0, gutterPos: 'left' },
+};
+
 export class DocumentEngine {
     static renderLatexHtml(latex, isDisplay = true) {
         if (!latex) return '';
@@ -72,6 +94,17 @@ export class DocumentEngine {
         this.currentMarginPreset = 'normal';
         this.currentPaperSize = 'a4';
         this.currentOrientation = 'portrait';
+        this.currentMargins = { top: 25.4, bottom: 25.4, left: 25.4, right: 25.4, gutter: 0, gutterPos: 'left' };
+        this.customWidthMm = 210;
+        this.customHeightMm = 297;
+        this.multiplePagesMode = 'normal';
+        this.sectionStart = 'newpage';
+        this.differentOddEven = false;
+        this.edgeHeader = 1.5;
+        this.edgeFooter = 1.5;
+        this.verticalAlign = 'top';
+        this.paragraphSpacing = { before: 0, after: 6 };
+        this.paragraphIndent = { left: 0, right: 0, special: 'none', specialVal: 1.25, mirrorIndents: false };
         this.activePageIndex = 1;
         this.history = [];
         this.historyIndex = -1;
@@ -640,12 +673,12 @@ export class DocumentEngine {
         pages.forEach((p, idx) => {
             const pageNum = idx + 1;
             const sheet = document.createElement('article');
-            sheet.className = 'document-page-sheet page-a4 relative flex flex-col justify-between shadow-2xl';
+            sheet.className = 'document-page-sheet relative flex flex-col justify-between shadow-2xl';
             sheet.setAttribute('data-page-index', pageNum);
             sheet.setAttribute('id', pageNum === 1 ? 'document-page-canvas' : `document-page-${pageNum}`);
 
-            // Apply margin preset
-            this.applyMarginsToSheet(sheet, this.currentMarginPreset);
+            // Apply full page setup (paper size, orientation, and margins)
+            this.applyPageSetupToSheet(sheet, pageNum);
 
             // Apply dark mode sheet if active
             const isDark = document.getElementById('btn-toggle-dark-sheet')?.classList.contains('active-dark') || false;
@@ -967,21 +1000,100 @@ export class DocumentEngine {
         }
     }
 
-    applyMarginsToSheet(sheet, preset) {
+    getDocumentWidthMm() {
+        let w = (this.currentPaperSize === 'custom' && this.customWidthMm) ? this.customWidthMm : (PAPER_DIMENSIONS[this.currentPaperSize]?.width || 210);
+        let h = (this.currentPaperSize === 'custom' && this.customHeightMm) ? this.customHeightMm : (PAPER_DIMENSIONS[this.currentPaperSize]?.height || 297);
+        return this.currentOrientation === 'landscape' ? h : w;
+    }
+
+    getDocumentHeightMm() {
+        let w = (this.currentPaperSize === 'custom' && this.customWidthMm) ? this.customWidthMm : (PAPER_DIMENSIONS[this.currentPaperSize]?.width || 210);
+        let h = (this.currentPaperSize === 'custom' && this.customHeightMm) ? this.customHeightMm : (PAPER_DIMENSIONS[this.currentPaperSize]?.height || 297);
+        return this.currentOrientation === 'landscape' ? w : h;
+    }
+
+    applyPageSetupToSheet(sheet, pageIndex = null) {
         if (!sheet) return;
-        if (preset === 'skripsi') {
+
+        sheet.classList.remove('page-a4', 'page-letter', 'page-legal', 'page-folio', 'page-executive', 'page-a3', 'page-a5', 'page-b5', 'page-statement');
+        sheet.classList.add(`page-${this.currentPaperSize || 'a4'}`);
+
+        if (this.currentOrientation === 'landscape') {
+            sheet.classList.add('page-landscape');
+        } else {
+            sheet.classList.remove('page-landscape');
+        }
+
+        const widthMm = this.getDocumentWidthMm();
+        const heightMm = this.getDocumentHeightMm();
+        sheet.style.width = `${widthMm}mm`;
+        sheet.style.minHeight = `${heightMm}mm`;
+
+        this.applyMarginsToSheet(sheet, this.currentMarginPreset, pageIndex);
+    }
+
+    applyMarginsToSheet(sheet, preset = null, pageIndex = null) {
+        if (!sheet) return;
+        const targetPreset = preset || this.currentMarginPreset || 'normal';
+
+        const pNum = pageIndex || parseInt(sheet.getAttribute('data-page-index') || '1', 10);
+        const isOdd = pNum % 2 !== 0;
+
+        if (typeof targetPreset === 'object' && targetPreset !== null) {
+            const top = parseFloat(targetPreset.top ?? 25.4);
+            const bottom = parseFloat(targetPreset.bottom ?? 25.4);
+            let left = parseFloat(targetPreset.left ?? 25.4);
+            let right = parseFloat(targetPreset.right ?? 25.4);
+            const gutter = parseFloat(targetPreset.gutter ?? 0);
+            const gutterPos = targetPreset.gutterPos || 'left';
+
+            let topPad = top;
+            let leftPad = left;
+            if (gutterPos === 'top') {
+                topPad += gutter;
+            } else {
+                leftPad += gutter;
+            }
+
+            if (this.multiplePagesMode === 'mirror') {
+                sheet.style.paddingTop = `${topPad}mm`;
+                sheet.style.paddingBottom = `${bottom}mm`;
+                sheet.style.paddingLeft = `${isOdd ? leftPad : right}mm`;
+                sheet.style.paddingRight = `${isOdd ? right : leftPad}mm`;
+            } else {
+                sheet.style.paddingTop = `${topPad}mm`;
+                sheet.style.paddingBottom = `${bottom}mm`;
+                sheet.style.paddingLeft = `${leftPad}mm`;
+                sheet.style.paddingRight = `${right}mm`;
+            }
+            return;
+        }
+
+        if (targetPreset === 'skripsi') {
             // Skripsi standard: Top 4cm, Left 4cm, Right 3cm, Bottom 3cm
             sheet.style.paddingTop = '40mm';
             sheet.style.paddingLeft = '40mm';
             sheet.style.paddingRight = '30mm';
             sheet.style.paddingBottom = '30mm';
-        } else if (preset === 'narrow') {
+        } else if (targetPreset === 'narrow') {
             sheet.style.padding = '12.7mm';
-        } else if (preset === 'wide') {
+        } else if (targetPreset === 'moderate') {
             sheet.style.paddingTop = '25.4mm';
             sheet.style.paddingBottom = '25.4mm';
-            sheet.style.paddingLeft = '38.1mm';
-            sheet.style.paddingRight = '38.1mm';
+            sheet.style.paddingLeft = '19.1mm';
+            sheet.style.paddingRight = '19.1mm';
+        } else if (targetPreset === 'wide') {
+            sheet.style.paddingTop = '25.4mm';
+            sheet.style.paddingBottom = '25.4mm';
+            sheet.style.paddingLeft = '50.8mm';
+            sheet.style.paddingRight = '50.8mm';
+        } else if (targetPreset === 'mirrored') {
+            sheet.style.paddingTop = '25.4mm';
+            sheet.style.paddingBottom = '25.4mm';
+            sheet.style.paddingLeft = `${isOdd ? 31.8 : 25.4}mm`;
+            sheet.style.paddingRight = `${isOdd ? 25.4 : 31.8}mm`;
+        } else if (targetPreset === 'custom' && this.currentMargins) {
+            this.applyMarginsToSheet(sheet, this.currentMargins, pageIndex);
         } else {
             sheet.style.padding = '25.4mm';
         }
@@ -1651,43 +1763,395 @@ export class DocumentEngine {
     }
 
     /* -------------------------------------------------------------
-     * Margins, Layout Presets & Formatting
+     * Microsoft Word Page Setup & Margins Suite
      * ------------------------------------------------------------- */
 
     setMarginPreset(preset) {
         this.currentMarginPreset = preset;
+        if (MARGIN_PRESETS[preset]) {
+            const p = MARGIN_PRESETS[preset];
+            this.currentMargins = {
+                top: p.top,
+                bottom: p.bottom,
+                left: p.left || p.inside || 25.4,
+                right: p.right || p.outside || 25.4,
+                gutter: p.gutter || 0,
+                gutterPos: p.gutterPos || 'left',
+            };
+            if (preset === 'mirrored') {
+                this.multiplePagesMode = 'mirror';
+            } else if (this.multiplePagesMode === 'mirror') {
+                this.multiplePagesMode = 'normal';
+            }
+        }
         const sheets = this.getAllPageSheets();
-        sheets.forEach(sheet => this.applyMarginsToSheet(sheet, preset));
-        this.updateRulerMarkersForPreset(preset);
+        sheets.forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.updateRulerForPageSetup();
 
         const marginSelect = document.getElementById('layout-margins');
         if (marginSelect) {
             marginSelect.value = preset;
         }
+        this.handleInput();
+    }
+
+    setCustomMargins(margins = {}) {
+        this.currentMarginPreset = 'custom';
+        this.currentMargins = {
+            top: parseFloat(margins.top ?? 25.4),
+            bottom: parseFloat(margins.bottom ?? 25.4),
+            left: parseFloat(margins.left ?? 25.4),
+            right: parseFloat(margins.right ?? 25.4),
+            gutter: parseFloat(margins.gutter ?? 0),
+            gutterPos: margins.gutterPos || 'left',
+        };
+        if (margins.multiplePages) {
+            this.multiplePagesMode = margins.multiplePages;
+        }
+        const sheets = this.getAllPageSheets();
+        sheets.forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.updateRulerForPageSetup();
+
+        const marginSelect = document.getElementById('layout-margins');
+        if (marginSelect) {
+            marginSelect.value = 'custom';
+        }
+        this.handleInput();
+    }
+
+    setPaperSize(sizeName, customWidth = null, customHeight = null) {
+        this.currentPaperSize = sizeName;
+        if (sizeName === 'custom' && customWidth && customHeight) {
+            this.customWidthMm = parseFloat(customWidth);
+            this.customHeightMm = parseFloat(customHeight);
+        }
+        const sheets = this.getAllPageSheets();
+        sheets.forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.updateRulerForPageSetup();
+
+        const paperSelect = document.getElementById('layout-paper-size');
+        if (paperSelect) {
+            paperSelect.value = sizeName;
+        }
+        this.handleInput();
+    }
+
+    setOrientation(orientation) {
+        this.currentOrientation = orientation === 'landscape' ? 'landscape' : 'portrait';
+        const sheets = this.getAllPageSheets();
+        sheets.forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.updateRulerForPageSetup();
+
+        const orientSelect = document.getElementById('layout-orientation');
+        if (orientSelect) {
+            orientSelect.value = this.currentOrientation;
+        }
+        this.handleInput();
+    }
+
+    setPageSetup(options = {}) {
+        if (options.paperSize) this.currentPaperSize = options.paperSize;
+        if (options.customWidth) this.customWidthMm = parseFloat(options.customWidth);
+        if (options.customHeight) this.customHeightMm = parseFloat(options.customHeight);
+        if (options.orientation) this.currentOrientation = options.orientation;
+        if (options.multiplePages) this.multiplePagesMode = options.multiplePages;
+        if (options.sectionStart) this.sectionStart = options.sectionStart;
+        if (options.diffOddEven !== undefined) this.differentOddEven = Boolean(options.diffOddEven);
+        if (options.diffFirstPage !== undefined) this.differentFirstPage = Boolean(options.diffFirstPage);
+        if (options.edgeHeader !== undefined) this.edgeHeader = parseFloat(options.edgeHeader);
+        if (options.edgeFooter !== undefined) this.edgeFooter = parseFloat(options.edgeFooter);
+        if (options.verticalAlign) this.verticalAlign = options.verticalAlign;
+
+        if (options.margins) {
+            this.setCustomMargins(options.margins);
+        } else if (options.marginPreset) {
+            this.setMarginPreset(options.marginPreset);
+        } else {
+            const sheets = this.getAllPageSheets();
+            sheets.forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+            this.updateRulerForPageSetup();
+        }
+
+        const psSelect = document.getElementById('layout-paper-size');
+        if (psSelect && this.currentPaperSize) psSelect.value = this.currentPaperSize;
+
+        const orSelect = document.getElementById('layout-orientation');
+        if (orSelect && this.currentOrientation) orSelect.value = this.currentOrientation;
+
+        this.handleInput();
+    }
+
+    updateRulerForPageSetup() {
+        const widthMm = this.getDocumentWidthMm();
+        const totalWidthCm = widthMm / 10;
+
+        const rulerTicks = document.getElementById('ruler-ticks');
+        if (rulerTicks) {
+            rulerTicks.style.width = `${widthMm}mm`;
+            if (window.uiController && typeof window.uiController.renderRuler === 'function') {
+                window.uiController.renderRuler(totalWidthCm);
+            }
+        }
+
+        let leftMarginCm = 2.54;
+        let rightMarginCm = 2.54;
+        if (this.currentMarginPreset === 'skripsi') {
+            leftMarginCm = 4.0;
+            rightMarginCm = 3.0;
+        } else if (this.currentMarginPreset === 'narrow') {
+            leftMarginCm = 1.27;
+            rightMarginCm = 1.27;
+        } else if (this.currentMarginPreset === 'moderate') {
+            leftMarginCm = 1.91;
+            rightMarginCm = 1.91;
+        } else if (this.currentMarginPreset === 'wide') {
+            leftMarginCm = 5.08;
+            rightMarginCm = 5.08;
+        } else if (this.currentMarginPreset === 'mirrored') {
+            leftMarginCm = 3.18;
+            rightMarginCm = 2.54;
+        } else if (this.currentMargins) {
+            const gutter = (this.currentMargins.gutterPos === 'left' ? (this.currentMargins.gutter || 0) : 0);
+            leftMarginCm = (this.currentMargins.left + gutter) / 10;
+            rightMarginCm = (this.currentMargins.right) / 10;
+        }
+
+        this.updateRulerMarkers(leftMarginCm, totalWidthCm - rightMarginCm, totalWidthCm);
     }
 
     updateRulerMarkersForPreset(preset) {
-        if (preset === 'skripsi') {
-            this.updateRulerMarkers(4, 18);
-        } else if (preset === 'narrow') {
-            this.updateRulerMarkers(1.3, 19.7);
-        } else if (preset === 'wide') {
-            this.updateRulerMarkers(3.8, 17.2);
-        } else {
-            this.updateRulerMarkers(2.5, 18.5);
-        }
+        this.updateRulerForPageSetup();
     }
 
-    updateRulerMarkers(leftCm, rightCm) {
+    updateRulerMarkers(leftCm, rightCm, totalCm = null) {
         const leftMarker = document.getElementById('ruler-left-margin');
         const rightMarker = document.getElementById('ruler-right-margin');
 
+        const total = totalCm || (this.getDocumentWidthMm() / 10) || 21;
         if (leftMarker) {
-            leftMarker.style.left = `${(leftCm / 21) * 100}%`;
+            leftMarker.style.left = `${(leftCm / total) * 100}%`;
+            leftMarker.title = `Margin Kiri (${leftCm.toFixed(1)} cm)`;
         }
         if (rightMarker) {
-            rightMarker.style.left = `${(rightCm / 21) * 100}%`;
+            rightMarker.style.left = `${(rightCm / total) * 100}%`;
+            rightMarker.title = `Margin Kanan (${(total - rightCm).toFixed(1)} cm)`;
         }
+    }
+
+    /* -------------------------------------------------------------
+     * Microsoft Word Paragraph Customization Suite
+     * ------------------------------------------------------------- */
+
+    setParagraphFormatting(options = {}, scope = 'selection') {
+        let targets = [];
+        if (scope === 'all') {
+            this.getAllEditorBodies().forEach(body => {
+                const els = body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, .heading-chapter');
+                els.forEach(el => targets.push(el));
+            });
+        } else {
+            targets = this.getSelectedParagraphElements();
+            if (targets.length === 0) {
+                const active = this.getActiveEditor();
+                if (active) {
+                    const p = active.querySelector('p') || active;
+                    targets.push(p);
+                }
+            }
+        }
+
+        targets.forEach(el => {
+            if (options.alignment) {
+                el.style.textAlign = options.alignment;
+            }
+            if (options.leftIndent !== undefined && options.leftIndent !== null && options.leftIndent !== '') {
+                const l = parseFloat(options.leftIndent);
+                el.style.marginLeft = l > 0 ? `${l}cm` : '';
+            }
+            if (options.rightIndent !== undefined && options.rightIndent !== null && options.rightIndent !== '') {
+                const r = parseFloat(options.rightIndent);
+                el.style.marginRight = r > 0 ? `${r}cm` : '';
+            }
+            if (options.specialIndent) {
+                const val = options.specialIndentVal !== undefined && options.specialIndentVal !== '' ? parseFloat(options.specialIndentVal) : 1.25;
+                if (options.specialIndent === 'first-line') {
+                    el.style.textIndent = `${val}cm`;
+                    el.style.paddingLeft = '';
+                    el.classList.add('indent-first-line');
+                    el.classList.remove('indent-hanging');
+                } else if (options.specialIndent === 'hanging') {
+                    el.style.textIndent = `-${val}cm`;
+                    el.style.paddingLeft = `${val}cm`;
+                    el.classList.add('indent-hanging');
+                    el.classList.remove('indent-first-line');
+                } else if (options.specialIndent === 'none') {
+                    el.style.textIndent = '0';
+                    el.style.paddingLeft = '';
+                    el.classList.remove('indent-first-line', 'indent-hanging');
+                }
+            }
+            if (options.spaceBefore !== undefined && options.spaceBefore !== null && options.spaceBefore !== '') {
+                el.style.marginTop = `${parseFloat(options.spaceBefore)}pt`;
+            }
+            if (options.spaceAfter !== undefined && options.spaceAfter !== null && options.spaceAfter !== '') {
+                el.style.marginBottom = `${parseFloat(options.spaceAfter)}pt`;
+            }
+            if (options.lineSpacing) {
+                el.style.lineHeight = String(options.lineSpacing);
+            }
+        });
+
+        if (options.lineSpacing) {
+            this.currentLineSpacing = String(options.lineSpacing);
+            const lsSelect = document.getElementById('line-spacing-select');
+            if (lsSelect) lsSelect.value = this.currentLineSpacing;
+        }
+        if (options.spaceBefore !== undefined) {
+            this.paragraphSpacing.before = parseFloat(options.spaceBefore);
+            const sbInput = document.getElementById('layout-spacing-before');
+            if (sbInput) sbInput.value = this.paragraphSpacing.before;
+        }
+        if (options.spaceAfter !== undefined) {
+            this.paragraphSpacing.after = parseFloat(options.spaceAfter);
+            const saInput = document.getElementById('layout-spacing-after');
+            if (saInput) saInput.value = this.paragraphSpacing.after;
+        }
+        if (options.leftIndent !== undefined) {
+            this.paragraphIndent.left = parseFloat(options.leftIndent || 0);
+            const liInput = document.getElementById('layout-indent-left');
+            if (liInput) liInput.value = this.paragraphIndent.left;
+        }
+        if (options.rightIndent !== undefined) {
+            this.paragraphIndent.right = parseFloat(options.rightIndent || 0);
+            const riInput = document.getElementById('layout-indent-right');
+            if (riInput) riInput.value = this.paragraphIndent.right;
+        }
+
+        this.handleInput();
+    }
+
+    addSpaceBeforeParagraph(scope = 'selection') {
+        this.setParagraphFormatting({ spaceBefore: 12 }, scope);
+    }
+
+    removeSpaceBeforeParagraph(scope = 'selection') {
+        this.setParagraphFormatting({ spaceBefore: 0 }, scope);
+    }
+
+    addSpaceAfterParagraph(scope = 'selection') {
+        this.setParagraphFormatting({ spaceAfter: 8 }, scope);
+    }
+
+    removeSpaceAfterParagraph(scope = 'selection') {
+        this.setParagraphFormatting({ spaceAfter: 0 }, scope);
+    }
+
+    setParagraphIndent(leftCm, rightCm, scope = 'selection') {
+        this.setParagraphFormatting({ leftIndent: leftCm, rightIndent: rightCm }, scope);
+    }
+
+    setParagraphSpacing(beforePt, afterPt, scope = 'selection') {
+        this.setParagraphFormatting({ spaceBefore: beforePt, spaceAfter: afterPt }, scope);
+    }
+
+    setSpecialIndent(type, cmVal = 1.25, scope = 'selection') {
+        this.setParagraphFormatting({ specialIndent: type, specialIndentVal: cmVal }, scope);
+    }
+
+    getSelectedParagraphElements() {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return [];
+        const range = sel.getRangeAt(0);
+
+        const startNode = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentElement : range.startContainer;
+        const endNode = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentElement : range.endContainer;
+
+        const startP = startNode?.closest('p, h1, h2, h3, h4, h5, h6, blockquote, .heading-chapter');
+        const endP = endNode?.closest('p, h1, h2, h3, h4, h5, h6, blockquote, .heading-chapter');
+
+        if (!startP && !endP) return [];
+        if (startP === endP && startP) return [startP];
+
+        const body = startP?.closest('.page-sheet-body') || endP?.closest('.page-sheet-body');
+        if (!body) return startP ? [startP] : (endP ? [endP] : []);
+
+        const allBlocks = Array.from(body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, .heading-chapter'));
+        const startIdx = allBlocks.indexOf(startP);
+        const endIdx = allBlocks.indexOf(endP);
+
+        if (startIdx !== -1 && endIdx !== -1) {
+            const [low, high] = startIdx <= endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+            return allBlocks.slice(low, high + 1);
+        }
+
+        return startP ? [startP] : (endP ? [endP] : []);
+    }
+
+    getActiveParagraphFormat() {
+        const paras = this.getSelectedParagraphElements();
+        const p = paras.length > 0 ? paras[0] : (this.getActiveEditor()?.querySelector('p') || null);
+        if (!p) {
+            return {
+                alignment: 'justify',
+                leftIndent: this.paragraphIndent.left || 0,
+                rightIndent: this.paragraphIndent.right || 0,
+                specialIndent: this.paragraphIndent.special || 'first-line',
+                specialIndentVal: this.paragraphIndent.specialVal || 1.25,
+                spaceBefore: this.paragraphSpacing.before || 0,
+                spaceAfter: this.paragraphSpacing.after || 6,
+                lineSpacing: this.currentLineSpacing || '1.5',
+            };
+        }
+
+        const computed = window.getComputedStyle(p);
+        let align = p.style.textAlign || computed.textAlign || 'justify';
+        if (align === 'start') align = 'left';
+
+        let leftIndent = 0;
+        if (p.style.marginLeft) {
+            leftIndent = parseFloat(p.style.marginLeft) || 0;
+        }
+
+        let rightIndent = 0;
+        if (p.style.marginRight) {
+            rightIndent = parseFloat(p.style.marginRight) || 0;
+        }
+
+        let specialIndent = 'none';
+        let specialVal = 1.25;
+        if (p.style.textIndent) {
+            const ti = parseFloat(p.style.textIndent);
+            if (ti < 0 || p.classList.contains('indent-hanging')) {
+                specialIndent = 'hanging';
+                specialVal = Math.abs(ti) || 1.25;
+            } else if (ti > 0 || p.classList.contains('indent-first-line')) {
+                specialIndent = 'first-line';
+                specialVal = ti || 1.25;
+            }
+        }
+
+        let spaceBefore = 0;
+        if (p.style.marginTop) {
+            spaceBefore = parseFloat(p.style.marginTop) || 0;
+        }
+
+        let spaceAfter = 6;
+        if (p.style.marginBottom) {
+            spaceAfter = parseFloat(p.style.marginBottom) || 0;
+        }
+
+        let lineSpacing = p.style.lineHeight || this.currentLineSpacing || '1.5';
+
+        return {
+            alignment: align,
+            leftIndent,
+            rightIndent,
+            specialIndent,
+            specialIndentVal: specialVal,
+            spaceBefore,
+            spaceAfter,
+            lineSpacing,
+        };
     }
 
     setFontFamily(fontName) {
@@ -3011,8 +3475,8 @@ ${entriesHtml}    </div>
         }
 
         const newSheet = document.createElement('article');
-        newSheet.className = 'document-page-sheet page-a4 relative flex flex-col justify-between shadow-2xl';
-        this.applyMarginsToSheet(newSheet, this.currentMarginPreset);
+        newSheet.className = 'document-page-sheet relative flex flex-col justify-between shadow-2xl';
+        this.applyPageSetupToSheet(newSheet);
 
         const header = document.createElement('header');
         header.className = 'page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none';
@@ -3447,6 +3911,15 @@ ${entriesHtml}    </div>
                     format,
                     header_text: this.customHeaderText,
                     footer_text: this.customFooterText,
+                    paper_size: this.currentPaperSize,
+                    width_mm: this.getDocumentWidthMm(),
+                    height_mm: this.getDocumentHeightMm(),
+                    orientation: this.currentOrientation,
+                    margin_preset: this.currentMarginPreset,
+                    margins: this.currentMargins,
+                    line_spacing: this.currentLineSpacing,
+                    paragraph_spacing: this.paragraphSpacing,
+                    paragraph_indent: this.paragraphIndent,
                 }),
             });
 
@@ -3481,16 +3954,40 @@ ${entriesHtml}    </div>
         let mime = 'text/plain';
         let ext = format;
 
+        const wMm = this.getDocumentWidthMm();
+        const hMm = this.getDocumentHeightMm();
+        const pageSizeStr = `${wMm}mm ${hMm}mm`;
+        const msoOrient = this.currentOrientation;
+        const lineSpacing = this.currentLineSpacing || '1.5';
+        const spaceBefore = `${this.paragraphSpacing?.before || 0}pt`;
+        const spaceAfter = `${this.paragraphSpacing?.after || 6}pt`;
+
+        let marginStr = '40mm 30mm 30mm 40mm';
+        if (this.currentMargins) {
+            marginStr = `${this.currentMargins.top}mm ${this.currentMargins.right}mm ${this.currentMargins.bottom}mm ${this.currentMargins.left}mm`;
+        }
+
         if (format === 'html') {
             mime = 'text/html; charset=utf-8';
             ext = 'html';
-            content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:'Times New Roman',serif;max-width:210mm;margin:40px auto;padding:40mm 30mm 30mm 40mm;line-height:1.5;}h1{text-align:center;}p{text-align:justify;text-indent:1.25cm;}</style></head><body>${htmlContent}</body></html>`;
+            content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>@page { size: ${pageSizeStr}; margin: ${marginStr}; } body{font-family:'Times New Roman',serif;max-width:${wMm}mm;margin:40px auto;padding:${marginStr};line-height:${lineSpacing};}h1{text-align:center;}p{text-align:justify;margin-top:${spaceBefore};margin-bottom:${spaceAfter};line-height:${lineSpacing};text-indent:1.25cm;}</style></head><body>${htmlContent}</body></html>`;
         } else if (format === 'json') {
             mime = 'application/json; charset=utf-8';
             ext = 'json';
             content = JSON.stringify({
                 title,
                 content: htmlContent,
+                layout: {
+                    paper_size: this.currentPaperSize,
+                    width_mm: wMm,
+                    height_mm: hMm,
+                    orientation: this.currentOrientation,
+                    margin_preset: this.currentMarginPreset,
+                    margins: this.currentMargins,
+                    line_spacing: this.currentLineSpacing,
+                    paragraph_spacing: this.paragraphSpacing,
+                    paragraph_indent: this.paragraphIndent,
+                },
                 exported_at: new Date().toISOString(),
             }, null, 2);
         } else if (format === 'txt') {
@@ -3507,7 +4004,7 @@ ${entriesHtml}    </div>
             ext = 'doc';
             const hText = this.customHeaderText || title;
             const fText = this.customFooterText || 'Dokumen VelScribe Wordcraft';
-            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title><style>@page Section1{size:210mm 297mm;margin:40mm 30mm 30mm 40mm;mso-header:h1;mso-footer:f1;}div.Section1{page:Section1;}p.MsoHeader{border-bottom:1px solid #ccc;padding-bottom:4px;font-size:10pt;color:#666;}p.MsoFooter{border-top:1px solid #ccc;padding-top:4px;font-size:10pt;color:#666;}body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.5;}h1{text-align:center;}p{text-align:justify;text-indent:1.25cm;}</style></head><body><div class="Section1"><div style="mso-element:header" id="h1"><p class="MsoHeader">${this.escapeHtml(hText)}</p></div>${htmlContent}<div style="mso-element:footer" id="f1"><p class="MsoFooter">${this.escapeHtml(fText)}</p></div></div></body></html>`;
+            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title><style>@page Section1{size:${pageSizeStr};margin:${marginStr};mso-page-orientation:${msoOrient};mso-header:h1;mso-footer:f1;}div.Section1{page:Section1;}p.MsoHeader{border-bottom:1px solid #ccc;padding-bottom:4px;font-size:10pt;color:#666;}p.MsoFooter{border-top:1px solid #ccc;padding-top:4px;font-size:10pt;color:#666;}body{font-family:'Times New Roman',serif;font-size:12pt;line-height:${lineSpacing};}h1{text-align:center;}p{text-align:justify;margin-top:${spaceBefore};margin-bottom:${spaceAfter};line-height:${lineSpacing};text-indent:1.25cm;}</style></head><body><div class="Section1"><div style="mso-element:header" id="h1"><p class="MsoHeader">${this.escapeHtml(hText)}</p></div>${htmlContent}<div style="mso-element:footer" id="f1"><p class="MsoFooter">${this.escapeHtml(fText)}</p></div></div></body></html>`;
         }
 
         const blob = new Blob([content], { type: mime });
@@ -3528,6 +4025,14 @@ ${entriesHtml}    </div>
                 content: this.getContent(),
                 format: this.currentFormat,
                 marginPreset: this.currentMarginPreset,
+                margins: this.currentMargins,
+                paperSize: this.currentPaperSize,
+                orientation: this.currentOrientation,
+                customWidthMm: this.customWidthMm,
+                customHeightMm: this.customHeightMm,
+                lineSpacing: this.currentLineSpacing,
+                paragraphSpacing: this.paragraphSpacing,
+                paragraphIndent: this.paragraphIndent,
                 customHeaderText: this.customHeaderText || '',
                 customFooterText: this.customFooterText || '',
                 differentFirstPage: this.differentFirstPage || false,
@@ -3557,7 +4062,13 @@ ${entriesHtml}    </div>
                 this.setTitle(data.title || 'Dokumen Tanpa Judul');
                 this.setContent(data.content);
                 this.setFormatBadge(data.format || 'docx');
-                if (data.marginPreset) this.setMarginPreset(data.marginPreset);
+                if (data.paperSize) this.setPaperSize(data.paperSize, data.customWidthMm, data.customHeightMm);
+                if (data.orientation) this.setOrientation(data.orientation);
+                if (data.margins) this.setCustomMargins(data.margins);
+                else if (data.marginPreset) this.setMarginPreset(data.marginPreset);
+                if (data.lineSpacing) this.setLineSpacing(data.lineSpacing);
+                if (data.paragraphSpacing) this.paragraphSpacing = data.paragraphSpacing;
+                if (data.paragraphIndent) this.paragraphIndent = data.paragraphIndent;
                 return true;
             }
         } catch (e) {

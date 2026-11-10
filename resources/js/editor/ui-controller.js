@@ -4,6 +4,8 @@
  * Interactive Table & Image Toolbars, Zoom, Rulers, Modals, Drag-and-Drop, and Keyboard Shortcuts.
  */
 
+import { PAPER_DIMENSIONS, MARGIN_PRESETS } from './document-engine.js';
+
 export class UiController {
     constructor(engine, wordcraftAi) {
         this.engine = engine;
@@ -44,6 +46,7 @@ export class UiController {
         this.bindLatexEquationModal();
         this.bindHeaderFooterModal();
         this.bindTableOfContentsSuite();
+        this.bindPageSetupAndParagraphSuite();
         this.bindDragAndDrop();
         this.bindGlobalKeyboardShortcuts();
         this.renderRuler();
@@ -168,6 +171,10 @@ export class UiController {
         const marginsSelect = document.getElementById('layout-margins');
         if (marginsSelect) {
             marginsSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    this.openPageSetupModal('margins');
+                    return;
+                }
                 this.engine.setMarginPreset(e.target.value);
                 this.showToast(`Margin halaman diatur ke preset: ${e.target.value.toUpperCase()}`);
             });
@@ -177,11 +184,11 @@ export class UiController {
         const paperSizeSelect = document.getElementById('layout-paper-size');
         if (paperSizeSelect) {
             paperSizeSelect.addEventListener('change', (e) => {
-                const sheets = document.querySelectorAll('.document-page-sheet');
-                sheets.forEach(sheet => {
-                    sheet.classList.remove('page-a4', 'page-letter', 'page-legal');
-                    sheet.classList.add(`page-${e.target.value}`);
-                });
+                if (e.target.value === 'custom') {
+                    this.openPageSetupModal('paper');
+                    return;
+                }
+                this.engine.setPaperSize(e.target.value);
                 this.showToast(`Ukuran kertas diatur ke ${e.target.value.toUpperCase()}`);
             });
         }
@@ -190,15 +197,8 @@ export class UiController {
         const orientationSelect = document.getElementById('layout-orientation');
         if (orientationSelect) {
             orientationSelect.addEventListener('change', (e) => {
-                const sheets = document.querySelectorAll('.document-page-sheet');
-                sheets.forEach(sheet => {
-                    if (e.target.value === 'landscape') {
-                        sheet.classList.add('page-landscape');
-                    } else {
-                        sheet.classList.remove('page-landscape');
-                    }
-                });
-                this.showToast(`Orientasi halaman: ${e.target.value}`);
+                this.engine.setOrientation(e.target.value);
+                this.showToast(`Orientasi halaman: ${e.target.value === 'landscape' ? 'Lanskap' : 'Potret'}`);
             });
         }
 
@@ -2108,16 +2108,678 @@ export class UiController {
     }
 
     /* -------------------------------------------------------------
+     * Page Setup & Paragraph Formatting Suite (Microsoft Word Parity)
+     * ------------------------------------------------------------- */
+
+    bindPageSetupAndParagraphSuite() {
+        // 1. Home Ribbon Line Spacing Dropdown Menu
+        const btnLineSpacingDropdown = document.getElementById('btn-line-spacing-dropdown');
+        const lineSpacingMenu = document.getElementById('line-spacing-dropdown-menu');
+
+        if (btnLineSpacingDropdown && lineSpacingMenu) {
+            btnLineSpacingDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                lineSpacingMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!lineSpacingMenu.contains(e.target) && !btnLineSpacingDropdown.contains(e.target)) {
+                    lineSpacingMenu.classList.add('hidden');
+                }
+            });
+
+            lineSpacingMenu.querySelectorAll('[data-spacing-val]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.getAttribute('data-spacing-val');
+                    this.engine.setLineSpacing(val);
+                    lineSpacingMenu.classList.add('hidden');
+                    this.showToast(`Spasi baris diatur ke ${val}`);
+                });
+            });
+
+            const btnAddBefore = lineSpacingMenu.querySelector('[data-action="add-space-before"]');
+            if (btnAddBefore) {
+                btnAddBefore.addEventListener('click', () => {
+                    this.engine.addSpaceBeforeParagraph(12);
+                    lineSpacingMenu.classList.add('hidden');
+                    this.showToast('Menambahkan spasi sebelum paragraf');
+                });
+            }
+
+            const btnRemBefore = lineSpacingMenu.querySelector('[data-action="remove-space-before"]');
+            if (btnRemBefore) {
+                btnRemBefore.addEventListener('click', () => {
+                    this.engine.removeSpaceBeforeParagraph();
+                    lineSpacingMenu.classList.add('hidden');
+                    this.showToast('Menghapus spasi sebelum paragraf');
+                });
+            }
+
+            const btnAddAfter = lineSpacingMenu.querySelector('[data-action="add-space-after"]');
+            if (btnAddAfter) {
+                btnAddAfter.addEventListener('click', () => {
+                    this.engine.addSpaceAfterParagraph(12);
+                    lineSpacingMenu.classList.add('hidden');
+                    this.showToast('Menambahkan spasi sesudah paragraf');
+                });
+            }
+
+            const btnRemAfter = lineSpacingMenu.querySelector('[data-action="remove-space-after"]');
+            if (btnRemAfter) {
+                btnRemAfter.addEventListener('click', () => {
+                    this.engine.removeSpaceAfterParagraph();
+                    lineSpacingMenu.classList.add('hidden');
+                    this.showToast('Menghapus spasi sesudah paragraf');
+                });
+            }
+        }
+
+        // Paragraph Dialog Launchers (Home & Layout ribbons & line spacing menu)
+        document.querySelectorAll('[data-action="open-paragraph-modal"], #btn-open-paragraph-modal, #btn-layout-open-paragraph-modal, #btn-menu-open-paragraph-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (lineSpacingMenu) lineSpacingMenu.classList.add('hidden');
+                this.openParagraphModal();
+            });
+        });
+
+        // Page Setup Dialog Launchers
+        document.querySelectorAll('[data-action="page-setup-modal"], #btn-open-page-setup-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.openPageSetupModal();
+            });
+        });
+
+        // 2. Layout Ribbon Paragraph Quick Inputs (Indent & Spacing)
+        const layoutIndentLeft = document.getElementById('layout-indent-left');
+        const layoutIndentRight = document.getElementById('layout-indent-right');
+        const layoutSpacingBefore = document.getElementById('layout-spacing-before');
+        const layoutSpacingAfter = document.getElementById('layout-spacing-after');
+
+        if (layoutIndentLeft) {
+            const handleIndent = () => {
+                const left = parseFloat(layoutIndentLeft.value) || 0;
+                const right = parseFloat(layoutIndentRight ? layoutIndentRight.value : 0) || 0;
+                this.engine.setParagraphIndent(left, right);
+            };
+            layoutIndentLeft.addEventListener('change', handleIndent);
+        }
+        if (layoutIndentRight) {
+            const handleIndent = () => {
+                const left = parseFloat(layoutIndentLeft ? layoutIndentLeft.value : 0) || 0;
+                const right = parseFloat(layoutIndentRight.value) || 0;
+                this.engine.setParagraphIndent(left, right);
+            };
+            layoutIndentRight.addEventListener('change', handleIndent);
+        }
+        if (layoutSpacingBefore) {
+            const handleSpacing = () => {
+                const before = parseFloat(layoutSpacingBefore.value) || 0;
+                const after = parseFloat(layoutSpacingAfter ? layoutSpacingAfter.value : 0) || 0;
+                this.engine.setParagraphSpacing(before, after);
+            };
+            layoutSpacingBefore.addEventListener('change', handleSpacing);
+        }
+        if (layoutSpacingAfter) {
+            const handleSpacing = () => {
+                const before = parseFloat(layoutSpacingBefore ? layoutSpacingBefore.value : 0) || 0;
+                const after = parseFloat(layoutSpacingAfter.value) || 0;
+                this.engine.setParagraphSpacing(before, after);
+            };
+            layoutSpacingAfter.addEventListener('change', handleSpacing);
+        }
+
+        // Selection Change -> Sync Layout Ribbon Quick Inputs
+        let debounceTimer = null;
+        const syncQuickInputsWithSelection = () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const format = this.engine.getActiveParagraphFormat();
+                if (layoutIndentLeft && document.activeElement !== layoutIndentLeft) {
+                    layoutIndentLeft.value = (format.indentLeft || 0).toFixed(2).replace(/\.?0+$/, '');
+                }
+                if (layoutIndentRight && document.activeElement !== layoutIndentRight) {
+                    layoutIndentRight.value = (format.indentRight || 0).toFixed(2).replace(/\.?0+$/, '');
+                }
+                if (layoutSpacingBefore && document.activeElement !== layoutSpacingBefore) {
+                    layoutSpacingBefore.value = Math.round(format.spacingBefore || 0);
+                }
+                if (layoutSpacingAfter && document.activeElement !== layoutSpacingAfter) {
+                    layoutSpacingAfter.value = Math.round(format.spacingAfter || 6);
+                }
+            }, 150);
+        };
+
+        document.addEventListener('selectionchange', syncQuickInputsWithSelection);
+        if (this.engine.editorEl) {
+            this.engine.editorEl.addEventListener('keyup', syncQuickInputsWithSelection);
+            this.engine.editorEl.addEventListener('mouseup', syncQuickInputsWithSelection);
+        }
+
+        // 3. Page Setup Modal Logic
+        const pageSetupModal = document.getElementById('modal-page-setup');
+        if (pageSetupModal) {
+            // Tab switching
+            pageSetupModal.querySelectorAll('[data-page-setup-tab]').forEach(tabBtn => {
+                tabBtn.addEventListener('click', () => {
+                    const target = tabBtn.getAttribute('data-page-setup-tab');
+                    pageSetupModal.querySelectorAll('[data-page-setup-tab]').forEach(b => {
+                        b.classList.remove('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'font-bold');
+                        b.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    tabBtn.classList.add('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'font-bold');
+                    tabBtn.classList.remove('border-transparent', 'text-gray-500');
+
+                    pageSetupModal.querySelectorAll('.page-setup-tab-pane').forEach(pane => pane.classList.add('hidden'));
+                    const targetPane = document.getElementById(`tab-ps-${target}`);
+                    if (targetPane) targetPane.classList.remove('hidden');
+                });
+            });
+
+            // Orientation Cards
+            pageSetupModal.querySelectorAll('.ps-orient-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const orient = card.getAttribute('data-orient');
+                    const radio = card.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+
+                    pageSetupModal.querySelectorAll('.ps-orient-card').forEach(c => {
+                        c.classList.remove('border-2', 'border-indigo-600', 'bg-indigo-50/50', 'dark:bg-indigo-950/30');
+                        c.classList.add('border', 'border-gray-200', 'dark:border-gray-700', 'bg-gray-50/50', 'dark:bg-gray-800/40');
+                    });
+                    card.classList.remove('border', 'border-gray-200', 'dark:border-gray-700', 'bg-gray-50/50', 'dark:bg-gray-800/40');
+                    card.classList.add('border-2', 'border-indigo-600', 'bg-indigo-50/50', 'dark:bg-indigo-950/30');
+
+                    this.updatePageSetupPreview();
+                });
+            });
+
+            // Margin Presets in Page Setup Modal
+            pageSetupModal.querySelectorAll('[data-ps-preset]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const preset = btn.getAttribute('data-ps-preset');
+                    pageSetupModal.querySelectorAll('[data-ps-preset]').forEach(b => {
+                        b.classList.remove('border-indigo-300', 'dark:border-indigo-800', 'bg-indigo-50', 'dark:bg-indigo-950/60', 'text-indigo-700', 'dark:text-indigo-300', 'font-semibold');
+                        b.classList.add('border-gray-200', 'dark:border-gray-700');
+                    });
+                    btn.classList.add('border-indigo-300', 'dark:border-indigo-800', 'bg-indigo-50', 'dark:bg-indigo-950/60', 'text-indigo-700', 'dark:text-indigo-300', 'font-semibold');
+
+                    const pDef = MARGIN_PRESETS[preset];
+                    if (pDef) {
+                        const topInput = document.getElementById('ps-margin-top');
+                        const btmInput = document.getElementById('ps-margin-bottom');
+                        const leftInput = document.getElementById('ps-margin-left');
+                        const rightInput = document.getElementById('ps-margin-right');
+                        if (topInput) topInput.value = (pDef.top / 10).toFixed(preset === 'skripsi' ? 1 : 2);
+                        if (btmInput) btmInput.value = (pDef.bottom / 10).toFixed(preset === 'skripsi' ? 1 : 2);
+                        if (leftInput) leftInput.value = (pDef.left / 10).toFixed(preset === 'skripsi' ? 1 : 2);
+                        if (rightInput) rightInput.value = (pDef.right / 10).toFixed(preset === 'skripsi' ? 1 : 2);
+                        this.updatePageSetupPreview();
+                    }
+                });
+            });
+
+            // Inputs change -> update preview
+            ['ps-margin-top', 'ps-margin-bottom', 'ps-margin-left', 'ps-margin-right', 'ps-gutter', 'ps-gutter-pos', 'ps-custom-width', 'ps-custom-height'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', () => this.updatePageSetupPreview());
+            });
+
+            // Paper Size Select
+            const psSizeSelect = document.getElementById('ps-paper-size-select');
+            if (psSizeSelect) {
+                psSizeSelect.addEventListener('change', () => {
+                    const val = psSizeSelect.value;
+                    if (val !== 'custom' && PAPER_DIMENSIONS[val]) {
+                        const dim = PAPER_DIMENSIONS[val];
+                        const wIn = document.getElementById('ps-custom-width');
+                        const hIn = document.getElementById('ps-custom-height');
+                        if (wIn) wIn.value = (dim.width / 10).toFixed(1);
+                        if (hIn) hIn.value = (dim.height / 10).toFixed(1);
+                    }
+                    this.updatePageSetupPreview();
+                });
+            }
+
+            // Multiple Pages Select
+            const psMultiplePages = document.getElementById('ps-multiple-pages');
+            if (psMultiplePages) {
+                psMultiplePages.addEventListener('change', () => {
+                    const isMirror = psMultiplePages.value === 'mirror';
+                    const lblLeft = document.getElementById('lbl-ps-margin-left');
+                    const lblRight = document.getElementById('lbl-ps-margin-right');
+                    if (lblLeft) lblLeft.textContent = isMirror ? 'Di Dalam (Inside):' : 'Kiri (Left):';
+                    if (lblRight) lblRight.textContent = isMirror ? 'Di Luar (Outside):' : 'Kanan (Right):';
+                });
+            }
+
+            // Confirm Page Setup Button
+            const btnConfirmPageSetup = document.getElementById('btn-confirm-page-setup');
+            if (btnConfirmPageSetup) {
+                btnConfirmPageSetup.addEventListener('click', () => {
+                    const top = (parseFloat(document.getElementById('ps-margin-top')?.value) || 2.54) * 10;
+                    const bottom = (parseFloat(document.getElementById('ps-margin-bottom')?.value) || 2.54) * 10;
+                    const left = (parseFloat(document.getElementById('ps-margin-left')?.value) || 2.54) * 10;
+                    const right = (parseFloat(document.getElementById('ps-margin-right')?.value) || 2.54) * 10;
+                    const gutter = (parseFloat(document.getElementById('ps-gutter')?.value) || 0) * 10;
+                    const gutterPos = document.getElementById('ps-gutter-pos')?.value || 'left';
+
+                    const orientRadio = pageSetupModal.querySelector('input[name="ps-orient-radio"]:checked');
+                    const orientation = orientRadio ? orientRadio.value : 'portrait';
+
+                    const paperSize = document.getElementById('ps-paper-size-select')?.value || 'a4';
+                    const customWidth = (parseFloat(document.getElementById('ps-custom-width')?.value) || 21) * 10;
+                    const customHeight = (parseFloat(document.getElementById('ps-custom-height')?.value) || 29.7) * 10;
+                    const multiplePages = document.getElementById('ps-multiple-pages')?.value || 'normal';
+
+                    const sectionStart = document.getElementById('ps-section-start')?.value || 'newpage';
+                    const diffOddEven = Boolean(document.getElementById('ps-diff-odd-even')?.checked);
+                    const diffFirstPage = Boolean(document.getElementById('ps-diff-first-page')?.checked);
+                    const edgeHeader = (parseFloat(document.getElementById('ps-edge-header')?.value) || 1.5) * 10;
+                    const edgeFooter = (parseFloat(document.getElementById('ps-edge-footer')?.value) || 1.5) * 10;
+                    const verticalAlign = document.getElementById('ps-vert-align')?.value || 'top';
+
+                    this.engine.setPageSetup({
+                        margins: { top, bottom, left, right, gutter, gutterPos, multiplePages },
+                        paperSize,
+                        customWidth,
+                        customHeight,
+                        orientation,
+                        multiplePages,
+                        sectionStart,
+                        diffOddEven,
+                        diffFirstPage,
+                        edgeHeader,
+                        edgeFooter,
+                        verticalAlign
+                    });
+
+                    this.closeModal(pageSetupModal);
+                    this.showToast('Penyetelan halaman Microsoft Word berhasil diterapkan!', 'success');
+                });
+            }
+
+            // Set as Default Page Setup Button
+            const btnPsSetDefault = document.getElementById('btn-ps-set-default');
+            if (btnPsSetDefault) {
+                btnPsSetDefault.addEventListener('click', () => {
+                    const top = (parseFloat(document.getElementById('ps-margin-top')?.value) || 2.54) * 10;
+                    const bottom = (parseFloat(document.getElementById('ps-margin-bottom')?.value) || 2.54) * 10;
+                    const left = (parseFloat(document.getElementById('ps-margin-left')?.value) || 2.54) * 10;
+                    const right = (parseFloat(document.getElementById('ps-margin-right')?.value) || 2.54) * 10;
+                    const gutter = (parseFloat(document.getElementById('ps-gutter')?.value) || 0) * 10;
+                    const gutterPos = document.getElementById('ps-gutter-pos')?.value || 'left';
+                    const orientRadio = pageSetupModal.querySelector('input[name="ps-orient-radio"]:checked');
+                    const orientation = orientRadio ? orientRadio.value : 'portrait';
+                    const paperSize = document.getElementById('ps-paper-size-select')?.value || 'a4';
+
+                    try {
+                        localStorage.setItem('velscribe_default_page_setup', JSON.stringify({
+                            margins: { top, bottom, left, right, gutter, gutterPos },
+                            orientation,
+                            paperSize
+                        }));
+                        this.showToast('Penyetelan halaman disimpan sebagai standar default dokumen baru.', 'success');
+                    } catch (e) {
+                        this.showToast('Gagal menyimpan ke penyimpanan lokal.', 'error');
+                    }
+                });
+            }
+        }
+
+        // 4. Paragraph Format Modal Logic
+        const paraModal = document.getElementById('modal-paragraph-format');
+        if (paraModal) {
+            // Tab switching
+            paraModal.querySelectorAll('[data-para-tab]').forEach(tabBtn => {
+                tabBtn.addEventListener('click', () => {
+                    const target = tabBtn.getAttribute('data-para-tab');
+                    paraModal.querySelectorAll('[data-para-tab]').forEach(b => {
+                        b.classList.remove('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'font-bold');
+                        b.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    tabBtn.classList.add('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'font-bold');
+                    tabBtn.classList.remove('border-transparent', 'text-gray-500');
+
+                    paraModal.querySelectorAll('.para-tab-pane').forEach(pane => pane.classList.add('hidden'));
+                    const targetPane = document.getElementById(`tab-para-${target}`);
+                    if (targetPane) targetPane.classList.remove('hidden');
+                });
+            });
+
+            // Live preview updates on input changes
+            ['para-align-select', 'para-indent-left', 'para-indent-right', 'para-special-indent', 'para-special-val', 'para-spacing-before', 'para-spacing-after', 'para-line-spacing-type', 'para-line-spacing-at'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', () => this.updateParagraphPreview());
+                    el.addEventListener('change', () => this.updateParagraphPreview());
+                }
+            });
+
+            const lsTypeSelect = document.getElementById('para-line-spacing-type');
+            const lsAtInput = document.getElementById('para-line-spacing-at');
+            if (lsTypeSelect && lsAtInput) {
+                lsTypeSelect.addEventListener('change', () => {
+                    const val = lsTypeSelect.value;
+                    if (val === '1.0' || val === '1.15' || val === '1.5' || val === '2.0') {
+                        lsAtInput.value = val;
+                    }
+                    this.updateParagraphPreview();
+                });
+            }
+
+            // Confirm Paragraph Formatting Button
+            const btnConfirmPara = document.getElementById('btn-confirm-paragraph-format');
+            if (btnConfirmPara) {
+                btnConfirmPara.addEventListener('click', () => {
+                    const textAlign = document.getElementById('para-align-select')?.value || 'justify';
+                    const indentLeft = parseFloat(document.getElementById('para-indent-left')?.value) || 0;
+                    const indentRight = parseFloat(document.getElementById('para-indent-right')?.value) || 0;
+                    const specialIndent = document.getElementById('para-special-indent')?.value || 'none';
+                    const specialVal = parseFloat(document.getElementById('para-special-val')?.value) || 1.25;
+                    const spacingBefore = parseFloat(document.getElementById('para-spacing-before')?.value) || 0;
+                    const spacingAfter = parseFloat(document.getElementById('para-spacing-after')?.value) || 6;
+
+                    const lsType = document.getElementById('para-line-spacing-type')?.value || '1.5';
+                    const lsAt = document.getElementById('para-line-spacing-at')?.value || '1.5';
+                    const lineSpacing = (lsType === '1.0' || lsType === '1.15' || lsType === '1.5' || lsType === '2.0') ? lsType : lsAt;
+
+                    const keepWithNext = Boolean(document.getElementById('para-keep-with-next')?.checked);
+                    const keepLinesTogether = Boolean(document.getElementById('para-keep-lines-together')?.checked);
+                    const pageBreakBefore = Boolean(document.getElementById('para-page-break-before')?.checked);
+                    const widowOrphan = Boolean(document.getElementById('para-widow-orphan')?.checked);
+
+                    const scope = document.getElementById('para-apply-scope')?.value || 'selection';
+
+                    this.engine.setParagraphFormatting({
+                        textAlign,
+                        indentLeft,
+                        indentRight,
+                        specialIndent,
+                        specialVal,
+                        spacingBefore,
+                        spacingAfter,
+                        lineSpacing,
+                        keepWithNext,
+                        keepLinesTogether,
+                        pageBreakBefore,
+                        widowOrphan
+                    }, scope);
+
+                    this.closeModal(paraModal);
+                    this.showToast('Format paragraf berhasil diterapkan!', 'success');
+                });
+            }
+
+            // Set as Default Paragraph Button
+            const btnParaSetDefault = document.getElementById('btn-para-set-default');
+            if (btnParaSetDefault) {
+                btnParaSetDefault.addEventListener('click', () => {
+                    const textAlign = document.getElementById('para-align-select')?.value || 'justify';
+                    const indentLeft = parseFloat(document.getElementById('para-indent-left')?.value) || 0;
+                    const indentRight = parseFloat(document.getElementById('para-indent-right')?.value) || 0;
+                    const specialIndent = document.getElementById('para-special-indent')?.value || 'none';
+                    const specialVal = parseFloat(document.getElementById('para-special-val')?.value) || 1.25;
+                    const spacingBefore = parseFloat(document.getElementById('para-spacing-before')?.value) || 0;
+                    const spacingAfter = parseFloat(document.getElementById('para-spacing-after')?.value) || 6;
+                    const lineSpacing = document.getElementById('para-line-spacing-type')?.value || '1.5';
+
+                    try {
+                        localStorage.setItem('velscribe_default_paragraph_format', JSON.stringify({
+                            textAlign, indentLeft, indentRight, specialIndent, specialVal, spacingBefore, spacingAfter, lineSpacing
+                        }));
+                        this.showToast('Format paragraf disimpan sebagai standar default.', 'success');
+                    } catch (e) {
+                        this.showToast('Gagal menyimpan ke penyimpanan lokal.', 'error');
+                    }
+                });
+            }
+        }
+    }
+
+    openPageSetupModal(initialTab = 'margins') {
+        const modal = document.getElementById('modal-page-setup');
+        if (!modal) return;
+
+        // Switch to target tab
+        const tabBtn = modal.querySelector(`[data-page-setup-tab="${initialTab}"]`);
+        if (tabBtn) tabBtn.click();
+
+        // Populate current margins
+        const margins = this.engine.currentMargins || { top: 40, bottom: 30, left: 40, right: 30, gutter: 0, gutterPos: 'left' };
+        const topIn = document.getElementById('ps-margin-top');
+        const btmIn = document.getElementById('ps-margin-bottom');
+        const lftIn = document.getElementById('ps-margin-left');
+        const rgtIn = document.getElementById('ps-margin-right');
+        const gutIn = document.getElementById('ps-gutter');
+        const gutPos = document.getElementById('ps-gutter-pos');
+
+        if (topIn) topIn.value = (margins.top / 10).toFixed(1);
+        if (btmIn) btmIn.value = (margins.bottom / 10).toFixed(1);
+        if (lftIn) lftIn.value = (margins.left / 10).toFixed(1);
+        if (rgtIn) rgtIn.value = (margins.right / 10).toFixed(1);
+        if (gutIn) gutIn.value = ((margins.gutter || 0) / 10).toFixed(1);
+        if (gutPos) gutPos.value = margins.gutterPos || 'left';
+
+        // Highlight preset button if matching
+        if (this.engine.currentMarginPreset) {
+            const presetBtn = modal.querySelector(`[data-ps-preset="${this.engine.currentMarginPreset}"]`);
+            if (presetBtn) {
+                modal.querySelectorAll('[data-ps-preset]').forEach(b => {
+                    b.classList.remove('border-indigo-300', 'dark:border-indigo-800', 'bg-indigo-50', 'dark:bg-indigo-950/60', 'text-indigo-700', 'dark:text-indigo-300', 'font-semibold');
+                    b.classList.add('border-gray-200', 'dark:border-gray-700');
+                });
+                presetBtn.classList.add('border-indigo-300', 'dark:border-indigo-800', 'bg-indigo-50', 'dark:bg-indigo-950/60', 'text-indigo-700', 'dark:text-indigo-300', 'font-semibold');
+            }
+        }
+
+        // Orientation
+        const orient = this.engine.currentOrientation || 'portrait';
+        const card = modal.querySelector(`.ps-orient-card[data-orient="${orient}"]`);
+        if (card) card.click();
+
+        // Paper size
+        const sizeSelect = document.getElementById('ps-paper-size-select');
+        if (sizeSelect) {
+            sizeSelect.value = this.engine.currentPaperSize || 'a4';
+        }
+        const customW = document.getElementById('ps-custom-width');
+        const customH = document.getElementById('ps-custom-height');
+        if (customW) customW.value = ((this.engine.customWidthMm || this.engine.getDocumentWidthMm()) / 10).toFixed(1);
+        if (customH) customH.value = ((this.engine.customHeightMm || this.engine.getDocumentHeightMm()) / 10).toFixed(1);
+
+        this.updatePageSetupPreview();
+        this.openModal(modal);
+    }
+
+    updatePageSetupPreview() {
+        const modal = document.getElementById('modal-page-setup');
+        if (!modal) return;
+
+        const orientRadio = modal.querySelector('input[name="ps-orient-radio"]:checked');
+        const orient = orientRadio ? orientRadio.value : 'portrait';
+
+        const sizeSelect = document.getElementById('ps-paper-size-select');
+        const paperSize = sizeSelect ? sizeSelect.value : 'a4';
+
+        let widthMm = 210;
+        let heightMm = 297;
+        if (paperSize === 'custom') {
+            widthMm = (parseFloat(document.getElementById('ps-custom-width')?.value) || 21) * 10;
+            heightMm = (parseFloat(document.getElementById('ps-custom-height')?.value) || 29.7) * 10;
+        } else if (PAPER_DIMENSIONS[paperSize]) {
+            widthMm = PAPER_DIMENSIONS[paperSize].width;
+            heightMm = PAPER_DIMENSIONS[paperSize].height;
+        }
+
+        if (orient === 'landscape') {
+            const tmp = widthMm;
+            widthMm = heightMm;
+            heightMm = tmp;
+        }
+
+        const topMm = (parseFloat(document.getElementById('ps-margin-top')?.value) || 2.54) * 10;
+        const bottomMm = (parseFloat(document.getElementById('ps-margin-bottom')?.value) || 2.54) * 10;
+        const leftMm = (parseFloat(document.getElementById('ps-margin-left')?.value) || 2.54) * 10;
+        const rightMm = (parseFloat(document.getElementById('ps-margin-right')?.value) || 2.54) * 10;
+
+        const previewCanvas = document.getElementById('ps-preview-canvas');
+        const contentBox = document.getElementById('ps-preview-content-box');
+        const caption = document.getElementById('ps-preview-caption');
+        const ratioInfo = document.getElementById('ps-paper-ratio-info');
+        const printAreaInfo = document.getElementById('ps-printable-area-info');
+
+        if (previewCanvas && contentBox) {
+            const maxW = 140;
+            const maxH = 150;
+            let canvasW = maxW;
+            let canvasH = maxH;
+            const aspect = widthMm / heightMm;
+
+            if (aspect <= 1) {
+                // portrait
+                canvasH = maxH;
+                canvasW = Math.round(maxH * aspect);
+            } else {
+                // landscape
+                canvasW = maxW;
+                canvasH = Math.round(maxW / aspect);
+            }
+
+            previewCanvas.style.width = `${canvasW}px`;
+            previewCanvas.style.height = `${canvasH}px`;
+
+            const topPct = Math.min(40, Math.max(5, (topMm / heightMm) * 100));
+            const bottomPct = Math.min(40, Math.max(5, (bottomMm / heightMm) * 100));
+            const leftPct = Math.min(40, Math.max(5, (leftMm / widthMm) * 100));
+            const rightPct = Math.min(40, Math.max(5, (rightMm / widthMm) * 100));
+
+            contentBox.style.top = `${topPct}%`;
+            contentBox.style.bottom = `${bottomPct}%`;
+            contentBox.style.left = `${leftPct}%`;
+            contentBox.style.right = `${rightPct}%`;
+        }
+
+        if (caption) {
+            caption.textContent = `${paperSize.toUpperCase()} ${orient === 'portrait' ? 'Potret' : 'Lanskap'} (${Math.round(widthMm)} × ${Math.round(heightMm)} mm)`;
+        }
+        if (ratioInfo) {
+            ratioInfo.textContent = `1 : ${(Math.max(widthMm, heightMm) / Math.min(widthMm, heightMm)).toFixed(3)}`;
+        }
+        if (printAreaInfo) {
+            const printW = Math.max(0, Math.round(widthMm - leftMm - rightMm));
+            const printH = Math.max(0, Math.round(heightMm - topMm - bottomMm));
+            printAreaInfo.textContent = `${printW} × ${printH} mm`;
+        }
+    }
+
+    openParagraphModal(initialTab = 'indents-spacing') {
+        const modal = document.getElementById('modal-paragraph-format');
+        if (!modal) return;
+
+        const tabBtn = modal.querySelector(`[data-para-tab="${initialTab}"]`);
+        if (tabBtn) tabBtn.click();
+
+        const format = this.engine.getActiveParagraphFormat();
+
+        const alignSelect = document.getElementById('para-align-select');
+        if (alignSelect) alignSelect.value = format.textAlign || 'justify';
+
+        const indentLeft = document.getElementById('para-indent-left');
+        if (indentLeft) indentLeft.value = (format.indentLeft || 0).toFixed(2).replace(/\.?0+$/, '');
+
+        const indentRight = document.getElementById('para-indent-right');
+        if (indentRight) indentRight.value = (format.indentRight || 0).toFixed(2).replace(/\.?0+$/, '');
+
+        const specialIndent = document.getElementById('para-special-indent');
+        if (specialIndent) specialIndent.value = format.specialIndent || 'none';
+
+        const specialVal = document.getElementById('para-special-val');
+        if (specialVal) specialVal.value = (format.specialVal || 1.25).toFixed(2).replace(/\.?0+$/, '');
+
+        const spacingBefore = document.getElementById('para-spacing-before');
+        if (spacingBefore) spacingBefore.value = Math.round(format.spacingBefore || 0);
+
+        const spacingAfter = document.getElementById('para-spacing-after');
+        if (spacingAfter) spacingAfter.value = Math.round(format.spacingAfter || 6);
+
+        const lsType = document.getElementById('para-line-spacing-type');
+        const lsAt = document.getElementById('para-line-spacing-at');
+        const rawLs = String(format.lineSpacing || '1.5');
+        if (lsType && lsAt) {
+            if (['1.0', '1.15', '1.5', '2.0'].includes(rawLs)) {
+                lsType.value = rawLs;
+                lsAt.value = rawLs;
+            } else {
+                lsType.value = 'multiple';
+                lsAt.value = rawLs;
+            }
+        }
+
+        const keepNext = document.getElementById('para-keep-with-next');
+        if (keepNext) keepNext.checked = Boolean(format.keepWithNext);
+
+        const pageBreak = document.getElementById('para-page-break-before');
+        if (pageBreak) pageBreak.checked = Boolean(format.pageBreakBefore);
+
+        const widowOrphan = document.getElementById('para-widow-orphan');
+        if (widowOrphan) widowOrphan.checked = format.widowOrphan !== false;
+
+        this.updateParagraphPreview();
+        this.openModal(modal);
+    }
+
+    updateParagraphPreview() {
+        const preview = document.getElementById('para-preview-sample');
+        if (!preview) return;
+
+        const align = document.getElementById('para-align-select')?.value || 'justify';
+        const indentLeft = parseFloat(document.getElementById('para-indent-left')?.value) || 0;
+        const indentRight = parseFloat(document.getElementById('para-indent-right')?.value) || 0;
+        const special = document.getElementById('para-special-indent')?.value || 'none';
+        const specialVal = parseFloat(document.getElementById('para-special-val')?.value) || 1.25;
+        const spacingBefore = parseFloat(document.getElementById('para-spacing-before')?.value) || 0;
+        const spacingAfter = parseFloat(document.getElementById('para-spacing-after')?.value) || 6;
+
+        const lsType = document.getElementById('para-line-spacing-type')?.value || '1.5';
+        const lsAt = document.getElementById('para-line-spacing-at')?.value || '1.5';
+        const lineSpacing = (lsType === '1.0' || lsType === '1.15' || lsType === '1.5' || lsType === '2.0') ? lsType : (lsAt || '1.5');
+
+        preview.style.textAlign = align;
+        preview.style.marginLeft = `${indentLeft}cm`;
+        preview.style.marginRight = `${indentRight}cm`;
+        preview.style.marginTop = `${spacingBefore}pt`;
+        preview.style.marginBottom = `${spacingAfter}pt`;
+        preview.style.lineHeight = lineSpacing;
+
+        if (special === 'first-line') {
+            preview.style.textIndent = `${specialVal}cm`;
+            preview.style.paddingLeft = '0px';
+        } else if (special === 'hanging') {
+            preview.style.textIndent = `-${specialVal}cm`;
+            preview.style.paddingLeft = `${specialVal}cm`;
+        } else {
+            preview.style.textIndent = '0px';
+            preview.style.paddingLeft = '0px';
+        }
+    }
+
+    /* -------------------------------------------------------------
      * Rulers & Measurements
      * ------------------------------------------------------------- */
 
-    renderRuler() {
+    renderRuler(widthCm = null) {
         const ruler = document.getElementById('ruler-ticks');
         if (!ruler) return;
 
+        if (!widthCm && this.engine && typeof this.engine.getDocumentWidthMm === 'function') {
+            widthCm = this.engine.getDocumentWidthMm() / 10;
+        }
+        if (!widthCm) widthCm = 21;
+
+        ruler.style.width = `${widthCm * 10}mm`;
         ruler.innerHTML = '';
-        // A4 width = 21 cm
-        for (let cm = 0; cm <= 21; cm++) {
+        const totalCm = Math.max(1, Math.round(widthCm));
+        for (let cm = 0; cm <= totalCm; cm++) {
             const cmTick = document.createElement('div');
             cmTick.className = 'flex-1 border-r border-gray-300 dark:border-gray-700 h-full relative';
             cmTick.innerHTML = `

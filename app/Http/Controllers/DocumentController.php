@@ -152,7 +152,18 @@ HTML;
         $headerText = $request->input('header_text');
         $footerText = $request->input('footer_text');
 
-        $exported = $this->documentService->exportDocument($title, $content, $format, $headerText, $footerText);
+        $layoutOptions = [
+            'paper_size' => $request->input('paper_size'),
+            'width_mm' => $request->input('width_mm'),
+            'height_mm' => $request->input('height_mm'),
+            'orientation' => $request->input('orientation'),
+            'margin_preset' => $request->input('margin_preset'),
+            'margins' => $request->input('margins'),
+            'line_spacing' => $request->input('line_spacing'),
+            'paragraph_spacing' => $request->input('paragraph_spacing'),
+        ];
+
+        $exported = $this->documentService->exportDocument($title, $content, $format, $headerText, $footerText, $layoutOptions);
 
         return response($exported['content'], 200, [
             'Content-Type' => $exported['mime'],

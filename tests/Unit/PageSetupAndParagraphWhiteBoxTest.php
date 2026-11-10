@@ -1,0 +1,243 @@
+<?php
+
+namespace Tests\Unit;
+
+use App\Services\DocumentService;
+use App\Services\DocxImporter;
+use DOMDocument;
+use DOMXPath;
+use Tests\TestCase;
+use ZipArchive;
+
+class PageSetupAndParagraphWhiteBoxTest extends TestCase
+{
+    protected DocxImporter $importer;
+    protected DocumentService $docService;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->importer = new DocxImporter();
+        $this->docService = new DocumentService();
+    }
+
+    public function test_parse_page_setup_detects_a4_portrait_skripsi_margins(): void
+    {
+        // A4: 11906 x 16838 twips (210 x 297 mm)
+        // Margins: Top 40mm (2268 twips), Left 40mm (2268 twips), Bottom 30mm (1701 twips), Right 30mm (1701 twips)
+        $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Halo Dunia</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:pgSz w:w="11906" w:h="16838" w:orient="portrait"/>
+            <w:pgMar w:top="2268" w:right="1701" w:bottom="1701" w:left="2268" w:gutter="0"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+
+        $setup = $this->importer->parsePageSetup($docXml);
+
+        $this->assertEquals('a4', $setup['paper_size']);
+        $this->assertEquals('portrait', $setup['orientation']);
+        $this->assertEquals(210.0, $setup['width_mm']);
+        $this->assertEquals(297.0, $setup['height_mm']);
+        $this->assertEquals(40.0, $setup['margins']['top']);
+        $this->assertEquals(40.0, $setup['margins']['left']);
+        $this->assertEquals(30.0, $setup['margins']['bottom']);
+        $this->assertEquals(30.0, $setup['margins']['right']);
+        $this->assertEquals('skripsi', $setup['margin_preset']);
+    }
+
+    public function test_parse_page_setup_detects_letter_landscape_normal_margins(): void
+    {
+        // Letter landscape: 15840 x 12240 twips (279.4 x 215.9 mm)
+        // Margins: Normal 25.4mm (1440 twips)
+        $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:sectPr>
+            <w:pgSz w:w="15840" w:h="12240" w:orient="landscape"/>
+            <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+
+        $setup = $this->importer->parsePageSetup($docXml);
+
+        $this->assertEquals('letter', $setup['paper_size']);
+        $this->assertEquals('landscape', $setup['orientation']);
+        $this->assertEquals(25.4, $setup['margins']['top']);
+        $this->assertEquals(25.4, $setup['margins']['left']);
+        $this->assertEquals(25.4, $setup['margins']['bottom']);
+        $this->assertEquals(25.4, $setup['margins']['right']);
+        $this->assertEquals('normal', $setup['margin_preset']);
+    }
+
+    public function test_parse_page_setup_detects_legal_and_folio_paper_sizes(): void
+    {
+        // Legal: 12240 x 20160 twips
+        $legalXml = <<<'XML'
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:sectPr>
+            <w:pgSz w:w="12240" w:h="20160"/>
+            <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+        $legalSetup = $this->importer->parsePageSetup($legalXml);
+        $this->assertEquals('legal', $legalSetup['paper_size']);
+
+        // Folio / F4: 12189 x 18708 twips (215 x 330 mm)
+        $folioXml = <<<'XML'
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:sectPr>
+            <w:pgSz w:w="12189" w:h="18708"/>
+            <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+        $folioSetup = $this->importer->parsePageSetup($folioXml);
+        $this->assertEquals('folio', $folioSetup['paper_size']);
+    }
+
+    public function test_parse_paragraph_spacing_and_first_line_indent(): void
+    {
+        $xml = <<<'XML'
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:pPr>
+        <w:spacing w:before="240" w:after="120" w:line="360" w:lineRule="auto"/>
+        <w:ind w:left="720" w:right="360" w:firstLine="720"/>
+    </w:pPr>
+    <w:r><w:t>Paragraf teks akademik dengan indentasi baris pertama.</w:t></w:r>
+</w:p>
+XML;
+
+        $dom = new DOMDocument();
+        $dom->loadXML($xml);
+        $pNode = $dom->documentElement;
+        $xpath = new DOMXPath($dom);
+        $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+        $zip = new ZipArchive();
+
+        $reflection = new \ReflectionClass(DocxImporter::class);
+        $method = $reflection->getMethod('parseParagraph');
+        $method->setAccessible(true);
+
+        $parsed = $method->invoke($this->importer, $pNode, $xpath, $zip, [], [], []);
+        $html = $parsed['html'];
+
+        $this->assertStringContainsString('margin-top: 12pt', $html);
+        $this->assertStringContainsString('margin-bottom: 6pt', $html);
+        $this->assertStringContainsString('line-height: 1.5', $html);
+        $this->assertStringContainsString('margin-left: 1.27cm', $html);
+        $this->assertStringContainsString('margin-right: 0.64cm', $html);
+        $this->assertStringContainsString('indent-first-line', $html);
+        $this->assertStringContainsString('text-indent: 1.27cm', $html);
+    }
+
+    public function test_parse_paragraph_hanging_indent(): void
+    {
+        $xml = <<<'XML'
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:pPr>
+        <w:spacing w:before="0" w:after="160" w:line="240" w:lineRule="auto"/>
+        <w:ind w:left="720" w:hanging="720"/>
+    </w:pPr>
+    <w:r><w:t>Kotler, P., &amp; Keller, K. L. (2016). Marketing Management (15th ed.). Pearson Education.</w:t></w:r>
+</w:p>
+XML;
+
+        $dom = new DOMDocument();
+        $dom->loadXML($xml);
+        $pNode = $dom->documentElement;
+        $xpath = new DOMXPath($dom);
+        $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+        $zip = new ZipArchive();
+
+        $reflection = new \ReflectionClass(DocxImporter::class);
+        $method = $reflection->getMethod('parseParagraph');
+        $method->setAccessible(true);
+
+        $parsed = $method->invoke($this->importer, $pNode, $xpath, $zip, [], [], []);
+        $html = $parsed['html'];
+
+        $this->assertStringContainsString('indent-hanging', $html);
+        $this->assertStringContainsString('text-indent: -1.27cm', $html);
+        $this->assertStringContainsString('padding-left: 1.27cm', $html);
+    }
+
+    public function test_document_service_export_embeds_layout_options_in_html(): void
+    {
+        $content = '<p>Naskah dalam format lanskap.</p>';
+        $layoutOptions = [
+            'paper_size' => 'legal',
+            'orientation' => 'landscape',
+            'margins' => ['top' => 30, 'bottom' => 30, 'left' => 35, 'right' => 25],
+            'line_spacing' => '2.0',
+            'paragraph_spacing' => ['before' => 6, 'after' => 12],
+        ];
+
+        $result = $this->docService->exportDocument('Laporan Lanskap', $content, 'html', null, null, $layoutOptions);
+        $htmlOutput = $result['content'];
+
+        $this->assertStringContainsString('@page {', $htmlOutput);
+        $this->assertStringContainsString('size: 355.6mm 215.9mm', $htmlOutput);
+        $this->assertStringContainsString('margin: 30mm 25mm 30mm 35mm', $htmlOutput);
+        $this->assertStringContainsString('line-height: 2.0', $htmlOutput);
+        $this->assertStringContainsString('margin-top: 6pt', $htmlOutput);
+        $this->assertStringContainsString('margin-bottom: 12pt', $htmlOutput);
+    }
+
+    public function test_document_service_export_docx_xml_embeds_page_sz_and_margins(): void
+    {
+        $content = '<p>Naskah skripsi akademik.</p>';
+        $layoutOptions = [
+            'paper_size' => 'a4',
+            'orientation' => 'portrait',
+            'margin_preset' => 'skripsi',
+            'margins' => ['top' => 40, 'bottom' => 30, 'left' => 40, 'right' => 30],
+            'line_spacing' => '1.5',
+            'paragraph_spacing' => ['before' => 0, 'after' => 6],
+        ];
+
+        $result = $this->docService->exportDocument('Skripsi Bab I', $content, 'docx', null, null, $layoutOptions);
+        $docOutput = $result['content'];
+
+        $this->assertStringContainsString('@page Section1 {', $docOutput);
+        $this->assertStringContainsString('size: 210mm 297mm;', $docOutput);
+        $this->assertStringContainsString('margin: 40mm 30mm 30mm 40mm;', $docOutput);
+        $this->assertStringContainsString('mso-page-orientation: portrait;', $docOutput);
+        $this->assertStringContainsString('line-height: 1.5;', $docOutput);
+        $this->assertStringContainsString('margin-top: 0pt;', $docOutput);
+        $this->assertStringContainsString('margin-bottom: 6pt;', $docOutput);
+    }
+
+    public function test_document_service_export_json_preserves_layout_options(): void
+    {
+        $content = '<p>Dokumen Uji JSON</p>';
+        $layoutOptions = [
+            'paper_size' => 'folio',
+            'orientation' => 'portrait',
+            'margin_preset' => 'custom',
+            'margins' => ['top' => 30, 'bottom' => 25, 'left' => 30, 'right' => 20],
+        ];
+
+        $result = $this->docService->exportDocument('JSON Dokumen', $content, 'json', null, null, $layoutOptions);
+        $data = json_decode($result['content'], true);
+
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('layout_options', $data);
+        $this->assertEquals('folio', $data['layout_options']['paper_size']);
+        $this->assertEquals('portrait', $data['layout_options']['orientation']);
+        $this->assertEquals(30, $data['layout_options']['margins']['top']);
+    }
+}

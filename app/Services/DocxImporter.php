@@ -31,6 +31,8 @@ class DocxImporter
 
     private ?string $defaultFontFamily = null;
 
+    private array $pageSetup = [];
+
     public function getExtractedHeader(): string
     {
         return $this->extractedHeader;
@@ -51,6 +53,11 @@ class DocxImporter
         return $this->defaultFontFamily;
     }
 
+    public function getPageSetup(): array
+    {
+        return $this->pageSetup;
+    }
+
     /**
      * Parse DOCX with extracted headers and footers metadata.
      */
@@ -64,6 +71,7 @@ class DocxImporter
             'footer_text' => $this->extractedFooter,
             'different_first_page' => $this->differentFirstPage,
             'default_font_family' => $this->defaultFontFamily,
+            'page_setup' => $this->pageSetup,
         ];
     }
 
@@ -101,6 +109,9 @@ class DocxImporter
 
         // 2. Extract "Different First Page" setting from Word section properties
         $this->differentFirstPage = (bool) preg_match('/<w:titlePg\s*\/?>/i', $docXml);
+
+        // 2b. Extract Page Setup (Paper size, Orientation, Margins)
+        $this->pageSetup = $this->parsePageSetup($docXml);
 
         // 3. Extract Running Headers and Footers from Word archive
         $this->parseHeadersAndFooters($zip, $rels, $docXml);
@@ -325,6 +336,122 @@ class DocxImporter
                 }
             }
         }
+    }
+
+    /**
+     * Parse section page setup properties from Word document.xml (pgSz and pgMar).
+     */
+    public function parsePageSetup(string $docXml): array
+    {
+        $setup = [
+            'paper_size' => 'a4',
+            'orientation' => 'portrait',
+            'width_mm' => 210.0,
+            'height_mm' => 297.0,
+            'margin_preset' => 'normal',
+            'margins' => [
+                'top' => 25.4,
+                'bottom' => 25.4,
+                'left' => 25.4,
+                'right' => 25.4,
+                'gutter' => 0.0,
+                'top_mm' => 25.4,
+                'bottom_mm' => 25.4,
+                'left_mm' => 25.4,
+                'right_mm' => 25.4,
+                'gutter_mm' => 0.0,
+            ],
+        ];
+
+        // Search <w:pgSz>
+        if (preg_match('/<w:pgSz\b([^>]*)\/?>/i', $docXml, $szMatch)) {
+            $attrs = $szMatch[1];
+            $widthTwips = null;
+            $heightTwips = null;
+            if (preg_match('/w:w=["\'](\d+)["\']/i', $attrs, $wm)) {
+                $widthTwips = (int) $wm[1];
+            }
+            if (preg_match('/w:h=["\'](\d+)["\']/i', $attrs, $hm)) {
+                $heightTwips = (int) $hm[1];
+            }
+            if (preg_match('/w:orient=["\'](landscape|portrait)["\']/i', $attrs, $om)) {
+                $setup['orientation'] = strtolower($om[1]);
+            }
+
+            if ($widthTwips && $heightTwips) {
+                $wMm = round($widthTwips * 25.4 / 1440, 1);
+                $hMm = round($heightTwips * 25.4 / 1440, 1);
+                $setup['width_mm'] = $wMm;
+                $setup['height_mm'] = $hMm;
+
+                if ($wMm > $hMm && ! isset($om[1])) {
+                    $setup['orientation'] = 'landscape';
+                }
+
+                $minDim = min($wMm, $hMm);
+                $maxDim = max($wMm, $hMm);
+
+                if (abs($minDim - 210.0) <= 3 && abs($maxDim - 297.0) <= 3) {
+                    $setup['paper_size'] = 'a4';
+                } elseif (abs($minDim - 215.9) <= 3 && abs($maxDim - 279.4) <= 3) {
+                    $setup['paper_size'] = 'letter';
+                } elseif (abs($minDim - 215.9) <= 3 && abs($maxDim - 355.6) <= 3) {
+                    $setup['paper_size'] = 'legal';
+                } elseif (abs($minDim - 215.0) <= 3 && abs($maxDim - 330.0) <= 3) {
+                    $setup['paper_size'] = 'folio';
+                } elseif (abs($minDim - 297.0) <= 3 && abs($maxDim - 420.0) <= 3) {
+                    $setup['paper_size'] = 'a3';
+                } elseif (abs($minDim - 148.0) <= 3 && abs($maxDim - 210.0) <= 3) {
+                    $setup['paper_size'] = 'a5';
+                } elseif (abs($minDim - 182.0) <= 3 && abs($maxDim - 257.0) <= 3) {
+                    $setup['paper_size'] = 'b5';
+                } elseif (abs($minDim - 184.1) <= 3 && abs($maxDim - 266.7) <= 3) {
+                    $setup['paper_size'] = 'executive';
+                } else {
+                    $setup['paper_size'] = 'custom';
+                }
+            }
+        }
+
+        // Search <w:pgMar>
+        if (preg_match('/<w:pgMar\b([^>]*)\/?>/i', $docXml, $marMatch)) {
+            $attrs = $marMatch[1];
+            $top = preg_match('/w:top=["\'](\d+)["\']/i', $attrs, $m) ? round(((int) $m[1]) * 25.4 / 1440, 1) : 25.4;
+            $bottom = preg_match('/w:bottom=["\'](\d+)["\']/i', $attrs, $m) ? round(((int) $m[1]) * 25.4 / 1440, 1) : 25.4;
+            $left = preg_match('/w:left=["\'](\d+)["\']/i', $attrs, $m) ? round(((int) $m[1]) * 25.4 / 1440, 1) : 25.4;
+            $right = preg_match('/w:right=["\'](\d+)["\']/i', $attrs, $m) ? round(((int) $m[1]) * 25.4 / 1440, 1) : 25.4;
+            $gutter = preg_match('/w:gutter=["\'](\d+)["\']/i', $attrs, $m) ? round(((int) $m[1]) * 25.4 / 1440, 1) : 0.0;
+
+            $setup['margins'] = [
+                'top' => $top,
+                'bottom' => $bottom,
+                'left' => $left,
+                'right' => $right,
+                'gutter' => $gutter,
+                'top_mm' => $top,
+                'bottom_mm' => $bottom,
+                'left_mm' => $left,
+                'right_mm' => $right,
+                'gutter_mm' => $gutter,
+            ];
+
+            // Resolve Presets
+            if (abs($top - 40) <= 2 && abs($left - 40) <= 2 && abs($bottom - 30) <= 2 && abs($right - 30) <= 2) {
+                $setup['margin_preset'] = 'skripsi';
+            } elseif (abs($top - 12.7) <= 2 && abs($bottom - 12.7) <= 2 && abs($left - 12.7) <= 2 && abs($right - 12.7) <= 2) {
+                $setup['margin_preset'] = 'narrow';
+            } elseif (abs($top - 25.4) <= 2 && abs($bottom - 25.4) <= 2 && abs($left - 19.1) <= 2 && abs($right - 19.1) <= 2) {
+                $setup['margin_preset'] = 'moderate';
+            } elseif (abs($top - 25.4) <= 2 && abs($bottom - 25.4) <= 2 && abs($left - 50.8) <= 2 && abs($right - 50.8) <= 2) {
+                $setup['margin_preset'] = 'wide';
+            } elseif (abs($top - 25.4) <= 2 && abs($bottom - 25.4) <= 2 && abs($left - 25.4) <= 2 && abs($right - 25.4) <= 2) {
+                $setup['margin_preset'] = 'normal';
+            } else {
+                $setup['margin_preset'] = 'custom';
+            }
+        }
+
+        return $setup;
     }
 
     /**
@@ -859,6 +986,12 @@ class DocxImporter
                 }
             }
 
+            // Check paragraph spacing <w:spacing>
+            $pSpacingNode = $xpath->query('./w:spacing', $pPr)->item(0);
+
+            // Check paragraph indentation <w:ind>
+            $pIndNode = $xpath->query('./w:ind', $pPr)->item(0);
+
             // Check list properties <w:numPr>
             $numPr = $xpath->query('./w:numPr', $pPr)->item(0);
             if ($numPr) {
@@ -933,6 +1066,62 @@ class DocxImporter
         } elseif ($align === 'left') {
             $classes[] = 'text-left';
             $styleAttr[] = 'text-align: left;';
+        }
+
+        // Paragraph spacing (<w:spacing>)
+        if (isset($pSpacingNode) && $pSpacingNode instanceof DOMElement) {
+            $beforeTwips = $pSpacingNode->getAttribute('w:before');
+            if ($beforeTwips !== '' && is_numeric($beforeTwips)) {
+                $beforePt = round(((int) $beforeTwips) / 20, 1);
+                if ($beforePt > 0) {
+                    $styleAttr[] = "margin-top: {$beforePt}pt;";
+                }
+            }
+            $afterTwips = $pSpacingNode->getAttribute('w:after');
+            if ($afterTwips !== '' && is_numeric($afterTwips)) {
+                $afterPt = round(((int) $afterTwips) / 20, 1);
+                if ($afterPt > 0) {
+                    $styleAttr[] = "margin-bottom: {$afterPt}pt;";
+                }
+            }
+            $lineTwips = $pSpacingNode->getAttribute('w:line');
+            $lineRule = $pSpacingNode->getAttribute('w:lineRule');
+            if ($lineTwips !== '' && is_numeric($lineTwips)) {
+                if ($lineRule === 'exact' || $lineRule === 'atLeast') {
+                    $linePt = round(((int) $lineTwips) / 20, 1);
+                    $styleAttr[] = "line-height: {$linePt}pt;";
+                } else {
+                    $lh = round(((int) $lineTwips) / 240, 2);
+                    if ($lh >= 0.8 && $lh <= 4.0) {
+                        $styleAttr[] = "line-height: {$lh};";
+                    }
+                }
+            }
+        }
+
+        // Paragraph indentation (<w:ind>)
+        if (isset($pIndNode) && $pIndNode instanceof DOMElement) {
+            $leftTwips = $pIndNode->getAttribute('w:left');
+            if ($leftTwips !== '' && is_numeric($leftTwips) && (int) $leftTwips > 0) {
+                $leftCm = round(((int) $leftTwips) * 2.54 / 1440, 2);
+                $styleAttr[] = "margin-left: {$leftCm}cm;";
+            }
+            $rightTwips = $pIndNode->getAttribute('w:right');
+            if ($rightTwips !== '' && is_numeric($rightTwips) && (int) $rightTwips > 0) {
+                $rightCm = round(((int) $rightTwips) * 2.54 / 1440, 2);
+                $styleAttr[] = "margin-right: {$rightCm}cm;";
+            }
+            $hangingTwips = $pIndNode->getAttribute('w:hanging');
+            $firstLineTwips = $pIndNode->getAttribute('w:firstLine');
+            if ($hangingTwips !== '' && is_numeric($hangingTwips) && (int) $hangingTwips > 0) {
+                $hCm = round(((int) $hangingTwips) * 2.54 / 1440, 2);
+                $classes[] = 'indent-hanging';
+                $styleAttr[] = "text-indent: -{$hCm}cm; padding-left: {$hCm}cm;";
+            } elseif ($firstLineTwips !== '' && is_numeric($firstLineTwips) && (int) $firstLineTwips > 0) {
+                $flCm = round(((int) $firstLineTwips) * 2.54 / 1440, 2);
+                $classes[] = 'indent-first-line';
+                $styleAttr[] = "text-indent: {$flCm}cm;";
+            }
         }
 
         // Heading specific font and color preservation

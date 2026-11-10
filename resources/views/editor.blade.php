@@ -70,17 +70,42 @@
             margin: 18px auto;
             background: #ffffff;
             box-shadow: 0 4px 25px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
-            transition: transform 0.15s ease-out, padding 0.2s ease, width 0.2s ease;
+            transition: transform 0.15s ease-out, padding 0.2s ease, width 0.2s ease, min-height 0.2s ease;
             box-sizing: border-box;
             border-radius: 2px;
             position: relative;
         }
 
+        /* Paper Sizes: Portrait */
+        .document-page-sheet.page-a4 { width: 210mm; min-height: 297mm; }
+        .document-page-sheet.page-letter { width: 215.9mm; min-height: 279.4mm; }
+        .document-page-sheet.page-legal { width: 215.9mm; min-height: 355.6mm; }
+        .document-page-sheet.page-folio { width: 215mm; min-height: 330mm; }
+        .document-page-sheet.page-executive { width: 184.1mm; min-height: 266.7mm; }
+        .document-page-sheet.page-a3 { width: 297mm; min-height: 420mm; }
+        .document-page-sheet.page-a5 { width: 148mm; min-height: 210mm; }
+        .document-page-sheet.page-b5 { width: 182mm; min-height: 257mm; }
+        .document-page-sheet.page-statement { width: 139.7mm; min-height: 215.9mm; }
+
+        /* Document Orientation: Landscape (Dynamic for all paper sizes) */
         #document-page-canvas.page-landscape,
         .document-page-sheet.page-landscape {
             width: 297mm !important;
             min-height: 210mm !important;
         }
+        .document-page-sheet.page-a4.page-landscape { width: 297mm !important; min-height: 210mm !important; }
+        .document-page-sheet.page-letter.page-landscape { width: 279.4mm !important; min-height: 215.9mm !important; }
+        .document-page-sheet.page-legal.page-landscape { width: 355.6mm !important; min-height: 215.9mm !important; }
+        .document-page-sheet.page-folio.page-landscape { width: 330mm !important; min-height: 215mm !important; }
+        .document-page-sheet.page-executive.page-landscape { width: 266.7mm !important; min-height: 184.1mm !important; }
+        .document-page-sheet.page-a3.page-landscape { width: 420mm !important; min-height: 297mm !important; }
+        .document-page-sheet.page-a5.page-landscape { width: 210mm !important; min-height: 148mm !important; }
+        .document-page-sheet.page-b5.page-landscape { width: 257mm !important; min-height: 182mm !important; }
+        .document-page-sheet.page-statement.page-landscape { width: 215.9mm !important; min-height: 139.7mm !important; }
+
+        /* Paragraph Indentation and Typography Helpers */
+        .page-sheet-body p.indent-first-line { text-indent: 1.25cm; }
+        .page-sheet-body p.indent-hanging { text-indent: -1.25cm; padding-left: 1.25cm; }
 
         /* Dark Sheet Mode (When explicitly toggled by user) */
         #document-page-canvas.canvas-dark-sheet,
@@ -741,7 +766,60 @@
                     <option value="1.15">Spasi 1.15</option>
                     <option value="1.5" selected>Spasi 1.5</option>
                     <option value="2.0">Spasi 2.0</option>
+                    <option value="2.5">Spasi 2.5</option>
+                    <option value="3.0">Spasi 3.0</option>
                 </select>
+
+                <!-- Microsoft Word Style Line & Paragraph Spacing Dropdown -->
+                <div class="relative inline-block" id="line-spacing-dropdown-wrapper">
+                    <button id="btn-line-spacing-dropdown" type="button" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded flex items-center gap-0.5 transition cursor-pointer" title="Spasi Baris dan Paragraf (Microsoft Word)">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16M7 4v16m0-16l-2 2m2-2l2 2m-2 16l-2-2m2 2l2-2" />
+                        </svg>
+                        <svg class="w-2.5 h-2.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="line-spacing-dropdown-menu" class="hidden absolute left-0 mt-1 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                        <button type="button" data-spacing-val="1.0" class="spacing-option-item w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center justify-between">
+                            <span>1.0 (Tunggal)</span>
+                            <span class="text-[10px] text-gray-400">Single</span>
+                        </button>
+                        <button type="button" data-spacing-val="1.15" class="spacing-option-item w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center justify-between">
+                            <span>1.15</span>
+                        </button>
+                        <button type="button" data-spacing-val="1.5" class="spacing-option-item w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center justify-between font-semibold text-indigo-600 dark:text-indigo-400">
+                            <span>1.5 (Standar Skripsi)</span>
+                            <span class="text-[10px]">1.5 Lines</span>
+                        </button>
+                        <button type="button" data-spacing-val="2.0" class="spacing-option-item w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center justify-between">
+                            <span>2.0 (Ganda)</span>
+                            <span class="text-[10px] text-gray-400">Double</span>
+                        </button>
+                        <button type="button" data-spacing-val="2.5" class="spacing-option-item w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center justify-between">
+                            <span>2.5</span>
+                        </button>
+                        <button type="button" data-spacing-val="3.0" class="spacing-option-item w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center justify-between">
+                            <span>3.0</span>
+                        </button>
+                        <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+                        <button type="button" data-action="add-space-before" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>➕ Tambah Spasi Sebelum Paragraf</span>
+                        </button>
+                        <button type="button" data-action="remove-space-before" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-500">
+                            <span>➖ Hapus Spasi Sebelum Paragraf</span>
+                        </button>
+                        <button type="button" data-action="add-space-after" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>➕ Tambah Spasi Sesudah Paragraf</span>
+                        </button>
+                        <button type="button" data-action="remove-space-after" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-500">
+                            <span>➖ Hapus Spasi Sesudah Paragraf</span>
+                        </button>
+                        <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+                        <button type="button" data-action="open-paragraph-modal" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 font-medium text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
+                            <span>Opsi Spasi Baris...</span>
+                            <span>↘</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Inline Styles (Bold, Italic, Underline, Strike, Sub, Super) -->
@@ -809,6 +887,9 @@
                 </button>
                 <button data-cmd="indent" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Tambah Indentasi Paragraf">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                </button>
+                <button id="btn-open-paragraph-modal" data-action="open-paragraph-modal" class="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition ml-0.5" title="Kotak Dialog Format Paragraf (Microsoft Word Paragraph Options)">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </button>
             </div>
 
@@ -905,40 +986,113 @@
         </div>
 
         <!-- Ribbon Panel 3: TATA LETAK (LAYOUT) -->
-        <div data-ribbon-panel="layout" class="hidden flex-wrap items-center px-4 py-2 gap-4 overflow-x-auto text-xs">
-            <div class="flex items-center gap-2">
-                <label class="text-gray-500 font-bold">Preset Margin:</label>
-                <select id="layout-margins" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none font-semibold">
-                    <option value="skripsi" selected>Skripsi / Tesis (Atas 4, Kiri 4, Kanan 3, Bawah 3 cm)</option>
-                    <option value="normal">Normal (2.54 cm / 1 inch)</option>
-                    <option value="narrow">Sempit (1.27 cm)</option>
-                    <option value="wide">Lebar (3.81 cm)</option>
-                </select>
+        <div data-ribbon-panel="layout" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs">
+            <!-- Group 1: Page Setup (Margins, Size, Orientation, Dialog Launcher) -->
+            <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <span class="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-wider">Halaman:</span>
+
+                <!-- Preset Margin -->
+                <div class="flex items-center gap-1.5" title="Margin Halaman (Microsoft Word)">
+                    <span class="text-gray-500 font-bold">Margin:</span>
+                    <select id="layout-margins" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none font-medium">
+                        <option value="skripsi" selected>Skripsi / Tesis (Atas 4, Kiri 4, Kanan 3, Bawah 3 cm)</option>
+                        <option value="normal">Normal (2.54 cm / 1 inch)</option>
+                        <option value="narrow">Sempit (1.27 cm)</option>
+                        <option value="moderate">Sedang (2.54 x 1.91 cm)</option>
+                        <option value="wide">Lebar (3.81 cm)</option>
+                        <option value="mirrored">Margin Cermin (Mirrored)</option>
+                        <option value="custom">Margin Kustom...</option>
+                    </select>
+                </div>
+
+                <!-- Ukuran Kertas -->
+                <div class="flex items-center gap-1.5" title="Ukuran Kertas Dokumen">
+                    <span class="text-gray-500 font-bold">Ukuran:</span>
+                    <select id="layout-paper-size" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none font-medium">
+                        <option value="a4" selected>A4 (210 x 297 mm)</option>
+                        <option value="letter">Letter (8.5 x 11 in)</option>
+                        <option value="legal">Legal (8.5 x 14 in)</option>
+                        <option value="folio">Folio / F4 (215 x 330 mm)</option>
+                        <option value="executive">Executive (184.1 x 266.7 mm)</option>
+                        <option value="a3">A3 (297 x 420 mm)</option>
+                        <option value="a5">A5 (148 x 210 mm)</option>
+                        <option value="b5">B5 (182 x 257 mm)</option>
+                        <option value="statement">Statement (139.7 x 215.9 mm)</option>
+                        <option value="custom">Ukuran Kustom...</option>
+                    </select>
+                </div>
+
+                <!-- Orientasi -->
+                <div class="flex items-center gap-1.5" title="Orientasi Halaman">
+                    <span class="text-gray-500 font-bold">Orientasi:</span>
+                    <select id="layout-orientation" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none font-medium">
+                        <option value="portrait" selected>Potret (Portrait)</option>
+                        <option value="landscape">Lanskap (Landscape)</option>
+                    </select>
+                </div>
+
+                <!-- Page Setup Dialog Launcher Button -->
+                <button id="btn-open-page-setup-modal" data-action="page-setup-modal" class="p-1 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Penyetelan Halaman Lengkap (Microsoft Word Page Setup Dialog)">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </button>
             </div>
 
-            <div class="flex items-center gap-2">
-                <label class="text-gray-500 font-bold">Ukuran Kertas:</label>
-                <select id="layout-paper-size" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none">
-                    <option value="a4" selected>A4 (210 x 297 mm)</option>
-                    <option value="letter">Letter (8.5 x 11 in)</option>
-                    <option value="legal">Legal (8.5 x 14 in)</option>
-                </select>
+            <!-- Group 2: Word Layout Paragraph Controls (Indent & Spacing Quick Inputs) -->
+            <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <span class="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-wider">Paragraf:</span>
+
+                <!-- Indent Left / Right -->
+                <div class="flex flex-col gap-0.5">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] text-gray-500 w-13">Indent Kiri:</span>
+                        <div class="flex items-center">
+                            <input type="number" id="layout-indent-left" value="0" min="0" max="10" step="0.25" class="w-13 px-1 py-0.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-center outline-none" />
+                            <span class="text-[10px] text-gray-400 ml-0.5">cm</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] text-gray-500 w-13">Indent Kanan:</span>
+                        <div class="flex items-center">
+                            <input type="number" id="layout-indent-right" value="0" min="0" max="10" step="0.25" class="w-13 px-1 py-0.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-center outline-none" />
+                            <span class="text-[10px] text-gray-400 ml-0.5">cm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spacing Before / After -->
+                <div class="flex flex-col gap-0.5">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] text-gray-500 w-12">Sebelum:</span>
+                        <div class="flex items-center">
+                            <input type="number" id="layout-spacing-before" value="0" min="0" max="72" step="6" class="w-13 px-1 py-0.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-center outline-none" />
+                            <span class="text-[10px] text-gray-400 ml-0.5">pt</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] text-gray-500 w-12">Sesudah:</span>
+                        <div class="flex items-center">
+                            <input type="number" id="layout-spacing-after" value="6" min="0" max="72" step="6" class="w-13 px-1 py-0.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-center outline-none" />
+                            <span class="text-[10px] text-gray-400 ml-0.5">pt</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paragraph Dialog Launcher Button -->
+                <button id="btn-layout-open-paragraph-modal" data-action="open-paragraph-modal" class="p-1 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Pengaturan Paragraf Lengkap (Word Dialog)">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </button>
             </div>
 
+            <!-- Group 3: Quick Templates & Headers -->
             <div class="flex items-center gap-2">
-                <label class="text-gray-500 font-bold">Orientasi:</label>
-                <select id="layout-orientation" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none">
-                    <option value="portrait" selected>Potret (Portrait)</option>
-                    <option value="landscape">Lanskap (Landscape)</option>
-                </select>
-            </div>
-
-            <div class="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-gray-800">
                 <button onclick="window.documentEngine.setMarginPreset('skripsi'); window.documentEngine.setFontFamily('\'Times New Roman\', serif'); window.documentEngine.setFontSize('12pt'); window.documentEngine.setLineSpacing('1.5'); window.uiController.showToast('Format Skripsi 4-4-3-3 cm diterapkan!');" class="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold hover:bg-indigo-100 transition">
                     🎓 Terapkan Standar Skripsi
                 </button>
                 <button data-action="header-footer-modal" class="px-2.5 py-1 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-medium hover:bg-gray-100 transition" title="Konfigurasi running header, footer, dan nomor halaman">
                     📋 Header & Footer
+                </button>
+                <button data-action="page-setup-modal" class="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-xs" title="Buka Kotak Dialog Penyetelan Halaman Word">
+                    📐 Penyetelan Halaman
                 </button>
             </div>
         </div>
@@ -2451,6 +2605,560 @@
                 <button type="button" id="btn-confirm-update-toc" class="px-4 py-2 text-xs font-bold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer">
                     OK
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 16: PENYETELAN HALAMAN (MICROSOFT WORD PAGE SETUP SUITE)            -->
+    <!-- ========================================================================= -->
+    <div id="modal-page-setup" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[92vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-indigo-600 text-white text-xs">📐</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Penyetelan Halaman (Page Setup)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur margin, ukuran kertas, orientasi, dan tata letak standar Microsoft Word</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-gray-200 dark:border-gray-800 px-4 bg-gray-50 dark:bg-gray-800/60 shrink-0 text-xs font-semibold">
+                <button type="button" data-page-setup-tab="margins" class="page-setup-tab-btn px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold transition">
+                    Margin
+                </button>
+                <button type="button" data-page-setup-tab="paper" class="page-setup-tab-btn px-4 py-2.5 border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
+                    Kertas (Paper)
+                </button>
+                <button type="button" data-page-setup-tab="layout" class="page-setup-tab-btn px-4 py-2.5 border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
+                    Tata Letak (Layout)
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs flex-1">
+                <!-- TAB 1: MARGIN -->
+                <div id="tab-ps-margins" class="page-setup-tab-pane space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Left: Margins and Gutter Form -->
+                        <div class="space-y-3.5">
+                            <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Margin Dokumen</legend>
+                                <div class="grid grid-cols-2 gap-3 mt-1">
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Atas (Top):</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-margin-top" value="4.0" step="0.1" min="0" max="15" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Bawah (Bottom):</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-margin-bottom" value="3.0" step="0.1" min="0" max="15" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label id="lbl-ps-margin-left" class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Kiri (Left):</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-margin-left" value="4.0" step="0.1" min="0" max="15" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label id="lbl-ps-margin-right" class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Kanan (Right):</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-margin-right" value="3.0" step="0.1" min="0" max="15" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Jilid (Gutter)</legend>
+                                <div class="grid grid-cols-2 gap-3 mt-1">
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Lebar Jilid:</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-gutter" value="0" step="0.1" min="0" max="10" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Posisi Jilid:</label>
+                                        <select id="ps-gutter-pos" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none">
+                                            <option value="left" selected>Kiri (Left)</option>
+                                            <option value="top">Atas (Top)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <!-- Orientation Visual Radio Cards -->
+                            <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Orientasi Halaman</legend>
+                                <div class="grid grid-cols-2 gap-3 mt-1">
+                                    <label class="ps-orient-card flex flex-col items-center p-2.5 rounded-lg border-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 cursor-pointer transition text-center" data-orient="portrait">
+                                        <input type="radio" name="ps-orient-radio" value="portrait" checked class="hidden" />
+                                        <div class="w-7 h-10 border-2 border-indigo-600 rounded bg-white dark:bg-gray-800 mb-1.5 flex flex-col justify-between p-1 shadow-xs">
+                                            <div class="w-full h-0.5 bg-indigo-300 rounded"></div>
+                                            <div class="w-2/3 h-0.5 bg-indigo-200 rounded"></div>
+                                        </div>
+                                        <span class="font-bold text-gray-800 dark:text-gray-200">Potret</span>
+                                        <span class="text-[10px] text-gray-500">Tegak (Portrait)</span>
+                                    </label>
+                                    <label class="ps-orient-card flex flex-col items-center p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40 hover:border-gray-300 cursor-pointer transition text-center" data-orient="landscape">
+                                        <input type="radio" name="ps-orient-radio" value="landscape" class="hidden" />
+                                        <div class="w-10 h-7 border-2 border-gray-400 rounded bg-white dark:bg-gray-800 mb-1.5 flex flex-col justify-between p-1 shadow-xs">
+                                            <div class="w-full h-0.5 bg-gray-300 rounded"></div>
+                                            <div class="w-2/3 h-0.5 bg-gray-200 rounded"></div>
+                                        </div>
+                                        <span class="font-bold text-gray-800 dark:text-gray-200">Lanskap</span>
+                                        <span class="text-[10px] text-gray-500">Mendatar (Landscape)</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Multiple Pages Mode -->
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Beberapa Halaman (Multiple Pages):</label>
+                                <select id="ps-multiple-pages" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none">
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="mirror">Margin Cermin (Mirror Margins)</option>
+                                    <option value="2pages">2 Halaman per Lembar (2 Pages per Sheet)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Right: Presets & Live Visual Sheet Preview -->
+                        <div class="space-y-3 flex flex-col">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-gray-700 dark:text-gray-300">Preset Margin Microsoft Word:</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <button type="button" data-ps-preset="skripsi" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-left font-semibold hover:bg-indigo-100 transition">
+                                    🎓 Skripsi (4-4-3-3 cm)
+                                </button>
+                                <button type="button" data-ps-preset="normal" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
+                                    📄 Normal (2.54 cm)
+                                </button>
+                                <button type="button" data-ps-preset="narrow" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
+                                    📐 Sempit (1.27 cm)
+                                </button>
+                                <button type="button" data-ps-preset="moderate" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
+                                    📏 Sedang (2.54 x 1.91)
+                                </button>
+                                <button type="button" data-ps-preset="wide" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
+                                    ↔️ Lebar (2.54 x 5.08)
+                                </button>
+                                <button type="button" data-ps-preset="mirrored" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
+                                    📖 Cermin (3.18 / 2.54)
+                                </button>
+                            </div>
+
+                            <!-- Interactive Miniature Preview -->
+                            <div class="flex-1 bg-gray-100 dark:bg-gray-800/80 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center min-h-[170px] relative overflow-hidden">
+                                <span class="text-[10px] font-bold text-gray-400 absolute top-2 left-2 uppercase">Pratinjau Lembar</span>
+                                <div id="ps-preview-canvas" class="bg-white dark:bg-gray-900 border border-gray-400 shadow-md relative transition-all duration-200" style="width: 105px; height: 148px;">
+                                    <!-- Margin overlay guides -->
+                                    <div id="ps-preview-content-box" class="absolute border border-dashed border-indigo-400/80 bg-indigo-50/20 dark:bg-indigo-950/20 flex flex-col gap-1 p-1" style="top: 20px; left: 20px; right: 15px; bottom: 15px;">
+                                        <div class="w-full h-1 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                                        <div class="w-5/6 h-1 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                        <div class="w-4/5 h-1 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                        <div class="w-full h-1 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                                    </div>
+                                </div>
+                                <span id="ps-preview-caption" class="text-[10px] text-gray-500 dark:text-gray-400 mt-2">A4 Potret (210 × 297 mm)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: KERTAS (PAPER) -->
+                <div id="tab-ps-paper" class="page-setup-tab-pane hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-3.5">
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Ukuran Kertas Standar (Paper Size):</label>
+                                <select id="ps-paper-size-select" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none font-semibold">
+                                    <option value="a4" selected>A4 (210 × 297 mm / 21 × 29.7 cm)</option>
+                                    <option value="letter">Letter (8.5 × 11 in / 21.59 × 27.94 cm)</option>
+                                    <option value="legal">Legal (8.5 × 14 in / 21.59 × 35.56 cm)</option>
+                                    <option value="folio">Folio / F4 (21.5 × 33 cm / 8.5 × 13 in)</option>
+                                    <option value="executive">Executive (18.41 × 26.67 cm / 7.25 × 10.5 in)</option>
+                                    <option value="a3">A3 (297 × 420 mm / 29.7 × 42 cm)</option>
+                                    <option value="a5">A5 (148 × 210 mm / 14.8 × 21 cm)</option>
+                                    <option value="b5">B5 JIS (18.2 × 25.7 cm)</option>
+                                    <option value="statement">Statement / Half Letter (13.97 × 21.59 cm)</option>
+                                    <option value="custom">Ukuran Kustom (Custom Dimensions)...</option>
+                                </select>
+                            </div>
+
+                            <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Dimensi Kertas Kustom</legend>
+                                <div class="grid grid-cols-2 gap-3 mt-1">
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Lebar Kertas (Width):</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-custom-width" value="21.0" step="0.1" min="5" max="100" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Tinggi Kertas (Height):</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-custom-height" value="29.7" step="0.1" min="5" max="100" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Sumber Kertas (Paper Source):</label>
+                                <select id="ps-paper-source" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none">
+                                    <option value="auto">Baki Otomatis (Default Tray)</option>
+                                    <option value="manual">Baki Manual (Manual Feed)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Paper Info Cards -->
+                        <div class="bg-indigo-50/40 dark:bg-indigo-950/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-900/40 space-y-3">
+                            <h4 class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                <span>📄 Informasi Kertas</span>
+                            </h4>
+                            <p class="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                                Standar naskah akademik, proposal penelitian, tesis, dan skripsi di universitas Indonesia umumnya menggunakan kertas <strong>A4 80 gram</strong> atau <strong>Folio / F4</strong>.
+                            </p>
+                            <div class="space-y-1.5 pt-1 text-[11px]">
+                                <div class="flex justify-between py-1 border-b border-gray-200/60 dark:border-gray-800">
+                                    <span class="text-gray-500">Rasio Lembar:</span>
+                                    <span id="ps-paper-ratio-info" class="font-mono font-semibold">1 : 1.414 (ISO 216)</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-200/60 dark:border-gray-800">
+                                    <span class="text-gray-500">Luas Area Cetak:</span>
+                                    <span id="ps-printable-area-info" class="font-mono font-semibold">140 × 227 mm</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: TATA LETAK (LAYOUT) -->
+                <div id="tab-ps-layout" class="page-setup-tab-pane hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-3.5">
+                            <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Bagian (Section)</legend>
+                                <div class="mt-1">
+                                    <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Awal Bagian (Section start):</label>
+                                    <select id="ps-section-start" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none">
+                                        <option value="newpage" selected>Halaman Baru (New page)</option>
+                                        <option value="continuous">Berkelanjutan (Continuous)</option>
+                                        <option value="evens">Halaman Genap</option>
+                                        <option value="odds">Halaman Ganjil</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+                                <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Header dan Footer</legend>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="ps-diff-odd-even" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                                    <span>Beda halaman ganjil dan genap (Different odd and even)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="ps-diff-first-page" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                                    <span>Beda halaman pertama (Different first page)</span>
+                                </label>
+                            </fieldset>
+
+                            <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Jarak dari Tepi (From edge)</legend>
+                                <div class="grid grid-cols-2 gap-3 mt-1">
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Header:</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-edge-header" value="1.5" step="0.1" min="0" max="10" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Footer:</label>
+                                        <div class="flex items-center">
+                                            <input type="number" id="ps-edge-footer" value="1.5" step="0.1" min="0" max="10" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Perataan Vertikal Halaman:</label>
+                                <select id="ps-vert-align" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none">
+                                    <option value="top" selected>Atas (Top - Standar)</option>
+                                    <option value="center">Tengah (Center)</option>
+                                    <option value="justify">Rata (Justified)</option>
+                                    <option value="bottom">Bawah (Bottom)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Layout Info -->
+                        <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2.5 text-[11px] text-gray-600 dark:text-gray-400">
+                            <span class="font-bold text-gray-900 dark:text-white block text-xs">Tata Letak Standar Word</span>
+                            <p>Konfigurasi header dan footer terintegrasi dengan running header dan nomor halaman pada dokumen Wordcraft Anda.</p>
+                            <p>Menandai <em>Different first page</em> akan menyembunyikan running header dan nomor halaman pada lembar sampul pertama.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3.5 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500 text-[11px]">Terapkan ke:</span>
+                    <select id="ps-apply-scope" class="px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-xs outline-none">
+                        <option value="document" selected>Seluruh dokumen</option>
+                        <option value="forward">Mulai titik ini ke depan</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-ps-set-default" class="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 transition">
+                        Jadikan Default
+                    </button>
+                    <button type="button" data-close-modal class="px-3.5 py-1.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-confirm-page-setup" class="px-4 py-1.5 text-xs font-bold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer">
+                        OK / Terapkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 17: FORMAT PARAGRAF (MICROSOFT WORD PARAGRAPH DIALOG SUITE)         -->
+    <!-- ========================================================================= -->
+    <div id="modal-paragraph-format" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[92vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs">📝</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Format Paragraf (Paragraph Options)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur perataan, indentasi baris pertama / gantung, jarak baris, dan spasi sebelum / sesudah</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-gray-200 dark:border-gray-800 px-4 bg-gray-50 dark:bg-gray-800/60 shrink-0 text-xs font-semibold">
+                <button type="button" data-para-tab="indents-spacing" class="para-tab-btn px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold transition">
+                    Indentasi dan Spasi (Indents and Spacing)
+                </button>
+                <button type="button" data-para-tab="line-breaks" class="para-tab-btn px-4 py-2.5 border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
+                    Pemindahan Baris dan Halaman (Line and Page Breaks)
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs flex-1">
+                <!-- TAB 1: INDENTASI & SPASI -->
+                <div id="tab-para-indents-spacing" class="para-tab-pane space-y-4">
+                    <!-- Bagian Umum (General) -->
+                    <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                        <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Umum (General)</legend>
+                        <div class="grid grid-cols-2 gap-3 mt-1">
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Perataan (Alignment):</label>
+                                <select id="para-align-select" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none">
+                                    <option value="justify" selected>Rata Kiri-Kanan (Justified / Standar)</option>
+                                    <option value="left">Rata Kiri (Left)</option>
+                                    <option value="center">Rata Tengah (Centered)</option>
+                                    <option value="right">Rata Kanan (Right)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Tingkat Kerangka (Outline Level):</label>
+                                <select id="para-outline-level" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none">
+                                    <option value="body" selected>Teks Isi (Body text)</option>
+                                    <option value="level1">Tingkat 1 (Level 1)</option>
+                                    <option value="level2">Tingkat 2 (Level 2)</option>
+                                    <option value="level3">Tingkat 3 (Level 3)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Bagian Indentasi (Indentation) -->
+                    <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                        <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Indentasi (Indentation)</legend>
+                        <div class="grid grid-cols-2 gap-3 mt-1">
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Kiri (Left):</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="para-indent-left" value="0" step="0.25" min="0" max="15" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                    <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Kanan (Right):</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="para-indent-right" value="0" step="0.25" min="0" max="15" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                    <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Khusus (Special Indent):</label>
+                                <select id="para-special-indent" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none font-medium">
+                                    <option value="none">(Tidak Ada)</option>
+                                    <option value="first-line" selected>Baris Pertama (First line)</option>
+                                    <option value="hanging">Gantung (Hanging - Daftar Pustaka)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Sebesar (By):</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="para-special-val" value="1.25" step="0.05" min="0" max="10" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                    <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2.5">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="para-mirror-indents" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                                <span class="text-gray-600 dark:text-gray-400">Indentasi cermin (Mirror indents)</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Bagian Spasi (Spacing) -->
+                    <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                        <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Spasi (Spacing)</legend>
+                        <div class="grid grid-cols-2 gap-3 mt-1">
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Sebelum (Before):</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="para-spacing-before" value="0" step="1" min="0" max="100" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                    <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">pt</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Sesudah (After):</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="para-spacing-after" value="6" step="1" min="0" max="100" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                                    <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">pt</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Jarak Baris (Line Spacing):</label>
+                                <select id="para-line-spacing-type" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none font-medium">
+                                    <option value="1.0">Tunggal (Single)</option>
+                                    <option value="1.15">1,15 baris</option>
+                                    <option value="1.5" selected>1,5 baris (Standar Skripsi)</option>
+                                    <option value="2.0">Ganda (Double)</option>
+                                    <option value="atleast">Minimal (At least)</option>
+                                    <option value="exactly">Tepat (Exactly)</option>
+                                    <option value="multiple">Jamak (Multiple)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 dark:text-gray-400 mb-1 font-medium">Sebesar (At):</label>
+                                <input type="text" id="para-line-spacing-at" value="1.5" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 outline-none text-right font-mono" />
+                            </div>
+                        </div>
+                        <div class="mt-2.5">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="para-dont-add-space-same" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                                <span class="text-gray-600 dark:text-gray-400">Jangan tambahkan spasi antar-paragraf dengan gaya yang sama</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Interactive Live Preview Box -->
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-800/40 space-y-1.5">
+                        <span class="font-bold text-gray-700 dark:text-gray-300 block text-[11px] uppercase">Pratinjau Paragraf (Live Preview):</span>
+                        <div class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-3 text-gray-900 dark:text-gray-100 max-h-36 overflow-hidden shadow-inner font-serif text-[11px]">
+                            <p class="text-gray-400 dark:text-gray-500 text-[10px] mb-1 italic">Paragraf Sebelumnya...</p>
+                            <div id="para-preview-sample" style="text-align: justify; text-indent: 1.25cm; line-height: 1.5; margin-top: 0pt; margin-bottom: 6pt;">
+                                Teks sampel ini menampilkan secara langsung penerapan perataan teks, indentasi baris pertama atau gantung, jarak baris (line spacing), dan spasi sebelum serta sesudah paragraf sesuai pengaturan Microsoft Word yang Anda pilih di atas.
+                            </div>
+                            <p class="text-gray-400 dark:text-gray-500 text-[10px] mt-1 italic">Paragraf Sesudahnya...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: PEMINDAHAN BARIS & HALAMAN -->
+                <div id="tab-para-line-breaks" class="para-tab-pane hidden space-y-4">
+                    <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
+                        <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Paginasi (Pagination)</legend>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="para-widow-orphan" checked class="rounded text-indigo-600 focus:ring-indigo-500" />
+                            <div>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">Kontrol janda / yatim baris (Widow/Orphan control)</span>
+                                <p class="text-[11px] text-gray-400">Mencegah satu baris terpisah sendiri di bagian bawah atau atas halaman.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="para-keep-with-next" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                            <div>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">Pertahankan bersama baris berikutnya (Keep with next)</span>
+                                <p class="text-[11px] text-gray-400">Mencegah pemisahan bab atau judul dari paragraf pertamanya.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="para-keep-lines-together" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                            <div>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">Pertahankan baris tetap menyatu (Keep lines together)</span>
+                                <p class="text-[11px] text-gray-400">Memastikan seluruh paragraf berada di halaman yang sama.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="para-page-break-before" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                            <div>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">Halaman baru sebelumnya (Page break before)</span>
+                                <p class="text-[11px] text-gray-400">Selalu memulai paragraf atau bab ini pada lembar halaman baru.</p>
+                            </div>
+                        </label>
+                    </fieldset>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3.5 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500 text-[11px]">Terapkan ke:</span>
+                    <select id="para-apply-scope" class="px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-xs outline-none">
+                        <option value="selection" selected>Paragraf yang dipilih / aktif</option>
+                        <option value="all">Seluruh paragraf dokumen</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-para-set-default" class="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 transition">
+                        Jadikan Standar
+                    </button>
+                    <button type="button" data-close-modal class="px-3.5 py-1.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-confirm-paragraph-format" class="px-4 py-1.5 text-xs font-bold rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer">
+                        OK / Terapkan
+                    </button>
+                </div>
             </div>
         </div>
     </div>

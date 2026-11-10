@@ -822,6 +822,24 @@ class DocumentService
                 $hasJustify = str_contains($existingAttrs, 'text-justify') || str_contains($existingAttrs, 'text-align: justify');
                 $hasLeft = str_contains($existingAttrs, 'text-left') || str_contains($existingAttrs, 'text-align: left');
 
+                $extraClasses = [];
+                if (str_contains($existingAttrs, 'indent-first-line')) {
+                    $extraClasses[] = 'indent-first-line';
+                }
+                if (str_contains($existingAttrs, 'indent-hanging')) {
+                    $extraClasses[] = 'indent-hanging';
+                }
+                if (str_contains($existingAttrs, 'keep-with-next')) {
+                    $extraClasses[] = 'keep-with-next';
+                }
+                if (str_contains($existingAttrs, 'keep-lines-together')) {
+                    $extraClasses[] = 'keep-lines-together';
+                }
+                if (str_contains($existingAttrs, 'page-break-before')) {
+                    $extraClasses[] = 'page-break-before';
+                }
+                $extraClassStr = ! empty($extraClasses) ? ' '.implode(' ', $extraClasses) : '';
+
                 // Extract style attribute if any
                 $styleMatch = '';
                 if (preg_match('/style=(["\'])(.*?)\1/is', $existingAttrs, $sm)) {
@@ -829,19 +847,19 @@ class DocumentService
                 }
 
                 if ($hasCenter) {
-                    $adaptedBlocks[] = "<p class=\"text-center my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
+                    $adaptedBlocks[] = "<p class=\"text-center my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasRight) {
-                    $adaptedBlocks[] = "<p class=\"text-right my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
+                    $adaptedBlocks[] = "<p class=\"text-right my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasJustify) {
-                    $indentClass = ($isAcademic && strlen($cleanText) > 100) ? ' indent-8' : '';
-                    $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800{$indentClass}\"{$styleMatch}>{$bodyHtml}</p>";
+                    $indentClass = ($isAcademic && strlen($cleanText) > 100 && empty($extraClasses)) ? ' indent-8' : '';
+                    $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800{$indentClass}{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasLeft) {
-                    $adaptedBlocks[] = "<p class=\"text-left my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
+                    $adaptedBlocks[] = "<p class=\"text-left my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } else {
-                    if ($isAcademic && strlen($cleanText) > 100) {
-                        $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 indent-8\"{$styleMatch}>{$bodyHtml}</p>";
+                    if ($isAcademic && strlen($cleanText) > 100 && empty($extraClasses)) {
+                        $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 indent-8{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                     } else {
-                        $adaptedBlocks[] = "<p class=\"my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                     }
                 }
             }
@@ -917,6 +935,7 @@ class DocumentService
                 $extractedFooter = $docxMeta['footer_text'];
                 $differentFirstPage = $docxMeta['different_first_page'] ?? false;
                 $defaultFontFamily = $docxMeta['default_font_family'] ?? null;
+                $pageSetup = $docxMeta['page_setup'] ?? null;
                 break;
 
             case 'txt':
@@ -950,6 +969,7 @@ class DocumentService
             'footer_text' => $extractedFooter ?? '',
             'different_first_page' => $differentFirstPage ?? false,
             'default_font_family' => $defaultFontFamily ?? null,
+            'page_setup' => $pageSetup ?? null,
             'stats' => $stats,
             'adapted_settings' => $adapted['presets'],
             'message' => $adapted['presets']['is_academic']
@@ -969,7 +989,7 @@ class DocumentService
     /**
      * Export document into requested format.
      */
-    public function exportDocument(string $title, string $html, string $format, ?string $headerText = null, ?string $footerText = null): array
+    public function exportDocument(string $title, string $html, string $format, ?string $headerText = null, ?string $footerText = null, array $layoutOptions = []): array
     {
         $safeTitle = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $title);
         if (empty($safeTitle)) {
@@ -977,6 +997,56 @@ class DocumentService
         }
 
         $sanitizedHtml = $this->sanitizeHtml($html);
+
+        $paperSize = strtolower($layoutOptions['paper_size'] ?? 'a4');
+        $orientation = strtolower($layoutOptions['orientation'] ?? 'portrait');
+
+        $dimensions = [
+            'a4' => ['w' => '210mm', 'h' => '297mm'],
+            'letter' => ['w' => '215.9mm', 'h' => '279.4mm'],
+            'legal' => ['w' => '215.9mm', 'h' => '355.6mm'],
+            'folio' => ['w' => '215mm', 'h' => '330mm'],
+            'executive' => ['w' => '184.1mm', 'h' => '266.7mm'],
+            'a3' => ['w' => '297mm', 'h' => '420mm'],
+            'a5' => ['w' => '148mm', 'h' => '210mm'],
+            'b5' => ['w' => '182mm', 'h' => '257mm'],
+            'statement' => ['w' => '139.7mm', 'h' => '215.9mm'],
+        ];
+
+        $w = $dimensions[$paperSize]['w'] ?? (! empty($layoutOptions['width_mm']) ? "{$layoutOptions['width_mm']}mm" : '210mm');
+        $h = $dimensions[$paperSize]['h'] ?? (! empty($layoutOptions['height_mm']) ? "{$layoutOptions['height_mm']}mm" : '297mm');
+
+        if ($orientation === 'landscape') {
+            $pageSizeStr = "{$h} {$w}";
+            $msoOrientation = 'landscape';
+        } else {
+            $pageSizeStr = "{$w} {$h}";
+            $msoOrientation = 'portrait';
+        }
+
+        $marginPreset = strtolower($layoutOptions['margin_preset'] ?? '');
+        $marginsOpt = $layoutOptions['margins'] ?? null;
+        if (! empty($marginsOpt) && is_array($marginsOpt)) {
+            $top = isset($marginsOpt['top']) ? (is_numeric($marginsOpt['top']) ? "{$marginsOpt['top']}mm" : $marginsOpt['top']) : '40mm';
+            $right = isset($marginsOpt['right']) ? (is_numeric($marginsOpt['right']) ? "{$marginsOpt['right']}mm" : $marginsOpt['right']) : '30mm';
+            $bottom = isset($marginsOpt['bottom']) ? (is_numeric($marginsOpt['bottom']) ? "{$marginsOpt['bottom']}mm" : $marginsOpt['bottom']) : '30mm';
+            $left = isset($marginsOpt['left']) ? (is_numeric($marginsOpt['left']) ? "{$marginsOpt['left']}mm" : $marginsOpt['left']) : '40mm';
+            $marginStr = "{$top} {$right} {$bottom} {$left}";
+        } elseif ($marginPreset === 'normal') {
+            $marginStr = '25.4mm 25.4mm 25.4mm 25.4mm';
+        } elseif ($marginPreset === 'narrow') {
+            $marginStr = '12.7mm 12.7mm 12.7mm 12.7mm';
+        } elseif ($marginPreset === 'moderate') {
+            $marginStr = '25.4mm 19.1mm 25.4mm 19.1mm';
+        } elseif ($marginPreset === 'wide') {
+            $marginStr = '25.4mm 50.8mm 25.4mm 50.8mm';
+        } else {
+            $marginStr = '40mm 30mm 30mm 40mm';
+        }
+
+        $lineSpacing = $layoutOptions['line_spacing'] ?? '1.5';
+        $spaceBefore = isset($layoutOptions['paragraph_spacing']['before']) ? (is_numeric($layoutOptions['paragraph_spacing']['before']) ? "{$layoutOptions['paragraph_spacing']['before']}pt" : $layoutOptions['paragraph_spacing']['before']) : '0pt';
+        $spaceAfter = isset($layoutOptions['paragraph_spacing']['after']) ? (is_numeric($layoutOptions['paragraph_spacing']['after']) ? "{$layoutOptions['paragraph_spacing']['after']}pt" : $layoutOptions['paragraph_spacing']['after']) : '6pt';
 
         switch (strtolower($format)) {
             case 'markdown':
@@ -1007,6 +1077,8 @@ class DocumentService
                     'plain_text' => $this->convertToPlainText($sanitizedHtml),
                     'header_text' => $headerText ?? '',
                     'footer_text' => $footerText ?? '',
+                    'layout' => $layoutOptions,
+                    'layout_options' => $layoutOptions,
                     'stats' => $stats,
                     'exported_at' => now()->toIso8601String(),
                     'app' => 'VelScribe Wordcraft Studio',
@@ -1038,8 +1110,9 @@ class DocumentService
 <![endif]-->
 <style>
 @page Section1 {
-    size: 210mm 297mm;
-    margin: 40mm 30mm 30mm 40mm;
+    size: {$pageSizeStr};
+    margin: {$marginStr};
+    mso-page-orientation: {$msoOrientation};
     mso-header-margin: 20mm;
     mso-footer-margin: 20mm;
     mso-header: h1;
@@ -1071,7 +1144,7 @@ p.MsoFooter, div.MsoFooter {
 body {
     font-family: 'Times New Roman', 'Calibri', serif;
     font-size: 12pt;
-    line-height: 1.5;
+    line-height: {$lineSpacing};
     color: #000000;
 }
 h1 {
@@ -1095,7 +1168,9 @@ h3 {
     margin-bottom: 4pt;
 }
 p {
-    margin-bottom: 6pt;
+    margin-top: {$spaceBefore};
+    margin-bottom: {$spaceAfter};
+    line-height: {$lineSpacing};
     text-align: justify;
     text-indent: 1.25cm;
 }
@@ -1157,11 +1232,12 @@ XML;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{$title}</title>
     <style>
-        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.6; max-width: 210mm; margin: 40px auto; padding: 40mm 30mm 30mm 40mm; color: #111827; }
+        @page { size: {$pageSizeStr}; margin: {$marginStr}; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: {$lineSpacing}; max-width: {$w}; margin: 40px auto; padding: {$marginStr}; color: #111827; }
         h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-top: 24px; margin-bottom: 16px; text-transform: uppercase; }
         h2 { font-size: 13pt; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
         h3 { font-size: 12pt; font-weight: bold; margin-top: 16px; margin-bottom: 8px; }
-        p { text-align: justify; margin-bottom: 10px; }
+        p { text-align: justify; margin-top: {$spaceBefore}; margin-bottom: {$spaceAfter}; line-height: {$lineSpacing}; }
         p.text-center { text-align: center; }
         table { border-collapse: collapse; width: 100%; margin: 16px 0; }
         th, td { border: 1px solid #374151; padding: 8px 12px; }

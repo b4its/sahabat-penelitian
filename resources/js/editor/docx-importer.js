@@ -41,6 +41,9 @@ export class DocxImporter {
         // 6. Extract "Different First Page" setting from Word section properties
         const differentFirstPage = /<w:titlePg\s*\/?>/i.test(docXml);
 
+        // 6b. Extract Section Page Setup (Paper size, Orientation, Margins)
+        const pageSetup = this.parsePageSetup(docXml);
+
         // 7. Parse Document DOM
         const parser = new DOMParser();
         const dom = parser.parseFromString(docXml, 'application/xml');
@@ -142,10 +145,93 @@ export class DocxImporter {
             footerText,
             differentFirstPage,
             defaultFontFamily: this.defaultFontFamily,
+            pageSetup,
             toString() {
                 return this.html;
             },
         };
+    }
+
+    parsePageSetup(docXml = '') {
+        const setup = {
+            paperSize: 'a4',
+            orientation: 'portrait',
+            widthMm: 210.0,
+            heightMm: 297.0,
+            marginPreset: 'normal',
+            margins: {
+                top: 25.4,
+                bottom: 25.4,
+                left: 25.4,
+                right: 25.4,
+                gutter: 0,
+            },
+        };
+
+        const szMatch = docXml.match(/<w:pgSz\b([^>]*)\/?>/i);
+        if (szMatch) {
+            const attrs = szMatch[1];
+            const wm = attrs.match(/w:w=["'](\d+)["']/i);
+            const hm = attrs.match(/w:h=["'](\d+)["']/i);
+            const om = attrs.match(/w:orient=["'](landscape|portrait)["']/i);
+
+            if (om) setup.orientation = om[1].toLowerCase();
+
+            if (wm && hm) {
+                const wMm = Math.round(((parseInt(wm[1], 10) * 25.4) / 1440) * 10) / 10;
+                const hMm = Math.round(((parseInt(hm[1], 10) * 25.4) / 1440) * 10) / 10;
+                setup.widthMm = wMm;
+                setup.heightMm = hMm;
+                if (wMm > hMm && !om) setup.orientation = 'landscape';
+
+                const minDim = Math.min(wMm, hMm);
+                const maxDim = Math.max(wMm, hMm);
+
+                if (Math.abs(minDim - 210.0) <= 3 && Math.abs(maxDim - 297.0) <= 3) setup.paperSize = 'a4';
+                else if (Math.abs(minDim - 215.9) <= 3 && Math.abs(maxDim - 279.4) <= 3) setup.paperSize = 'letter';
+                else if (Math.abs(minDim - 215.9) <= 3 && Math.abs(maxDim - 355.6) <= 3) setup.paperSize = 'legal';
+                else if (Math.abs(minDim - 215.0) <= 3 && Math.abs(maxDim - 330.0) <= 3) setup.paperSize = 'folio';
+                else if (Math.abs(minDim - 297.0) <= 3 && Math.abs(maxDim - 420.0) <= 3) setup.paperSize = 'a3';
+                else if (Math.abs(minDim - 148.0) <= 3 && Math.abs(maxDim - 210.0) <= 3) setup.paperSize = 'a5';
+                else if (Math.abs(minDim - 182.0) <= 3 && Math.abs(maxDim - 257.0) <= 3) setup.paperSize = 'b5';
+                else if (Math.abs(minDim - 184.1) <= 3 && Math.abs(maxDim - 266.7) <= 3) setup.paperSize = 'executive';
+                else setup.paperSize = 'custom';
+            }
+        }
+
+        const marMatch = docXml.match(/<w:pgMar\b([^>]*)\/?>/i);
+        if (marMatch) {
+            const attrs = marMatch[1];
+            const topM = attrs.match(/w:top=["'](\d+)["']/i);
+            const botM = attrs.match(/w:bottom=["'](\d+)["']/i);
+            const leftM = attrs.match(/w:left=["'](\d+)["']/i);
+            const rightM = attrs.match(/w:right=["'](\d+)["']/i);
+            const gutM = attrs.match(/w:gutter=["'](\d+)["']/i);
+
+            const top = topM ? Math.round(((parseInt(topM[1], 10) * 25.4) / 1440) * 10) / 10 : 25.4;
+            const bottom = botM ? Math.round(((parseInt(botM[1], 10) * 25.4) / 1440) * 10) / 10 : 25.4;
+            const left = leftM ? Math.round(((parseInt(leftM[1], 10) * 25.4) / 1440) * 10) / 10 : 25.4;
+            const right = rightM ? Math.round(((parseInt(rightM[1], 10) * 25.4) / 1440) * 10) / 10 : 25.4;
+            const gutter = gutM ? Math.round(((parseInt(gutM[1], 10) * 25.4) / 1440) * 10) / 10 : 0;
+
+            setup.margins = { top, bottom, left, right, gutter };
+
+            if (Math.abs(top - 40) <= 2 && Math.abs(left - 40) <= 2 && Math.abs(bottom - 30) <= 2 && Math.abs(right - 30) <= 2) {
+                setup.marginPreset = 'skripsi';
+            } else if (Math.abs(top - 12.7) <= 2 && Math.abs(bottom - 12.7) <= 2 && Math.abs(left - 12.7) <= 2 && Math.abs(right - 12.7) <= 2) {
+                setup.marginPreset = 'narrow';
+            } else if (Math.abs(top - 25.4) <= 2 && Math.abs(bottom - 25.4) <= 2 && Math.abs(left - 19.1) <= 2 && Math.abs(right - 19.1) <= 2) {
+                setup.marginPreset = 'moderate';
+            } else if (Math.abs(top - 25.4) <= 2 && Math.abs(bottom - 25.4) <= 2 && Math.abs(left - 50.8) <= 2 && Math.abs(right - 50.8) <= 2) {
+                setup.marginPreset = 'wide';
+            } else if (Math.abs(top - 25.4) <= 2 && Math.abs(bottom - 25.4) <= 2 && Math.abs(left - 25.4) <= 2 && Math.abs(right - 25.4) <= 2) {
+                setup.marginPreset = 'normal';
+            } else {
+                setup.marginPreset = 'custom';
+            }
+        }
+
+        return setup;
     }
 
     async parseHeadersAndFooters(zip, rels = {}, docXml = '') {
@@ -654,9 +740,14 @@ export class DocxImporter {
             isItalic: false,
         };
 
+        let pSpacing = null;
+        let pInd = null;
+
         // Check paragraph properties
         const pPr = this.findFirstDirectChild(p, ['w:pPr', 'pPr']);
         if (pPr) {
+            pSpacing = pPr.getElementsByTagName('w:spacing')[0] || null;
+            pInd = pPr.getElementsByTagName('w:ind')[0] || null;
             // Check pageBreakBefore
             if (pPr.getElementsByTagName('w:pageBreakBefore').length > 0) {
                 pageBreakBefore = true;
@@ -786,6 +877,54 @@ export class DocxImporter {
         } else if (align === 'left') {
             classes.push('text-left');
             styles.push('text-align: left;');
+        }
+
+        if (pSpacing) {
+            const bTwips = pSpacing.getAttribute('w:before');
+            if (bTwips && !isNaN(bTwips)) {
+                const bPt = Math.round((parseInt(bTwips, 10) / 20) * 10) / 10;
+                if (bPt > 0) styles.push(`margin-top: ${bPt}pt;`);
+            }
+            const aTwips = pSpacing.getAttribute('w:after');
+            if (aTwips && !isNaN(aTwips)) {
+                const aPt = Math.round((parseInt(aTwips, 10) / 20) * 10) / 10;
+                if (aPt > 0) styles.push(`margin-bottom: ${aPt}pt;`);
+            }
+            const lTwips = pSpacing.getAttribute('w:line');
+            const lRule = pSpacing.getAttribute('w:lineRule');
+            if (lTwips && !isNaN(lTwips)) {
+                if (lRule === 'exact' || lRule === 'atLeast') {
+                    const lPt = Math.round((parseInt(lTwips, 10) / 20) * 10) / 10;
+                    styles.push(`line-height: ${lPt}pt;`);
+                } else {
+                    const lh = Math.round((parseInt(lTwips, 10) / 240) * 100) / 100;
+                    if (lh >= 0.8 && lh <= 4.0) styles.push(`line-height: ${lh};`);
+                }
+            }
+        }
+
+        if (pInd) {
+            const lTwips = pInd.getAttribute('w:left');
+            if (lTwips && !isNaN(lTwips) && parseInt(lTwips, 10) > 0) {
+                const lCm = Math.round(((parseInt(lTwips, 10) * 2.54) / 1440) * 100) / 100;
+                styles.push(`margin-left: ${lCm}cm;`);
+            }
+            const rTwips = pInd.getAttribute('w:right');
+            if (rTwips && !isNaN(rTwips) && parseInt(rTwips, 10) > 0) {
+                const rCm = Math.round(((parseInt(rTwips, 10) * 2.54) / 1440) * 100) / 100;
+                styles.push(`margin-right: ${rCm}cm;`);
+            }
+            const hTwips = pInd.getAttribute('w:hanging');
+            const flTwips = pInd.getAttribute('w:firstLine');
+            if (hTwips && !isNaN(hTwips) && parseInt(hTwips, 10) > 0) {
+                const hCm = Math.round(((parseInt(hTwips, 10) * 2.54) / 1440) * 100) / 100;
+                classes.push('indent-hanging');
+                styles.push(`text-indent: -${hCm}cm; padding-left: ${hCm}cm;`);
+            } else if (flTwips && !isNaN(flTwips) && parseInt(flTwips, 10) > 0) {
+                const flCm = Math.round(((parseInt(flTwips, 10) * 2.54) / 1440) * 100) / 100;
+                classes.push('indent-first-line');
+                styles.push(`text-indent: ${flCm}cm;`);
+            }
         }
 
         const classStr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
