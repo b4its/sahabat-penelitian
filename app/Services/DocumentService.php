@@ -1020,9 +1020,7 @@ th {
 
     <div style="mso-element:footer" id="f1">
         <p class="MsoFooter">
-            <span style="float:left;">{$footerHtml}</span>
-            <span style="float:right;">Halaman <span style="mso-field-code: PAGE "></span> dari <span style="mso-field-code: NUMPAGES "></span></span>
-            <span style="clear:both; display:block;"></span>
+            <span>{$footerHtml}</span>
         </p>
     </div>
 </div>

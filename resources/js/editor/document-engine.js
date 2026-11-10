@@ -541,25 +541,18 @@ export class DocumentEngine {
                 sheet.classList.add('canvas-dark-sheet');
             }
 
-            // Header
-            // In Word, if differentFirstPage is false, header appears on all pages including page 1.
+            // Header (Pristine running header without synthetic in-content markers)
             const isSuppressedFirstPage = this.differentFirstPage && pageNum === 1;
             const header = document.createElement('header');
-            header.className = `page-sheet-header group flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
-            header.setAttribute('title', 'Klik dua kali untuk menyesuaikan Header & Footer');
+            header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
+            header.setAttribute('title', 'Klik untuk menyesuaikan Header & Footer');
             header.setAttribute('data-action', 'header-footer-modal');
 
             const headerLeft = this.customHeaderText || docTitle;
             const headerRight = p.chapterName || '';
             header.innerHTML = `
-                <div class="flex items-center gap-1.5 truncate max-w-[55%] pointer-events-none">
-                    <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Header:</span>
-                    <span class="header-doc-title truncate font-medium text-gray-600 dark:text-gray-300" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
-                    ${isSuppressedFirstPage ? '<span class="text-[9px] text-gray-400 italic">(Halaman Pertama)</span>' : ''}
-                </div>
-                <div class="flex items-center gap-1.5 truncate max-w-[42%] justify-end pointer-events-none">
-                    <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate" title="${this.escapeHtml(headerRight)}">${this.escapeHtml(headerRight)}</span>
-                </div>
+                <span class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
+                <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%] text-right" title="${this.escapeHtml(headerRight)}">${this.escapeHtml(headerRight)}</span>
             `;
             sheet.appendChild(header);
 
@@ -579,23 +572,53 @@ export class DocumentEngine {
             body.innerHTML = p.contentHtml;
             sheet.appendChild(body);
 
-            // Footer
+            // Footer (Clean document footer without synthetic page marks or 'halaman dari')
             const footer = document.createElement('footer');
-            footer.className = `page-sheet-footer group flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
-            footer.setAttribute('title', 'Klik dua kali untuk menyesuaikan Header & Footer');
+            footer.className = `page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
+            footer.setAttribute('title', 'Klik untuk menyesuaikan Header & Footer');
             footer.setAttribute('data-action', 'header-footer-modal');
 
-            const footerLeft = this.customFooterText || 'Dokumen VelScribe Wordcraft';
-            const pageNumText = isSuppressedFirstPage ? '' : this.formatPageNumber(pageNum, totalPages);
+            const footerText = this.customFooterText || '';
             footer.innerHTML = `
-                <div class="flex items-center gap-1.5 truncate max-w-[60%] pointer-events-none">
-                    <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Footer:</span>
-                    <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate" title="${this.escapeHtml(footerLeft)}">${this.escapeHtml(footerLeft)}</span>
-                    ${isSuppressedFirstPage ? '<span class="text-[9px] text-gray-400 italic">(Halaman Pertama)</span>' : ''}
-                </div>
-                <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0 pointer-events-none">${pageNumText}</span>
+                <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[85%]" title="${this.escapeHtml(footerText)}">${this.escapeHtml(footerText)}</span>
             `;
             sheet.appendChild(footer);
+
+            // Side Page Indicator (Outside Document Canvas)
+            const sideIndicator = document.createElement('div');
+            sideIndicator.className = 'page-side-indicator absolute -left-12 sm:-left-16 top-6 select-none no-print pointer-events-auto flex flex-col items-center';
+            sideIndicator.title = `Lembar Halaman ${pageNum} dari ${totalPages}`;
+            sideIndicator.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-w-[38px] px-2 py-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-600 dark:text-gray-300 font-mono text-[11px] hover:border-indigo-400 hover:text-indigo-600 transition">
+                    <span class="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold leading-none mb-0.5">Hal</span>
+                    <span class="font-bold text-xs leading-none text-indigo-600 dark:text-indigo-400">${pageNum}</span>
+                    <span class="text-[9px] text-gray-400 dark:text-gray-500 leading-none mt-0.5">/ ${totalPages}</span>
+                </div>
+                ${isSuppressedFirstPage ? '<span class="mt-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-sans shadow-2xs">Sampul</span>' : ''}
+            `;
+            if (this.showPageNumber === false) {
+                sideIndicator.style.display = 'none';
+            }
+            sheet.appendChild(sideIndicator);
+
+            // Side Header & Footer Quick Action Buttons (Outside Document Canvas)
+            const sideActions = document.createElement('div');
+            sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col gap-2 pointer-events-auto';
+            sideActions.innerHTML = `
+                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Header Dokumen">
+                    <span class="text-xs">🏷️</span>
+                </button>
+            `;
+            sheet.appendChild(sideActions);
+
+            const sideFooterAction = document.createElement('div');
+            sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto';
+            sideFooterAction.innerHTML = `
+                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Footer Dokumen">
+                    <span class="text-xs">📋</span>
+                </button>
+            `;
+            sheet.appendChild(sideFooterAction);
 
             this.pagesWrapper.appendChild(sheet);
 
@@ -755,14 +778,59 @@ export class DocumentEngine {
 
             const footerTitle = sheet.querySelector('.footer-doc-title');
             if (footerTitle) {
-                const ftrText = this.customFooterText || 'Dokumen VelScribe Wordcraft';
+                const ftrText = this.customFooterText || '';
                 footerTitle.textContent = ftrText;
                 footerTitle.title = ftrText;
             }
 
             const footerNum = sheet.querySelector('.footer-page-num');
             if (footerNum) {
-                footerNum.textContent = isSuppressedFirstPage ? '' : this.formatPageNumber(pageNum, total);
+                footerNum.remove();
+            }
+
+            // Update or create side indicator (outside document content)
+            let sideIndicator = sheet.querySelector('.page-side-indicator');
+            if (!sideIndicator) {
+                sideIndicator = document.createElement('div');
+                sideIndicator.className = 'page-side-indicator absolute -left-12 sm:-left-16 top-6 select-none no-print pointer-events-auto flex flex-col items-center';
+                sheet.appendChild(sideIndicator);
+            }
+            sideIndicator.title = `Lembar Halaman ${pageNum} dari ${total}`;
+            sideIndicator.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-w-[38px] px-2 py-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-600 dark:text-gray-300 font-mono text-[11px] hover:border-indigo-400 hover:text-indigo-600 transition">
+                    <span class="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold leading-none mb-0.5">Hal</span>
+                    <span class="font-bold text-xs leading-none text-indigo-600 dark:text-indigo-400">${pageNum}</span>
+                    <span class="text-[9px] text-gray-400 dark:text-gray-500 leading-none mt-0.5">/ ${total}</span>
+                </div>
+                ${isSuppressedFirstPage ? '<span class="mt-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-sans shadow-2xs">Sampul</span>' : ''}
+            `;
+            if (this.showPageNumber === false) {
+                sideIndicator.style.display = 'none';
+            } else {
+                sideIndicator.style.display = '';
+            }
+
+            // Side quick action buttons (outside document content)
+            if (!sheet.querySelector('.page-side-actions')) {
+                const sideActions = document.createElement('div');
+                sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col gap-2 pointer-events-auto';
+                sideActions.innerHTML = `
+                    <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Header Dokumen">
+                        <span class="text-xs">🏷️</span>
+                    </button>
+                `;
+                sheet.appendChild(sideActions);
+            }
+
+            if (!sheet.querySelector('.page-side-footer-action')) {
+                const sideFooterAction = document.createElement('div');
+                sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto';
+                sideFooterAction.innerHTML = `
+                    <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Footer Dokumen">
+                        <span class="text-xs">📋</span>
+                    </button>
+                `;
+                sheet.appendChild(sideFooterAction);
             }
         });
 
@@ -1883,11 +1951,10 @@ export class DocumentEngine {
         newSheet.appendChild(body);
 
         const footer = document.createElement('footer');
-        footer.className = 'page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none';
-        const fLeft = this.customFooterText || 'Dokumen VelScribe Wordcraft';
+        footer.className = 'page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none';
+        const fLeft = this.customFooterText || '';
         footer.innerHTML = `
-            <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[60%]" title="${this.escapeHtml(fLeft)}">${this.escapeHtml(fLeft)}</span>
-            <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0"></span>
+            <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[85%]" title="${this.escapeHtml(fLeft)}">${this.escapeHtml(fLeft)}</span>
         `;
         newSheet.appendChild(footer);
 

@@ -698,5 +698,5 @@ test('white-box: exportDocument embeds Word MsoHeader and MsoFooter when headerT
         ->and($exported['content'])->toContain('mso-footer: f1;')
         ->and($exported['content'])->toContain('KEMENTERIAN RISET DAN TEKNOLOGI')
         ->and($exported['content'])->toContain('Hak Cipta 2026 Dilindungi')
-        ->and($exported['content'])->toContain('Halaman <span style="mso-field-code: PAGE "></span> dari <span style="mso-field-code: NUMPAGES "></span>');
+        ->and($exported['content'])->not->toContain('Halaman <span style="mso-field-code: PAGE "></span> dari');
 });

@@ -579,11 +579,17 @@ test('black-box: editor view renders running header and footer structure without
     $response->assertStatus(200);
 
     $content = $response->getContent();
+    preg_match('/<footer class="page-sheet-footer[^>]*>(.*?)<\/footer>/s', $content, $footerMatches);
+    $footerInnerHtml = $footerMatches[1] ?? '';
+
     expect($content)->toContain('class="page-sheet-header')
         ->and($content)->toContain('class="header-doc-title')
         ->and($content)->toContain('class="page-sheet-footer')
         ->and($content)->toContain('class="footer-doc-title')
-        ->and($content)->toContain('class="footer-page-num')
+        ->and($content)->toContain('class="page-side-indicator')
+        ->and($footerInnerHtml)->not->toContain('Halaman')
+        ->and($footerInnerHtml)->not->toContain('dari')
+        ->and($footerInnerHtml)->not->toContain('footer-page-num')
         ->and($content)->not->toMatch('/class="page-sheet-header[^"]*no-print/')
         ->and($content)->not->toMatch('/class="page-sheet-footer[^"]*no-print/');
 });

@@ -856,7 +856,7 @@
         </aside>
 
         <!-- Center Document Canvas Area -->
-        <section id="document-canvas-container" class="flex-1 bg-gray-200/70 dark:bg-gray-950 overflow-y-auto overflow-x-hidden flex flex-col items-center p-4 sm:p-8 relative">
+        <section id="document-canvas-container" class="flex-1 bg-gray-200/70 dark:bg-gray-950 overflow-y-auto overflow-x-auto flex flex-col items-center p-4 sm:p-8 relative">
 
             <!-- Drag & Drop Visual Overlay -->
             <div id="drag-drop-overlay" class="hidden absolute inset-0 bg-indigo-600/90 text-white z-50 flex flex-col items-center justify-center backdrop-blur-xs transition">
@@ -931,18 +931,13 @@
             </div>
 
             <!-- A4 Document Multi-Page Sheets Container -->
-            <div id="document-pages-wrapper" class="w-full flex flex-col items-center">
+            <div id="document-pages-wrapper" class="w-full flex flex-col items-center relative py-4 px-6 sm:px-14">
                 <!-- Initial / SSR Document Page Sheet -->
                 <article id="document-page-canvas" class="document-page-sheet page-a4 relative flex flex-col justify-between" data-page-index="1">
                     <!-- Page Sheet Header -->
-                    <header class="page-sheet-header group flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1" title="Klik dua kali atau klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
-                        <div class="flex items-center gap-1.5 truncate max-w-[55%] pointer-events-none">
-                            <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Header:</span>
-                            <span class="header-doc-title truncate font-medium text-gray-600 dark:text-gray-300" title="{{ $initialTitle }}">{{ $initialTitle }}</span>
-                        </div>
-                        <div class="flex items-center gap-1.5 truncate max-w-[42%] justify-end pointer-events-none">
-                            <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate"></span>
-                        </div>
+                    <header class="page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1" title="Klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
+                        <span class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300" title="{{ $initialTitle }}">{{ $initialTitle }}</span>
+                        <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%] text-right"></span>
                     </header>
 
                     <!-- Page Content Area (Editable) -->
@@ -957,14 +952,31 @@
                         {!! $initialContent !!}
                     </div>
 
-                    <!-- Page Footer Simulation (Print Layout) -->
-                    <footer class="page-sheet-footer group flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1" title="Klik dua kali atau klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
-                        <div class="flex items-center gap-1.5 truncate max-w-[60%] pointer-events-none">
-                            <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Footer:</span>
-                            <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate" title="Dokumen VelScribe Wordcraft">Dokumen VelScribe Wordcraft</span>
-                        </div>
-                        <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0 pointer-events-none">Halaman 1 dari 1</span>
+                    <!-- Page Footer Simulation (Print Layout - Clean without synthetic page marks) -->
+                    <footer class="page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1" title="Klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
+                        <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[85%]"></span>
                     </footer>
+
+                    <!-- Side Page Indicator (Outside Document Canvas) -->
+                    <div class="page-side-indicator absolute -left-12 sm:-left-16 top-6 select-none no-print pointer-events-auto flex flex-col items-center" title="Lembar Halaman 1">
+                        <div class="flex flex-col items-center justify-center min-w-[38px] px-2 py-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-600 dark:text-gray-300 font-mono text-[11px] hover:border-indigo-400 hover:text-indigo-600 transition">
+                            <span class="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold leading-none mb-0.5">Hal</span>
+                            <span class="font-bold text-xs leading-none text-indigo-600 dark:text-indigo-400">1</span>
+                            <span class="text-[9px] text-gray-400 dark:text-gray-500 leading-none mt-0.5">/ 1</span>
+                        </div>
+                    </div>
+
+                    <!-- Side Header & Footer Quick Edit Actions (Outside Document Canvas) -->
+                    <div class="page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col gap-2 pointer-events-auto">
+                        <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Header Dokumen">
+                            <span class="text-xs">🏷️</span>
+                        </button>
+                    </div>
+                    <div class="page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto">
+                        <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Footer Dokumen">
+                            <span class="text-xs">📋</span>
+                        </button>
+                    </div>
                 </article>
             </div>
 
@@ -1550,8 +1562,8 @@
                     <label class="flex items-start gap-2.5 cursor-pointer">
                         <input type="checkbox" id="hf-show-page-number-toggle" checked class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-700" />
                         <div>
-                            <span class="font-medium text-gray-800 dark:text-gray-200">Tampilkan Nomor Halaman di Footer</span>
-                            <p class="text-[11px] text-gray-400">Menyisipkan posisi penomoran otomatis pada setiap lembar A4.</p>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">Tampilkan Penanda Halaman di Samping Dokumen</span>
+                            <p class="text-[11px] text-gray-400">Menampilkan badge nomor halaman di samping lembar dokumen A4 (di luar konten dokumen).</p>
                         </div>
                     </label>
 
