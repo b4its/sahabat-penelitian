@@ -24,6 +24,8 @@ class DocxImporter
 
     private string $extractedFooter = '';
 
+    private bool $differentFirstPage = false;
+
     public function getExtractedHeader(): string
     {
         return $this->extractedHeader;
@@ -32,6 +34,11 @@ class DocxImporter
     public function getExtractedFooter(): string
     {
         return $this->extractedFooter;
+    }
+
+    public function getDifferentFirstPage(): bool
+    {
+        return $this->differentFirstPage;
     }
 
     /**
@@ -45,6 +52,7 @@ class DocxImporter
             'html' => $html,
             'header_text' => $this->extractedHeader,
             'footer_text' => $this->extractedFooter,
+            'different_first_page' => $this->differentFirstPage,
         ];
     }
 
@@ -55,6 +63,7 @@ class DocxImporter
     {
         $this->extractedHeader = '';
         $this->extractedFooter = '';
+        $this->differentFirstPage = false;
 
         $filePath = ($file instanceof UploadedFile) ? $file->getRealPath() : (is_string($file) && file_exists($file) ? $file : null);
         $raw = $filePath && file_exists($filePath) ? @file_get_contents($filePath) : (is_string($file) ? $file : '');
@@ -68,9 +77,6 @@ class DocxImporter
             return $this->fallbackRawContent($raw);
         }
 
-        // Extract Running Headers and Footers from Word archive
-        $this->parseHeadersAndFooters($zip);
-
         $docXml = $zip->getFromName('word/document.xml');
         if ($docXml === false) {
             $zip->close();
@@ -81,10 +87,16 @@ class DocxImporter
         // 1. Parse Relationships (hyperlinks and embedded images)
         $rels = $this->parseRelationships($zip);
 
-        // 2. Parse Numbering formats (bullet vs ordered lists)
+        // 2. Extract "Different First Page" setting from Word section properties
+        $this->differentFirstPage = (bool) preg_match('/<w:titlePg\s*\/?>/i', $docXml);
+
+        // 3. Extract Running Headers and Footers from Word archive
+        $this->parseHeadersAndFooters($zip, $rels, $docXml);
+
+        // 4. Parse Numbering formats (bullet vs ordered lists)
         $numberingMap = $this->parseNumbering($zip);
 
-        // 3. Parse Styles (Heading levels, Title, Subtitle, etc.)
+        // 5. Parse Styles (Heading levels, Title, Subtitle, etc.)
         $stylesMap = $this->parseStyles($zip);
 
         // 4. Parse Main Document XML
@@ -197,42 +209,104 @@ class DocxImporter
     /**
      * Parse running headers and footers from Word archive.
      */
-    private function parseHeadersAndFooters(ZipArchive $zip): void
+    private function parseHeadersAndFooters(ZipArchive $zip, array $rels = [], string $docXml = ''): void
     {
-        for ($i = 1; $i <= 6; $i++) {
-            $hdrXml = $zip->getFromName("word/header{$i}.xml");
-            if ($hdrXml !== false && empty($this->extractedHeader)) {
-                $hDom = new DOMDocument;
-                @$hDom->loadXML($hdrXml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
-                $hXpath = new DOMXPath($hDom);
-                $hXpath->registerNamespace('w', self::W_NS);
-                $texts = [];
-                foreach ($hXpath->query('//w:t') as $tNode) {
-                    $texts[] = trim($tNode->nodeValue);
-                }
-                $joined = trim(implode(' ', array_filter($texts)));
-                $cleaned = preg_replace('/\bPAGE\b|\bMERGEFORMAT\b|[\\\\*]/i', '', $joined);
-                $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned ?? ''));
-                if (! empty($cleaned) && ! preg_match('/^\d+$/', $cleaned)) {
-                    $this->extractedHeader = $cleaned;
+        $extractCleanText = function (string $xml): string {
+            $dom = new DOMDocument;
+            @$dom->loadXML($xml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+            $xpath = new DOMXPath($dom);
+            $xpath->registerNamespace('w', self::W_NS);
+            $texts = [];
+            foreach ($xpath->query('//w:t') as $tNode) {
+                $texts[] = trim($tNode->nodeValue);
+            }
+            $joined = trim(implode(' ', array_filter($texts)));
+            $cleaned = preg_replace('/\bPAGE\b|\bNUMPAGES\b|\bMERGEFORMAT\b|[\\\\*]/i', '', $joined);
+            $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned ?? ''));
+
+            return (! empty($cleaned) && ! preg_match('/^\d+$/', $cleaned)) ? $cleaned : '';
+        };
+
+        // 1. Check referenced default headers and footers from document.xml
+        if (! empty($docXml) && ! empty($rels)) {
+            if (preg_match('/<w:headerReference[^>]*w:type=["\']default["\'][^>]*r:id=["\']([^"\']+)["\']/i', $docXml, $m) ||
+                preg_match('/<w:headerReference[^>]*r:id=["\']([^"\']+)["\'][^>]*w:type=["\']default["\']/i', $docXml, $m) ||
+                preg_match('/<w:headerReference[^>]*r:id=["\']([^"\']+)["\']/i', $docXml, $m)) {
+                $rId = $m[1];
+                if (isset($rels[$rId]['target'])) {
+                    $target = str_starts_with($rels[$rId]['target'], 'word/') ? $rels[$rId]['target'] : 'word/'.$rels[$rId]['target'];
+                    $xml = $zip->getFromName($target);
+                    if ($xml !== false) {
+                        $txt = $extractCleanText($xml);
+                        if (! empty($txt)) {
+                            $this->extractedHeader = $txt;
+                        }
+                    }
                 }
             }
 
-            $ftrXml = $zip->getFromName("word/footer{$i}.xml");
-            if ($ftrXml !== false && empty($this->extractedFooter)) {
-                $fDom = new DOMDocument;
-                @$fDom->loadXML($ftrXml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
-                $fXpath = new DOMXPath($fDom);
-                $fXpath->registerNamespace('w', self::W_NS);
-                $texts = [];
-                foreach ($fXpath->query('//w:t') as $tNode) {
-                    $texts[] = trim($tNode->nodeValue);
+            if (preg_match('/<w:footerReference[^>]*w:type=["\']default["\'][^>]*r:id=["\']([^"\']+)["\']/i', $docXml, $m) ||
+                preg_match('/<w:footerReference[^>]*r:id=["\']([^"\']+)["\'][^>]*w:type=["\']default["\']/i', $docXml, $m) ||
+                preg_match('/<w:footerReference[^>]*r:id=["\']([^"\']+)["\']/i', $docXml, $m)) {
+                $rId = $m[1];
+                if (isset($rels[$rId]['target'])) {
+                    $target = str_starts_with($rels[$rId]['target'], 'word/') ? $rels[$rId]['target'] : 'word/'.$rels[$rId]['target'];
+                    $xml = $zip->getFromName($target);
+                    if ($xml !== false) {
+                        $txt = $extractCleanText($xml);
+                        if (! empty($txt)) {
+                            $this->extractedFooter = $txt;
+                        }
+                    }
                 }
-                $joined = trim(implode(' ', array_filter($texts)));
-                $cleaned = preg_replace('/\bPAGE\b|\bMERGEFORMAT\b|[\\\\*]/i', '', $joined);
-                $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned ?? ''));
-                if (! empty($cleaned) && ! preg_match('/^\d+$/', $cleaned)) {
-                    $this->extractedFooter = $cleaned;
+            }
+        }
+
+        // 2. Check relationship entries matching header or footer types
+        if ((empty($this->extractedHeader) || empty($this->extractedFooter)) && ! empty($rels)) {
+            foreach ($rels as $rel) {
+                if (empty($this->extractedHeader) && isset($rel['type'], $rel['target']) && str_contains($rel['type'], '/header')) {
+                    $target = str_starts_with($rel['target'], 'word/') ? $rel['target'] : 'word/'.$rel['target'];
+                    $xml = $zip->getFromName($target);
+                    if ($xml !== false) {
+                        $txt = $extractCleanText($xml);
+                        if (! empty($txt)) {
+                            $this->extractedHeader = $txt;
+                        }
+                    }
+                }
+                if (empty($this->extractedFooter) && isset($rel['type'], $rel['target']) && str_contains($rel['type'], '/footer')) {
+                    $target = str_starts_with($rel['target'], 'word/') ? $rel['target'] : 'word/'.$rel['target'];
+                    $xml = $zip->getFromName($target);
+                    if ($xml !== false) {
+                        $txt = $extractCleanText($xml);
+                        if (! empty($txt)) {
+                            $this->extractedFooter = $txt;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Scan zip files if not found
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if (preg_match('/^word\/header\d*\.xml$/i', $name) && empty($this->extractedHeader)) {
+                $xml = $zip->getFromIndex($i);
+                if ($xml !== false) {
+                    $txt = $extractCleanText($xml);
+                    if (! empty($txt)) {
+                        $this->extractedHeader = $txt;
+                    }
+                }
+            }
+            if (preg_match('/^word\/footer\d*\.xml$/i', $name) && empty($this->extractedFooter)) {
+                $xml = $zip->getFromIndex($i);
+                if ($xml !== false) {
+                    $txt = $extractCleanText($xml);
+                    if (! empty($txt)) {
+                        $this->extractedFooter = $txt;
+                    }
                 }
             }
         }

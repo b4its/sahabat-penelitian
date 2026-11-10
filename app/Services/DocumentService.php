@@ -804,6 +804,7 @@ class DocumentService
                 $contentHtml = $docxMeta['html'];
                 $extractedHeader = $docxMeta['header_text'];
                 $extractedFooter = $docxMeta['footer_text'];
+                $differentFirstPage = $docxMeta['different_first_page'] ?? false;
                 break;
 
             case 'txt':
@@ -835,6 +836,7 @@ class DocumentService
             'headings' => $adapted['headings'],
             'header_text' => $extractedHeader ?? '',
             'footer_text' => $extractedFooter ?? '',
+            'different_first_page' => $differentFirstPage ?? false,
             'stats' => $stats,
             'adapted_settings' => $adapted['presets'],
             'message' => $adapted['presets']['is_academic']
@@ -854,7 +856,7 @@ class DocumentService
     /**
      * Export document into requested format.
      */
-    public function exportDocument(string $title, string $html, string $format): array
+    public function exportDocument(string $title, string $html, string $format, ?string $headerText = null, ?string $footerText = null): array
     {
         $safeTitle = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $title);
         if (empty($safeTitle)) {
@@ -890,6 +892,8 @@ class DocumentService
                     'title' => $title,
                     'content' => $sanitizedHtml,
                     'plain_text' => $this->convertToPlainText($sanitizedHtml),
+                    'header_text' => $headerText ?? '',
+                    'footer_text' => $footerText ?? '',
                     'stats' => $stats,
                     'exported_at' => now()->toIso8601String(),
                     'app' => 'VelScribe Wordcraft Studio',
@@ -903,15 +907,53 @@ class DocumentService
 
             case 'docx':
             case 'doc':
+                $headerHtml = ! empty($headerText) ? htmlspecialchars($headerText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $footerHtml = ! empty($footerText) ? htmlspecialchars($footerText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 'Dokumen VelScribe Wordcraft';
+
                 $wordContent = <<<XML
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
 <meta charset='utf-8'>
 <title>{$title}</title>
+<!--[if gte mso 9]>
+<xml>
+ <w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+ </w:WordDocument>
+</xml>
+<![endif]-->
 <style>
-@page {
+@page Section1 {
     size: 210mm 297mm;
     margin: 40mm 30mm 30mm 40mm;
+    mso-header-margin: 20mm;
+    mso-footer-margin: 20mm;
+    mso-header: h1;
+    mso-footer: f1;
+}
+div.Section1 {
+    page: Section1;
+}
+table.MsoHeaderTable, table.MsoFooterTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+p.MsoHeader, div.MsoHeader {
+    margin: 0;
+    font-size: 10pt;
+    font-family: 'Times New Roman', serif;
+    color: #666666;
+    border-bottom: 1px solid #d1d5db;
+    padding-bottom: 4pt;
+}
+p.MsoFooter, div.MsoFooter {
+    margin: 0;
+    font-size: 10pt;
+    font-family: 'Times New Roman', serif;
+    color: #666666;
+    border-top: 1px solid #d1d5db;
+    padding-top: 4pt;
 }
 body {
     font-family: 'Times New Roman', 'Calibri', serif;
@@ -965,7 +1007,25 @@ th {
 </style>
 </head>
 <body>
-{$sanitizedHtml}
+<div class="Section1">
+    <div style="mso-element:header" id="h1">
+        <p class="MsoHeader">
+            <span style="float:left;">{$headerHtml}</span>
+            <span style="float:right; font-style:italic;">VelScribe Wordcraft</span>
+            <span style="clear:both; display:block;"></span>
+        </p>
+    </div>
+
+    {$sanitizedHtml}
+
+    <div style="mso-element:footer" id="f1">
+        <p class="MsoFooter">
+            <span style="float:left;">{$footerHtml}</span>
+            <span style="float:right;">Halaman <span style="mso-field-code: PAGE "></span> dari <span style="mso-field-code: NUMPAGES "></span></span>
+            <span style="clear:both; display:block;"></span>
+        </p>
+    </div>
+</div>
 </body>
 </html>
 XML;

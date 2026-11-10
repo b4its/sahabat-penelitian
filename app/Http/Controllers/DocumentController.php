@@ -138,13 +138,17 @@ HTML;
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
             'format' => ['required', 'string', 'in:docx,doc,html,htm,markdown,md,txt,text,json'],
+            'header_text' => ['nullable', 'string', 'max:500'],
+            'footer_text' => ['nullable', 'string', 'max:500'],
         ]);
 
         $title = $request->input('title');
         $content = $request->input('content');
         $format = $request->input('format');
+        $headerText = $request->input('header_text');
+        $footerText = $request->input('footer_text');
 
-        $exported = $this->documentService->exportDocument($title, $content, $format);
+        $exported = $this->documentService->exportDocument($title, $content, $format, $headerText, $footerText);
 
         return response($exported['content'], 200, [
             'Content-Type' => $exported['mime'],

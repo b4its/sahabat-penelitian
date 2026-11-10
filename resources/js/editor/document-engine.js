@@ -44,6 +44,10 @@ export class DocumentEngine {
         this.activeImage = null;
         this.customHeaderText = '';
         this.customFooterText = '';
+        this.differentFirstPage = false;
+        this.pageNumberFormat = 'full';
+        this.showPageNumber = true;
+        this.startPageNumber = 1;
         this.copiedFormat = null;
 
         window.documentEngine = this;
@@ -537,15 +541,25 @@ export class DocumentEngine {
                 sheet.classList.add('canvas-dark-sheet');
             }
 
-            // Header (Cover page has no running header, just like Word's "Different First Page")
-            const isCoverPage = pageNum === 1 && Boolean(p.isCover);
+            // Header
+            // In Word, if differentFirstPage is false, header appears on all pages including page 1.
+            const isSuppressedFirstPage = this.differentFirstPage && pageNum === 1;
             const header = document.createElement('header');
-            header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none ${isCoverPage ? 'invisible' : ''}`;
+            header.className = `page-sheet-header group flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
+            header.setAttribute('title', 'Klik dua kali untuk menyesuaikan Header & Footer');
+            header.setAttribute('data-action', 'header-footer-modal');
+
             const headerLeft = this.customHeaderText || docTitle;
             const headerRight = p.chapterName || '';
             header.innerHTML = `
-                <span class="header-doc-title truncate max-w-[55%] font-medium" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
-                <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%]" title="${this.escapeHtml(headerRight)}">${this.escapeHtml(headerRight)}</span>
+                <div class="flex items-center gap-1.5 truncate max-w-[55%] pointer-events-none">
+                    <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Header:</span>
+                    <span class="header-doc-title truncate font-medium text-gray-600 dark:text-gray-300" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
+                    ${isSuppressedFirstPage ? '<span class="text-[9px] text-gray-400 italic">(Halaman Pertama)</span>' : ''}
+                </div>
+                <div class="flex items-center gap-1.5 truncate max-w-[42%] justify-end pointer-events-none">
+                    <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate" title="${this.escapeHtml(headerRight)}">${this.escapeHtml(headerRight)}</span>
+                </div>
             `;
             sheet.appendChild(header);
 
@@ -565,13 +579,21 @@ export class DocumentEngine {
             body.innerHTML = p.contentHtml;
             sheet.appendChild(body);
 
-            // Footer (Cover page has no page number footer)
+            // Footer
             const footer = document.createElement('footer');
-            footer.className = `page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none ${isCoverPage ? 'invisible' : ''}`;
+            footer.className = `page-sheet-footer group flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
+            footer.setAttribute('title', 'Klik dua kali untuk menyesuaikan Header & Footer');
+            footer.setAttribute('data-action', 'header-footer-modal');
+
             const footerLeft = this.customFooterText || 'Dokumen VelScribe Wordcraft';
+            const pageNumText = isSuppressedFirstPage ? '' : this.formatPageNumber(pageNum, totalPages);
             footer.innerHTML = `
-                <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[60%]" title="${this.escapeHtml(footerLeft)}">${this.escapeHtml(footerLeft)}</span>
-                <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0">Halaman ${pageNum} dari ${totalPages}</span>
+                <div class="flex items-center gap-1.5 truncate max-w-[60%] pointer-events-none">
+                    <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Footer:</span>
+                    <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate" title="${this.escapeHtml(footerLeft)}">${this.escapeHtml(footerLeft)}</span>
+                    ${isSuppressedFirstPage ? '<span class="text-[9px] text-gray-400 italic">(Halaman Pertama)</span>' : ''}
+                </div>
+                <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0 pointer-events-none">${pageNumText}</span>
             `;
             sheet.appendChild(footer);
 
@@ -594,6 +616,79 @@ export class DocumentEngine {
         // Update stats and outline
         this.updateStats();
         this.updateOutline();
+    }
+
+    formatPageNumber(pageNum, totalPages) {
+        if (!this.showPageNumber) return '';
+        const offset = (parseInt(this.startPageNumber, 10) || 1) - 1;
+        const current = pageNum + offset;
+        const total = totalPages + offset;
+
+        switch (this.pageNumberFormat) {
+            case 'number':
+                return `${current}`;
+            case 'simple':
+                return `${current} dari ${total}`;
+            case 'hal':
+                return `Hal. ${current}`;
+            case 'dash':
+                return `- ${current} -`;
+            case 'roman': {
+                const lookup = [
+                    ['m', 1000], ['cm', 900], ['d', 500], ['cd', 400],
+                    ['c', 100], ['xc', 90], ['l', 50], ['xl', 40],
+                    ['x', 10], ['ix', 9], ['v', 5], ['iv', 4], ['i', 1]
+                ];
+                let num = current;
+                let roman = '';
+                for (const [letter, value] of lookup) {
+                    while (num >= value) {
+                        roman += letter;
+                        num -= value;
+                    }
+                }
+                return roman || 'i';
+            }
+            case 'full':
+            default:
+                return `Halaman ${current} dari ${total}`;
+        }
+    }
+
+    setHeaderText(text) {
+        this.customHeaderText = (text || '').trim();
+        this.renumberPages();
+        this.saveToLocalStorage();
+    }
+
+    setFooterText(text) {
+        this.customFooterText = (text || '').trim();
+        this.renumberPages();
+        this.saveToLocalStorage();
+    }
+
+    setPageNumberFormat(format) {
+        this.pageNumberFormat = format || 'full';
+        this.renumberPages();
+        this.saveToLocalStorage();
+    }
+
+    setDifferentFirstPage(enabled) {
+        this.differentFirstPage = Boolean(enabled);
+        this.renumberPages();
+        this.saveToLocalStorage();
+    }
+
+    setShowPageNumber(show) {
+        this.showPageNumber = Boolean(show);
+        this.renumberPages();
+        this.saveToLocalStorage();
+    }
+
+    setStartPageNumber(start) {
+        this.startPageNumber = Math.max(1, parseInt(start, 10) || 1);
+        this.renumberPages();
+        this.saveToLocalStorage();
     }
 
     renumberPages() {
@@ -623,6 +718,18 @@ export class DocumentEngine {
                 }
             }
 
+            const isSuppressedFirstPage = this.differentFirstPage && pageNum === 1;
+
+            const headerEl = sheet.querySelector('.page-sheet-header');
+            if (headerEl) {
+                headerEl.classList.remove('invisible');
+                if (isSuppressedFirstPage) {
+                    headerEl.classList.add('opacity-30');
+                } else {
+                    headerEl.classList.remove('opacity-30');
+                }
+            }
+
             const headerTitle = sheet.querySelector('.header-doc-title');
             if (headerTitle) {
                 const leftText = this.customHeaderText || docTitle;
@@ -636,6 +743,16 @@ export class DocumentEngine {
                 headerChapter.title = activeChapter;
             }
 
+            const footerEl = sheet.querySelector('.page-sheet-footer');
+            if (footerEl) {
+                footerEl.classList.remove('invisible');
+                if (isSuppressedFirstPage) {
+                    footerEl.classList.add('opacity-30');
+                } else {
+                    footerEl.classList.remove('opacity-30');
+                }
+            }
+
             const footerTitle = sheet.querySelector('.footer-doc-title');
             if (footerTitle) {
                 const ftrText = this.customFooterText || 'Dokumen VelScribe Wordcraft';
@@ -645,7 +762,7 @@ export class DocumentEngine {
 
             const footerNum = sheet.querySelector('.footer-page-num');
             if (footerNum) {
-                footerNum.textContent = `Halaman ${pageNum} dari ${total}`;
+                footerNum.textContent = isSuppressedFirstPage ? '' : this.formatPageNumber(pageNum, total);
             }
         });
 
@@ -702,6 +819,7 @@ export class DocumentEngine {
                         contentHtml = parsed.html;
                         this.customHeaderText = parsed.headerText || '';
                         this.customFooterText = parsed.footerText || '';
+                        this.differentFirstPage = Boolean(parsed.differentFirstPage);
                     } else {
                         contentHtml = String(parsed);
                     }
@@ -752,6 +870,9 @@ export class DocumentEngine {
                         contentHtml = backendResult.content_html;
                         this.customHeaderText = backendResult.header_text || '';
                         this.customFooterText = backendResult.footer_text || '';
+                        if (backendResult.different_first_page !== undefined) {
+                            this.differentFirstPage = Boolean(backendResult.different_first_page);
+                        }
                     }
                 }
             } else if (['md', 'markdown'].includes(extension)) {
@@ -797,6 +918,16 @@ export class DocumentEngine {
             const restoreBtn = document.getElementById('btn-restore-draft');
             if (restoreBtn) restoreBtn.classList.add('hidden');
 
+            // Include header & footer details in notification if detected
+            let hfDetail = '';
+            if (this.customHeaderText && this.customFooterText) {
+                hfDetail = ` (Header: "${this.customHeaderText}" & Footer: "${this.customFooterText}")`;
+            } else if (this.customHeaderText) {
+                hfDetail = ` (Header: "${this.customHeaderText}")`;
+            } else if (this.customFooterText) {
+                hfDetail = ` (Footer: "${this.customFooterText}")`;
+            }
+
             // Apply adapted typography and margins
             if (adapted.isAcademic) {
                 this.setMarginPreset('skripsi');
@@ -805,13 +936,13 @@ export class DocumentEngine {
                 this.setLineSpacing('1.5');
                 this.onAdaptationNotice({
                     type: 'academic',
-                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font Times New Roman 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.`,
+                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font Times New Roman 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.${hfDetail}`,
                 });
             } else {
                 this.setMarginPreset('normal');
                 this.onAdaptationNotice({
                     type: 'normal',
-                    message: `Format ${detectedFormat.toUpperCase()} berhasil dimuat dan diselaraskan ke dalam lembar halaman A4.`,
+                    message: `Format ${detectedFormat.toUpperCase()} berhasil dimuat dan diselaraskan ke dalam lembar halaman A4.${hfDetail}`,
                 });
             }
 
@@ -820,7 +951,7 @@ export class DocumentEngine {
                 filename,
                 format: detectedFormat,
                 isAcademic: adapted.isAcademic,
-                message: `Format ${detectedFormat.toUpperCase()} otomatis disesuaikan.`,
+                message: `Format ${detectedFormat.toUpperCase()} otomatis disesuaikan.${hfDetail}`,
             };
         } catch (err) {
             console.error('Error loading local file:', err);
@@ -829,6 +960,9 @@ export class DocumentEngine {
                 const backendResult = await this.uploadToBackend(file);
                 this.customHeaderText = backendResult.header_text || '';
                 this.customFooterText = backendResult.footer_text || '';
+                if (backendResult.different_first_page !== undefined) {
+                    this.differentFirstPage = Boolean(backendResult.different_first_page);
+                }
                 this.setContent(backendResult.content_html);
                 this.setTitle(backendResult.title);
                 this.setFormatBadge(backendResult.format);
@@ -2081,6 +2215,8 @@ export class DocumentEngine {
                     title,
                     content,
                     format,
+                    header_text: this.customHeaderText,
+                    footer_text: this.customFooterText,
                 }),
             });
 
@@ -2139,7 +2275,9 @@ export class DocumentEngine {
         } else {
             mime = 'application/msword; charset=utf-8';
             ext = 'doc';
-            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title><style>body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.5;}h1{text-align:center;}p{text-align:justify;text-indent:1.25cm;}</style></head><body>${htmlContent}</body></html>`;
+            const hText = this.customHeaderText || title;
+            const fText = this.customFooterText || 'Dokumen VelScribe Wordcraft';
+            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title><style>@page Section1{size:210mm 297mm;margin:40mm 30mm 30mm 40mm;mso-header:h1;mso-footer:f1;}div.Section1{page:Section1;}p.MsoHeader{border-bottom:1px solid #ccc;padding-bottom:4px;font-size:10pt;color:#666;}p.MsoFooter{border-top:1px solid #ccc;padding-top:4px;font-size:10pt;color:#666;}body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.5;}h1{text-align:center;}p{text-align:justify;text-indent:1.25cm;}</style></head><body><div class="Section1"><div style="mso-element:header" id="h1"><p class="MsoHeader">${this.escapeHtml(hText)}</p></div>${htmlContent}<div style="mso-element:footer" id="f1"><p class="MsoFooter">${this.escapeHtml(fText)}</p></div></div></body></html>`;
         }
 
         const blob = new Blob([content], { type: mime });
@@ -2162,6 +2300,10 @@ export class DocumentEngine {
                 marginPreset: this.currentMarginPreset,
                 customHeaderText: this.customHeaderText || '',
                 customFooterText: this.customFooterText || '',
+                differentFirstPage: this.differentFirstPage || false,
+                pageNumberFormat: this.pageNumberFormat || 'full',
+                showPageNumber: this.showPageNumber !== false,
+                startPageNumber: this.startPageNumber || 1,
                 savedAt: new Date().toISOString(),
             };
             localStorage.setItem('velscribe_document_state', JSON.stringify(data));
@@ -2178,6 +2320,10 @@ export class DocumentEngine {
             if (data && data.content) {
                 this.customHeaderText = data.customHeaderText || '';
                 this.customFooterText = data.customFooterText || '';
+                this.differentFirstPage = Boolean(data.differentFirstPage);
+                this.pageNumberFormat = data.pageNumberFormat || 'full';
+                this.showPageNumber = data.showPageNumber !== false;
+                this.startPageNumber = parseInt(data.startPageNumber, 10) || 1;
                 this.setTitle(data.title || 'Dokumen Tanpa Judul');
                 this.setContent(data.content);
                 this.setFormatBadge(data.format || 'docx');

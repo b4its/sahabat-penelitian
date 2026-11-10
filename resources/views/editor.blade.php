@@ -670,6 +670,14 @@
                 <span>Ω Simbol Khusus</span>
             </button>
 
+            <button data-action="header-footer-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Konfigurasi running header, footer, dan nomor halaman">
+                <span>📋 Header & Footer</span>
+            </button>
+
+            <button data-action="page-number-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Format dan penomoran halaman">
+                <span>#️⃣ Nomor Halaman</span>
+            </button>
+
             <button onclick="window.documentEngine.insertCallout('info', 'Catatan Penelitian', 'Informasi terverifikasi untuk analisis bab selanjutnya.')" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
                 <span>💬 Callout Box</span>
             </button>
@@ -711,6 +719,9 @@
             <div class="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-gray-800">
                 <button onclick="window.documentEngine.setMarginPreset('skripsi'); window.documentEngine.setFontFamily('\'Times New Roman\', serif'); window.documentEngine.setFontSize('12pt'); window.documentEngine.setLineSpacing('1.5'); window.uiController.showToast('Format Skripsi 4-4-3-3 cm diterapkan!');" class="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold hover:bg-indigo-100 transition">
                     🎓 Terapkan Standar Skripsi
+                </button>
+                <button data-action="header-footer-modal" class="px-2.5 py-1 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-medium hover:bg-gray-100 transition" title="Konfigurasi running header, footer, dan nomor halaman">
+                    📋 Header & Footer
                 </button>
             </div>
         </div>
@@ -924,9 +935,14 @@
                 <!-- Initial / SSR Document Page Sheet -->
                 <article id="document-page-canvas" class="document-page-sheet page-a4 relative flex flex-col justify-between" data-page-index="1">
                     <!-- Page Sheet Header -->
-                    <header class="page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none">
-                        <span class="header-doc-title truncate max-w-[60%] font-medium">{{ $initialTitle }}</span>
-                        <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]"></span>
+                    <header class="page-sheet-header group flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1" title="Klik dua kali atau klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
+                        <div class="flex items-center gap-1.5 truncate max-w-[55%] pointer-events-none">
+                            <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Header:</span>
+                            <span class="header-doc-title truncate font-medium text-gray-600 dark:text-gray-300" title="{{ $initialTitle }}">{{ $initialTitle }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 truncate max-w-[42%] justify-end pointer-events-none">
+                            <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate"></span>
+                        </div>
                     </header>
 
                     <!-- Page Content Area (Editable) -->
@@ -942,9 +958,12 @@
                     </div>
 
                     <!-- Page Footer Simulation (Print Layout) -->
-                    <footer class="page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none">
-                        <span class="footer-doc-title text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
-                        <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono">Halaman 1 dari 1</span>
+                    <footer class="page-sheet-footer group flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20 hover:border-indigo-300 rounded px-1 -mx-1" title="Klik dua kali atau klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
+                        <div class="flex items-center gap-1.5 truncate max-w-[60%] pointer-events-none">
+                            <span class="opacity-0 group-hover:opacity-100 transition text-[10px] text-indigo-500 font-mono font-medium">✏️ Footer:</span>
+                            <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate" title="Dokumen VelScribe Wordcraft">Dokumen VelScribe Wordcraft</span>
+                        </div>
+                        <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0 pointer-events-none">Halaman 1 dari 1</span>
                     </footer>
                 </article>
             </div>
@@ -1482,6 +1501,77 @@
             <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
                 <button data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Batal</button>
                 <button id="btn-confirm-citation" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white">Sisipkan Sitasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 11: Pengaturan Header & Footer Dokumen (Microsoft Word & Google Docs Style) -->
+    <div id="modal-header-footer" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="p-1 rounded bg-indigo-600 text-white">📋</span>
+                    <span>Pengaturan Header & Footer Dokumen</span>
+                </h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            <div class="p-6 space-y-4 text-xs">
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Teks Header (Bagian Atas Dokumen):</label>
+                    <input type="text" id="hf-header-input" placeholder="Contoh: UNIVERSITAS NEGERI SEMARANG / Laporan Tugas Akhir" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                    <p class="text-[11px] text-gray-400 mt-1">Muncul di sudut kiri atas setiap lembar halaman dokumen.</p>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Teks Footer (Bagian Bawah Dokumen):</label>
+                    <input type="text" id="hf-footer-input" placeholder="Contoh: Dokumen VelScribe Wordcraft / Draft Rahasia" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                    <p class="text-[11px] text-gray-400 mt-1">Muncul di sudut kiri bawah berdampingan dengan nomor halaman.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Format Nomor Halaman:</label>
+                        <select id="hf-page-format-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500 font-medium">
+                            <option value="full">Halaman X dari Y (Standar)</option>
+                            <option value="simple">X dari Y</option>
+                            <option value="number">X (Hanya Angka)</option>
+                            <option value="hal">Hal. X</option>
+                            <option value="dash">- X -</option>
+                            <option value="roman">i, ii, iii (Romawi Kecil)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Mulai Dari Nomor:</label>
+                        <input type="number" id="hf-start-page-input" min="1" value="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500 font-mono" />
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2.5">
+                    <label class="flex items-start gap-2.5 cursor-pointer">
+                        <input type="checkbox" id="hf-show-page-number-toggle" checked class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-700" />
+                        <div>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">Tampilkan Nomor Halaman di Footer</span>
+                            <p class="text-[11px] text-gray-400">Menyisipkan posisi penomoran otomatis pada setiap lembar A4.</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-2.5 cursor-pointer">
+                        <input type="checkbox" id="hf-different-first-toggle" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-700" />
+                        <div>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">Halaman Pertama Berbeda (Different First Page)</span>
+                            <p class="text-[11px] text-gray-400">Sembunyikan header dan footer pada halaman pertama (standar halaman sampul atau judul skripsi Microsoft Word).</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <button id="btn-reset-header-footer" class="px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition font-medium">
+                    Reset ke Standar
+                </button>
+                <div class="flex items-center gap-2">
+                    <button data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Batal</button>
+                    <button id="btn-apply-header-footer" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">Terapkan Perubahan</button>
+                </div>
             </div>
         </div>
     </div>

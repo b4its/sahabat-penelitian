@@ -31,9 +31,12 @@ export class DocxImporter {
         const stylesMap = await this.parseStyles(zip);
 
         // 4. Extract Header & Footer text from Word archive
-        const { headerText, footerText } = await this.parseHeadersAndFooters(zip);
+        const { headerText, footerText } = await this.parseHeadersAndFooters(zip, rels, docXml);
 
-        // 5. Parse Document DOM
+        // 5. Extract "Different First Page" setting from Word section properties
+        const differentFirstPage = /<w:titlePg\s*\/?>/i.test(docXml);
+
+        // 6. Parse Document DOM
         const parser = new DOMParser();
         const dom = parser.parseFromString(docXml, 'application/xml');
 
@@ -132,40 +135,148 @@ export class DocxImporter {
             html: finalHtml,
             headerText,
             footerText,
+            differentFirstPage,
             toString() {
                 return this.html;
             },
         };
     }
 
-    async parseHeadersAndFooters(zip) {
+    async parseHeadersAndFooters(zip, rels = {}, docXml = '') {
         let headerText = '';
         let footerText = '';
 
-        for (let i = 1; i <= 6; i++) {
-            const hFile = zip.file(`word/header${i}.xml`);
-            if (hFile && !headerText) {
-                const xml = await hFile.async('string');
+        const resolveTarget = (target) => {
+            if (!target) return '';
+            let clean = target.replace(/^\//, '').replace(/^\.\//, '');
+            if (clean.startsWith('../')) {
+                clean = clean.replace(/^\.\.\//, '');
+            }
+            return clean.startsWith('word/') ? clean : `word/${clean}`;
+        };
+
+        const extractCleanText = (xmlStr) => {
+            if (!xmlStr) return '';
+            try {
                 const parser = new DOMParser();
-                const dom = parser.parseFromString(xml, 'application/xml');
-                const tNodes = Array.from(dom.getElementsByTagName('w:t'));
-                let txt = tNodes.map(n => (n.textContent || '').trim()).filter(Boolean).join(' ');
-                txt = txt.replace(/\bPAGE\b|\bMERGEFORMAT\b|[\\*]/gi, '').replace(/\s+/g, ' ').trim();
-                if (txt && !/^\d+$/.test(txt)) {
-                    headerText = txt;
+                const dom = parser.parseFromString(xmlStr, 'application/xml');
+                const paragraphs = Array.from(dom.querySelectorAll('p, w\\:p'));
+                let lines = [];
+                if (paragraphs.length > 0) {
+                    lines = paragraphs.map(p => {
+                        const tNodes = Array.from(p.querySelectorAll('t, w\\:t'));
+                        return tNodes.map(n => n.textContent || '').join('');
+                    });
+                } else {
+                    const tNodes = Array.from(dom.querySelectorAll('t, w\\:t'));
+                    lines = [tNodes.map(n => n.textContent || '').join('')];
+                }
+
+                let full = lines.join(' ')
+                    .replace(/\bPAGE\b|\bNUMPAGES\b|\bMERGEFORMAT\b|[\\*]/gi, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                if (full && !/^\d+$/.test(full)) {
+                    return full;
+                }
+            } catch (e) {
+                // fallback regex extraction
+                const matches = Array.from(xmlStr.matchAll(/<w:t[^>]*>([^<]+)<\/w:t>/g)).map(m => m[1]);
+                let full = matches.join(' ')
+                    .replace(/\bPAGE\b|\bNUMPAGES\b|\bMERGEFORMAT\b|[\\*]/gi, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                if (full && !/^\d+$/.test(full)) return full;
+            }
+            return '';
+        };
+
+        // 1. Try to resolve referenced default header & footer from section properties (w:sectPr)
+        if (docXml && rels) {
+            const defaultHeaderMatch = docXml.match(/<w:headerReference[^>]*w:type=["']default["'][^>]*r:id=["']([^"']+)["']/i) ||
+                                       docXml.match(/<w:headerReference[^>]*r:id=["']([^"']+)["'][^>]*w:type=["']default["']/i) ||
+                                       docXml.match(/<w:headerReference[^>]*r:id=["']([^"']+)["']/i);
+            if (defaultHeaderMatch) {
+                const rId = defaultHeaderMatch[1];
+                const rel = rels[rId];
+                if (rel && rel.target) {
+                    const targetFile = resolveTarget(rel.target);
+                    const f = zip.file(targetFile);
+                    if (f) {
+                        const xml = await f.async('string');
+                        const txt = extractCleanText(xml);
+                        if (txt) headerText = txt;
+                    }
                 }
             }
 
-            const fFile = zip.file(`word/footer${i}.xml`);
-            if (fFile && !footerText) {
+            const defaultFooterMatch = docXml.match(/<w:footerReference[^>]*w:type=["']default["'][^>]*r:id=["']([^"']+)["']/i) ||
+                                       docXml.match(/<w:footerReference[^>]*r:id=["']([^"']+)["'][^>]*w:type=["']default["']/i) ||
+                                       docXml.match(/<w:footerReference[^>]*r:id=["']([^"']+)["']/i);
+            if (defaultFooterMatch) {
+                const rId = defaultFooterMatch[1];
+                const rel = rels[rId];
+                if (rel && rel.target) {
+                    const targetFile = resolveTarget(rel.target);
+                    const f = zip.file(targetFile);
+                    if (f) {
+                        const xml = await f.async('string');
+                        const txt = extractCleanText(xml);
+                        if (txt) footerText = txt;
+                    }
+                }
+            }
+        }
+
+        // 2. Check relationship entries matching header or footer types
+        if ((!headerText || !footerText) && rels) {
+            for (const rel of Object.values(rels)) {
+                if (!headerText && rel.type && rel.type.includes('/header')) {
+                    const targetFile = resolveTarget(rel.target);
+                    const f = zip.file(targetFile);
+                    if (f) {
+                        const xml = await f.async('string');
+                        const txt = extractCleanText(xml);
+                        if (txt) headerText = txt;
+                    }
+                }
+                if (!footerText && rel.type && rel.type.includes('/footer')) {
+                    const targetFile = resolveTarget(rel.target);
+                    const f = zip.file(targetFile);
+                    if (f) {
+                        const xml = await f.async('string');
+                        const txt = extractCleanText(xml);
+                        if (txt) footerText = txt;
+                    }
+                }
+            }
+        }
+
+        // 3. Scan all header files in zip if still not found
+        if (!headerText) {
+            const headerFiles = zip.file(/^word\/header\d*\.xml$/i) || [];
+            headerFiles.sort((a, b) => b.name.localeCompare(a.name)); // check header2, header1
+            for (const hFile of headerFiles) {
+                const xml = await hFile.async('string');
+                const txt = extractCleanText(xml);
+                if (txt) {
+                    headerText = txt;
+                    break;
+                }
+            }
+        }
+
+        // 4. Scan all footer files in zip if still not found
+        if (!footerText) {
+            const footerFiles = zip.file(/^word\/footer\d*\.xml$/i) || [];
+            footerFiles.sort((a, b) => b.name.localeCompare(a.name));
+            for (const fFile of footerFiles) {
                 const xml = await fFile.async('string');
-                const parser = new DOMParser();
-                const dom = parser.parseFromString(xml, 'application/xml');
-                const tNodes = Array.from(dom.getElementsByTagName('w:t'));
-                let txt = tNodes.map(n => (n.textContent || '').trim()).filter(Boolean).join(' ');
-                txt = txt.replace(/\bPAGE\b|\bMERGEFORMAT\b|[\\*]/gi, '').replace(/\s+/g, ' ').trim();
-                if (txt && !/^\d+$/.test(txt)) {
+                const txt = extractCleanText(xml);
+                if (txt) {
                     footerText = txt;
+                    break;
                 }
             }
         }

@@ -690,3 +690,92 @@ test('black-box: editor view loads compiled client assets without temporal dead 
     $sourceAppJs = file_get_contents(resource_path('js/app.js'));
     expect($sourceAppJs)->not->toContain('engine.escapeHtml');
 });
+
+test('black-box: editor view renders Header & Footer customization modal with full controls', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Modal Header & Footer
+    $response->assertSee('id="modal-header-footer"', false);
+    $response->assertSee('id="hf-header-input"', false);
+    $response->assertSee('id="hf-footer-input"', false);
+    $response->assertSee('id="hf-page-format-select"', false);
+    $response->assertSee('id="hf-start-page-input"', false);
+    $response->assertSee('id="hf-show-page-number-toggle"', false);
+    $response->assertSee('id="hf-different-first-toggle"', false);
+    $response->assertSee('id="btn-apply-header-footer"', false);
+    $response->assertSee('id="btn-reset-header-footer"', false);
+
+    // Ribbon actions
+    $response->assertSee('data-action="header-footer-modal"', false);
+    $response->assertSee('data-action="page-number-modal"', false);
+});
+
+test('black-box: user can export document with custom header and footer into doc format', function () {
+    $response = $this->postJson('/api/documents/export', [
+        'title' => 'Laporan Akhir Penelitian',
+        'content' => '<p>Hasil pengujian model machine learning.</p>',
+        'format' => 'doc',
+        'header_text' => 'UNIVERSITAS GADJAH MADA - DEPARTEMEN ILMU KOMPUTER',
+        'footer_text' => 'Draft Penelitian 2026 - Rahasia',
+    ]);
+
+    $response->assertStatus(200);
+    $content = $response->getContent();
+
+    expect($content)->toContain('mso-header: h1;')
+        ->and($content)->toContain('mso-footer: f1;')
+        ->and($content)->toContain('UNIVERSITAS GADJAH MADA - DEPARTEMEN ILMU KOMPUTER')
+        ->and($content)->toContain('Draft Penelitian 2026 - Rahasia')
+        ->and($content)->toContain('Hasil pengujian model machine learning');
+});
+
+test('black-box: user can upload docx with referenced headers and footers and receive them in response', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_upload_hf_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $relsXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rIdHeaderDefault" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header2.xml"/>
+    <Relationship Id="rIdFooterDefault" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer2.xml"/>
+</Relationships>
+XML;
+    $zip->addFromString('word/_rels/document.xml.rels', $relsXml);
+
+    $zip->addFromString('word/header2.xml', '<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>INSTITUT TEKNOLOGI BANDUNG</w:t></w:r></w:p></w:hdr>');
+    $zip->addFromString('word/footer2.xml', '<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>Publikasi Jurnal 2026</w:t></w:r></w:p></w:ftr>');
+
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <w:body>
+        <w:p><w:r><w:t>Konten Jurnal Ilmiah</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:headerReference w:type="default" r:id="rIdHeaderDefault"/>
+            <w:footerReference w:type="default" r:id="rIdFooterDefault"/>
+            <w:titlePg/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile($zipPath, 'jurnal_itb.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'header_text' => 'INSTITUT TEKNOLOGI BANDUNG',
+            'footer_text' => 'Publikasi Jurnal 2026',
+            'different_first_page' => true,
+        ]);
+
+    @unlink($zipPath);
+});

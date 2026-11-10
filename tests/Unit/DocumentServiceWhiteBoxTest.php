@@ -633,3 +633,70 @@ HTML;
         ->and($stats['paragraph_count'])->toBeGreaterThanOrEqual(4)
         ->and($stats['reading_time_minutes'])->toBeGreaterThanOrEqual(1);
 });
+
+test('white-box: DocxImporter extracts header and footer referenced via relationships rId and titlePg', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_rel_hf_').'.docx';
+    $zip = new \ZipArchive;
+    $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    // Relationships in document.xml.rels
+    $relsXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rIdHeaderDefault" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header2.xml"/>
+    <Relationship Id="rIdFooterDefault" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer2.xml"/>
+</Relationships>
+XML;
+    $zip->addFromString('word/_rels/document.xml.rels', $relsXml);
+
+    // Header 1 (first page empty) and Header 2 (running header)
+    $zip->addFromString('word/header1.xml', '<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
+    $zip->addFromString('word/header2.xml', '<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>UNIVERSITAS NEGERI SEMARANG - TEKNIK INFORMATIKA</w:t></w:r></w:p></w:hdr>');
+
+    // Footer 1 and Footer 2
+    $zip->addFromString('word/footer2.xml', '<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>Laporan Tugas Akhir 2026</w:t></w:r><w:r><w:t>PAGE \* MERGEFORMAT</w:t></w:r></w:p></w:ftr>');
+
+    // Document with headerReference, footerReference, and titlePg
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <w:body>
+        <w:p><w:r><w:t>Halaman Isi Skripsi</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:headerReference w:type="default" r:id="rIdHeaderDefault"/>
+            <w:footerReference w:type="default" r:id="rIdFooterDefault"/>
+            <w:titlePg/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $importer = new DocxImporter;
+    $meta = $importer->parseWithMetadata($zipPath);
+
+    expect($meta['header_text'])->toBe('UNIVERSITAS NEGERI SEMARANG - TEKNIK INFORMATIKA')
+        ->and($meta['footer_text'])->toBe('Laporan Tugas Akhir 2026')
+        ->and($meta['different_first_page'])->toBeTrue()
+        ->and($importer->getDifferentFirstPage())->toBeTrue();
+
+    @unlink($zipPath);
+});
+
+test('white-box: exportDocument embeds Word MsoHeader and MsoFooter when headerText and footerText are specified', function () {
+    $exported = $this->service->exportDocument(
+        'Laporan Riset AI',
+        '<p>Konten hasil riset</p>',
+        'doc',
+        'KEMENTERIAN RISET DAN TEKNOLOGI',
+        'Hak Cipta 2026 Dilindungi'
+    );
+
+    expect($exported['mime'])->toBe('application/msword; charset=UTF-8')
+        ->and($exported['content'])->toContain('mso-header: h1;')
+        ->and($exported['content'])->toContain('mso-footer: f1;')
+        ->and($exported['content'])->toContain('KEMENTERIAN RISET DAN TEKNOLOGI')
+        ->and($exported['content'])->toContain('Hak Cipta 2026 Dilindungi')
+        ->and($exported['content'])->toContain('Halaman <span style="mso-field-code: PAGE "></span> dari <span style="mso-field-code: NUMPAGES "></span>');
+});

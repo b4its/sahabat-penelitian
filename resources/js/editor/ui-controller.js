@@ -40,6 +40,7 @@ export class UiController {
         this.bindCoverPageModal();
         this.bindSymbolsModal();
         this.bindCitationModal();
+        this.bindHeaderFooterModal();
         this.bindDragAndDrop();
         this.bindGlobalKeyboardShortcuts();
         this.renderRuler();
@@ -470,6 +471,80 @@ export class UiController {
                 this.engine.insertCitation(author, year, title, source);
                 this.closeModal(modal);
                 this.showToast('Sitasi & Entri Daftar Pustaka berhasil disisipkan!');
+            });
+        }
+    }
+
+    bindHeaderFooterModal() {
+        const modal = document.getElementById('modal-header-footer');
+        if (!modal) return;
+
+        const openBtns = document.querySelectorAll('[data-action="header-footer-modal"], [data-action="page-number-modal"]');
+        const headerInput = document.getElementById('hf-header-input');
+        const footerInput = document.getElementById('hf-footer-input');
+        const formatSelect = document.getElementById('hf-page-format-select');
+        const diffFirstToggle = document.getElementById('hf-different-first-toggle');
+        const showNumToggle = document.getElementById('hf-show-page-number-toggle');
+        const startNumInput = document.getElementById('hf-start-page-input');
+
+        const populateFields = () => {
+            if (headerInput) headerInput.value = this.engine.customHeaderText || this.engine.getTitle();
+            if (footerInput) footerInput.value = this.engine.customFooterText || 'Dokumen VelScribe Wordcraft';
+            if (formatSelect) formatSelect.value = this.engine.pageNumberFormat || 'full';
+            if (diffFirstToggle) diffFirstToggle.checked = Boolean(this.engine.differentFirstPage);
+            if (showNumToggle) showNumToggle.checked = this.engine.showPageNumber !== false;
+            if (startNumInput) startNumInput.value = this.engine.startPageNumber || 1;
+        };
+
+        const openHfModal = () => {
+            populateFields();
+            this.openModal(modal);
+        };
+
+        openBtns.forEach(btn => btn.addEventListener('click', openHfModal));
+
+        // Click / Double Click delegation on header & footer inside document pages
+        const pagesWrapper = document.getElementById('document-pages-wrapper') || document.body;
+        pagesWrapper.addEventListener('click', (e) => {
+            const hf = e.target.closest('.page-sheet-header, .page-sheet-footer');
+            if (hf) {
+                openHfModal();
+            }
+        });
+        pagesWrapper.addEventListener('dblclick', (e) => {
+            const hf = e.target.closest('.page-sheet-header, .page-sheet-footer');
+            if (hf) {
+                openHfModal();
+            }
+        });
+
+        // Apply changes button
+        const btnApply = document.getElementById('btn-apply-header-footer');
+        if (btnApply) {
+            btnApply.addEventListener('click', () => {
+                if (headerInput) this.engine.setHeaderText(headerInput.value);
+                if (footerInput) this.engine.setFooterText(footerInput.value);
+                if (formatSelect) this.engine.setPageNumberFormat(formatSelect.value);
+                if (diffFirstToggle) this.engine.setDifferentFirstPage(diffFirstToggle.checked);
+                if (showNumToggle) this.engine.setShowPageNumber(showNumToggle.checked);
+                if (startNumInput) this.engine.setStartPageNumber(startNumInput.value);
+                this.closeModal(modal);
+                this.showToast('Header & Footer berhasil diperbarui!');
+            });
+        }
+
+        // Reset / Clear button
+        const btnReset = document.getElementById('btn-reset-header-footer');
+        if (btnReset) {
+            btnReset.addEventListener('click', () => {
+                this.engine.setHeaderText('');
+                this.engine.setFooterText('');
+                this.engine.setDifferentFirstPage(false);
+                this.engine.setPageNumberFormat('full');
+                this.engine.setShowPageNumber(true);
+                this.engine.setStartPageNumber(1);
+                this.closeModal(modal);
+                this.showToast('Header & Footer dikembalikan ke standar.');
             });
         }
     }
