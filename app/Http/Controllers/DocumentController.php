@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AiService;
 use App\Services\CitationService;
 use App\Services\DocumentService;
+use App\Services\TocService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,6 +17,7 @@ class DocumentController extends Controller
         protected DocumentService $documentService,
         protected AiService $aiService,
         protected CitationService $citationService,
+        protected TocService $tocService,
     ) {}
 
     /**
@@ -231,6 +233,90 @@ HTML;
             'success' => true,
             'style' => $style,
             'heading' => $heading,
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * Generate Microsoft Word-style Table of Contents (Daftar Isi) block.
+     */
+    public function generateToc(Request $request): JsonResponse
+    {
+        $request->validate([
+            'headings' => ['nullable', 'array'],
+            'content_html' => ['nullable', 'string'],
+            'heading' => ['nullable', 'string', 'max:100'],
+            'style' => ['nullable', 'string', 'in:template,classic,modern,formal,simple'],
+            'leader' => ['nullable', 'string', 'in:dots,dashes,line,none'],
+            'levels' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'showPageNumbers' => ['nullable', 'boolean'],
+            'rightAlignPageNumbers' => ['nullable', 'boolean'],
+            'templateType' => ['nullable', 'string', 'in:auto1,auto2,manual,custom'],
+        ]);
+
+        $headings = $request->input('headings');
+        $contentHtml = $request->input('content_html', '');
+        $maxLevels = (int) $request->input('levels', 3);
+
+        if (empty($headings) && ! empty($contentHtml)) {
+            $headings = $this->tocService->extractHeadingsFromHtml($contentHtml, $maxLevels);
+        }
+
+        $headings = $headings ?: [];
+        $options = [
+            'heading' => $request->input('heading', 'DAFTAR ISI'),
+            'style' => $request->input('style', 'template'),
+            'leader' => $request->input('leader', 'dots'),
+            'levels' => $maxLevels,
+            'showPageNumbers' => $request->boolean('showPageNumbers', true),
+            'rightAlignPageNumbers' => $request->boolean('rightAlignPageNumbers', true),
+            'templateType' => $request->input('templateType', 'auto2'),
+        ];
+
+        $html = $this->tocService->generateTocHtml($headings, $options);
+
+        return response()->json([
+            'success' => true,
+            'count' => count($headings),
+            'headings' => $headings,
+            'options' => $options,
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * Update an existing Table of Contents block (page numbers only or entire table).
+     */
+    public function updateToc(Request $request): JsonResponse
+    {
+        $request->validate([
+            'existing_toc_html' => ['required', 'string'],
+            'headings' => ['nullable', 'array'],
+            'content_html' => ['nullable', 'string'],
+            'update_type' => ['required', 'string', 'in:page_numbers,entire'],
+            'options' => ['nullable', 'array'],
+        ]);
+
+        $existingHtml = $request->input('existing_toc_html');
+        $updateType = $request->input('update_type');
+        $headings = $request->input('headings');
+        $contentHtml = $request->input('content_html', '');
+        $options = $request->input('options', []);
+
+        $maxLevels = (int) ($options['levels'] ?? 3);
+
+        if (empty($headings) && ! empty($contentHtml)) {
+            $headings = $this->tocService->extractHeadingsFromHtml($contentHtml, $maxLevels);
+        }
+
+        $headings = $headings ?: [];
+
+        $html = $this->tocService->updateTocHtml($existingHtml, $headings, $updateType, $options);
+
+        return response()->json([
+            'success' => true,
+            'update_type' => $updateType,
+            'count' => count($headings),
             'html' => $html,
         ]);
     }

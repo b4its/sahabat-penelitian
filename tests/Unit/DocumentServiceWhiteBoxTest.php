@@ -926,3 +926,51 @@ test('white-box: app css stylesheet defines custom-variant for class-based dark 
     $css = file_get_contents($cssPath);
     expect($css)->toContain('@custom-variant dark (&:where(.dark, .dark *));');
 });
+
+test('white-box: adaptDocumentStructure does not convert student names, NIPs, and supervisor titles to headings in docx files', function () {
+    $docxHtml = '
+        <p>LEMBAR PERSETUJUAN</p>
+        <p>ALVIN GRAND PUTRA</p>
+        <p>NIP. 19941024 202406 1 002</p>
+        <p>NIP. 19800703 200604 1013</p>
+        <p>Pembimbing Utama</p>
+        <p>BAB 1 PENDAHULUAN</p>
+        <p>1.1 Latar Belakang</p>
+    ';
+
+    $adapted = $this->service->adaptDocumentStructure($docxHtml, 'SKRIPSI 236661027 ALVIN GRAND PUTRA.docx');
+
+    // ALVIN GRAND PUTRA and NIP should NOT be headings
+    expect($adapted['headings'])->toHaveCount(3) // LEMBAR PERSETUJUAN, BAB 1, 1.1
+        ->and($adapted['adapted_html'])->not->toContain('<h2 class="heading-section">ALVIN GRAND PUTRA</h2>')
+        ->and($adapted['adapted_html'])->not->toContain('NIP. 19941024 202406 1 002</h2>');
+});
+
+test('white-box: adaptDocumentStructure preserves borderless signature and approval tables without forcing borders', function () {
+    $tableHtml = '
+        <table class="border-none w-full">
+            <tr><td>Pembimbing Utama</td><td>Penguji</td></tr>
+            <tr><td>(Nama Dosen)</td><td>(Nama Penguji)</td></tr>
+        </table>
+    ';
+
+    $adapted = $this->service->adaptDocumentStructure($tableHtml, 'skripsi.docx');
+    expect($adapted['adapted_html'])->toContain('border-none')
+        ->and($adapted['adapted_html'])->not->toContain('border border-gray-300');
+});
+
+test('white-box: adaptDocumentStructure sanitizes unescaped percent signs in LaTeX formulas without breaking equations', function () {
+    $formulaHtml = '<p>$$F1\text{-}Score = 2 \times \frac{1 \times 1}{1 + 1} = 100{,}00% \quad (4.9)$$</p>';
+    $adapted = $this->service->adaptDocumentStructure($formulaHtml, 'dokumen.docx');
+
+    expect($adapted['adapted_html'])->toContain('data-latex=')
+        ->and($adapted['adapted_html'])->toContain('100{,}00\% \quad (4.9)');
+});
+
+test('white-box: DocxImporter suppresses near-white low-contrast color #eeece1 on white canvas', function () {
+    expect(DocxImporter::isNearWhiteColor('#eeece1'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#ffffff'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#f8f9fa'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#111827'))->toBeFalse()
+        ->and(DocxImporter::isNearWhiteColor('#4f81bd'))->toBeFalse();
+});

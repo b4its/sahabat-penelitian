@@ -43,6 +43,7 @@ export class UiController {
         this.bindCitationModal();
         this.bindLatexEquationModal();
         this.bindHeaderFooterModal();
+        this.bindTableOfContentsSuite();
         this.bindDragAndDrop();
         this.bindGlobalKeyboardShortcuts();
         this.renderRuler();
@@ -161,18 +162,7 @@ export class UiController {
             });
         }
 
-        // Insert Table of Contents
-        const btnInsertToc = document.getElementById('btn-insert-toc');
-        if (btnInsertToc) {
-            btnInsertToc.addEventListener('click', () => {
-                const ok = this.engine.generateTableOfContents();
-                if (ok) {
-                    this.showToast('Daftar Isi Otomatis berhasil dibuat dan disisipkan!');
-                } else {
-                    this.showToast('Tidak ada judul/heading untuk dibuatkan Daftar Isi.', 'warning');
-                }
-            });
-        }
+        // Insert Table of Contents is handled in bindTableOfContentsSuite()
 
         // Page Layout tab settings (Margins preset)
         const marginsSelect = document.getElementById('layout-margins');
@@ -1908,8 +1898,213 @@ export class UiController {
             } else if (isCtrl && e.key === '/') {
                 e.preventDefault();
                 this.openModal(document.getElementById('modal-shortcuts'));
+            } else if (e.key === 'F9') {
+                e.preventDefault();
+                const updateModal = document.getElementById('modal-update-toc');
+                if (updateModal) this.openModal(updateModal);
             }
         });
+    }
+
+    /* -------------------------------------------------------------
+     * Table of Contents Suite (Microsoft Word Standard)
+     * ------------------------------------------------------------- */
+
+    bindTableOfContentsSuite() {
+        const customModal = document.getElementById('modal-custom-toc');
+        const updateModal = document.getElementById('modal-update-toc');
+
+        // Dropdown Gallery Menu
+        const btnTocDropdown = document.getElementById('btn-toc-dropdown');
+        const tocDropdownMenu = document.getElementById('toc-dropdown-menu');
+
+        if (btnTocDropdown && tocDropdownMenu) {
+            btnTocDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tocDropdownMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#toc-dropdown-wrapper')) {
+                    tocDropdownMenu.classList.add('hidden');
+                }
+            });
+        }
+
+        // Dropdown actions
+        document.querySelectorAll('[data-toc-action="insert-auto1"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (tocDropdownMenu) tocDropdownMenu.classList.add('hidden');
+                const ok = this.engine.generateTableOfContents({ heading: 'KONTEN', templateType: 'auto1' });
+                if (ok) {
+                    this.showToast('Tabel Otomatis 1 (Konten) berhasil disisipkan!');
+                } else {
+                    this.showToast('Tidak ada judul bab/heading yang terdeteksi di dokumen.', 'warning');
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-toc-action="insert-auto2"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (tocDropdownMenu) tocDropdownMenu.classList.add('hidden');
+                const ok = this.engine.generateTableOfContents({ heading: 'DAFTAR ISI', templateType: 'auto2' });
+                if (ok) {
+                    this.showToast('Tabel Otomatis 2 (Daftar Isi) berhasil disisipkan!');
+                } else {
+                    this.showToast('Tidak ada judul bab/heading yang terdeteksi di dokumen.', 'warning');
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-toc-action="insert-manual"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (tocDropdownMenu) tocDropdownMenu.classList.add('hidden');
+                this.engine.generateTableOfContents({ heading: 'DAFTAR ISI', templateType: 'manual' });
+                this.showToast('Tabel Manual berhasil disisipkan dengan templat!');
+            });
+        });
+
+        document.querySelectorAll('[data-action="open-custom-toc-modal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (tocDropdownMenu) tocDropdownMenu.classList.add('hidden');
+                this.openModal(customModal);
+                renderCustomTocPreview();
+            });
+        });
+
+        document.querySelectorAll('[data-toc-action="remove-toc"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (tocDropdownMenu) tocDropdownMenu.classList.add('hidden');
+                const ok = this.engine.removeTableOfContents();
+                if (ok) {
+                    this.showToast('Daftar Isi berhasil dihapus.');
+                } else {
+                    this.showToast('Tidak ditemukan Daftar Isi di naskah.', 'info');
+                }
+            });
+        });
+
+        // Quick Insert from Ribbon "Sisipkan (Insert)"
+        const btnInsertToc = document.getElementById('btn-insert-toc');
+        if (btnInsertToc) {
+            btnInsertToc.addEventListener('click', () => {
+                const activeContainer = this.engine.pagesWrapper || this.engine.canvasEl || document;
+                const existingToc = activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
+                if (existingToc) {
+                    this.openModal(updateModal);
+                } else {
+                    const ok = this.engine.generateTableOfContents({ heading: 'DAFTAR ISI', templateType: 'auto2' });
+                    if (ok) {
+                        this.showToast('Daftar Isi Otomatis berhasil disisipkan!');
+                    } else {
+                        this.openModal(customModal);
+                        renderCustomTocPreview();
+                    }
+                }
+            });
+        }
+
+        // Ribbon Update Button
+        const btnRibbonUpdateToc = document.getElementById('btn-ribbon-update-toc');
+        if (btnRibbonUpdateToc) {
+            btnRibbonUpdateToc.addEventListener('click', () => {
+                const activeContainer = this.engine.pagesWrapper || this.engine.canvasEl || document;
+                const existingToc = activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
+                if (!existingToc) {
+                    this.showToast('Belum ada Daftar Isi. Buat Daftar Isi terlebih dahulu.', 'warning');
+                    return;
+                }
+                this.openModal(updateModal);
+            });
+        }
+
+        // Ribbon Heading Level Selector (Add Text)
+        const ribbonTocLevelSelect = document.getElementById('ribbon-toc-level-select');
+        if (ribbonTocLevelSelect) {
+            ribbonTocLevelSelect.addEventListener('change', (e) => {
+                const val = e.target.value;
+                this.engine.setSelectionHeadingLevel(val);
+                e.target.value = '';
+                this.showToast(`Level teks diatur ke: ${val === 'none' ? 'Teks Normal' : 'Level ' + val}`);
+            });
+        }
+
+        // Window Events from TOC block hover buttons
+        window.addEventListener('open-update-toc-dialog', () => {
+            this.openModal(updateModal);
+        });
+
+        window.addEventListener('open-custom-toc-dialog', () => {
+            this.openModal(customModal);
+            renderCustomTocPreview();
+        });
+
+        // Custom TOC Modal Live Preview & Insertion
+        const headingInput = document.getElementById('toc-heading-input');
+        const showPageNumCheckbox = document.getElementById('toc-show-page-numbers');
+        const rightAlignCheckbox = document.getElementById('toc-right-align-pages');
+        const leaderSelect = document.getElementById('toc-tab-leader-select');
+        const styleSelect = document.getElementById('toc-style-select');
+        const levelsSelect = document.getElementById('toc-levels-select');
+        const previewContainer = document.getElementById('toc-preview-container');
+        const previewBadge = document.getElementById('toc-preview-badge');
+
+        const getCustomOptions = () => ({
+            heading: (headingInput ? headingInput.value : 'DAFTAR ISI') || 'DAFTAR ISI',
+            showPageNumbers: showPageNumCheckbox ? showPageNumCheckbox.checked : true,
+            rightAlignPageNumbers: rightAlignCheckbox ? rightAlignCheckbox.checked : true,
+            leader: leaderSelect ? leaderSelect.value : 'dots',
+            style: styleSelect ? styleSelect.value : 'template',
+            levels: levelsSelect ? parseInt(levelsSelect.value, 10) : 3,
+        });
+
+        const renderCustomTocPreview = () => {
+            if (!previewContainer) return;
+            const opts = getCustomOptions();
+            if (previewBadge) previewBadge.textContent = `Level 1 - ${opts.levels}`;
+
+            const html = this.engine.generateTableOfContentsHtml(opts);
+            previewContainer.innerHTML = html;
+        };
+
+        [headingInput, showPageNumCheckbox, rightAlignCheckbox, leaderSelect, styleSelect, levelsSelect].forEach(el => {
+            if (el) {
+                el.addEventListener('input', renderCustomTocPreview);
+                el.addEventListener('change', renderCustomTocPreview);
+            }
+        });
+
+        const btnConfirmInsertToc = document.getElementById('btn-confirm-insert-toc');
+        if (btnConfirmInsertToc) {
+            btnConfirmInsertToc.addEventListener('click', () => {
+                const opts = getCustomOptions();
+                const ok = this.engine.generateTableOfContents(opts);
+                this.closeModal(customModal);
+                if (ok) {
+                    this.showToast('Daftar Isi berhasil disisipkan sesuai kustomisasi!');
+                } else {
+                    this.showToast('Daftar Isi berhasil disisipkan dengan templat!', 'info');
+                }
+            });
+        }
+
+        // Update Modal Confirmation
+        const btnConfirmUpdateToc = document.getElementById('btn-confirm-update-toc');
+        if (btnConfirmUpdateToc) {
+            btnConfirmUpdateToc.addEventListener('click', () => {
+                const selectedRadio = document.querySelector('input[name="toc-update-scope"]:checked');
+                const scope = selectedRadio ? selectedRadio.value : 'entire';
+
+                this.engine.updateTableOfContents(scope);
+                this.closeModal(updateModal);
+
+                if (scope === 'page_numbers') {
+                    this.showToast('Nomor halaman Daftar Isi berhasil diperbarui!');
+                } else {
+                    this.showToast('Seluruh Daftar Isi berhasil dipindai dan diperbarui!');
+                }
+            });
+        }
     }
 
     /* -------------------------------------------------------------

@@ -20,13 +20,23 @@ import katex from 'katex';
 export class DocumentEngine {
     static renderLatexHtml(latex, isDisplay = true) {
         if (!latex) return '';
-        const clean = latex.trim();
+        let clean = String(latex)
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;/g, "'")
+            .trim();
+        clean = clean.replace(/(?<!\\)%/g, '\\%');
         try {
             const k = (typeof window !== 'undefined' && window.katex) ? window.katex : katex;
             if (k && typeof k.renderToString === 'function') {
                 return k.renderToString(clean, {
                     displayMode: isDisplay,
                     throwOnError: false,
+                    strict: 'ignore',
                     output: 'htmlAndMathml',
                 });
             }
@@ -150,6 +160,44 @@ export class DocumentEngine {
                 const eq = e.target.closest('.latex-equation');
                 if (eq) {
                     window.dispatchEvent(new CustomEvent('select-latex-equation', { detail: { element: eq } }));
+                }
+
+                // Table of Contents click navigation (Jump to heading & highlight)
+                const tocLink = e.target.closest('.toc-link, .toc-item a');
+                if (tocLink) {
+                    e.preventDefault();
+                    const targetId = (tocLink.getAttribute('href') || '').replace('#', '') || tocLink.closest('.toc-item')?.getAttribute('data-target');
+                    if (targetId) {
+                        const targetEl = document.getElementById(targetId);
+                        if (targetEl) {
+                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            targetEl.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50/60', 'dark:bg-indigo-950/40', 'transition', 'duration-500');
+                            setTimeout(() => {
+                                targetEl.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50/60', 'dark:bg-indigo-950/40');
+                            }, 1600);
+                        }
+                    }
+                    return;
+                }
+
+                // Table of Contents Action Bar Buttons
+                const btnTocUpdate = e.target.closest('.btn-toc-update');
+                if (btnTocUpdate) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('open-update-toc-dialog'));
+                    return;
+                }
+                const btnTocCustomize = e.target.closest('.btn-toc-customize');
+                if (btnTocCustomize) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('open-custom-toc-dialog'));
+                    return;
+                }
+                const btnTocDelete = e.target.closest('.btn-toc-delete');
+                if (btnTocDelete) {
+                    e.preventDefault();
+                    this.removeTableOfContents();
+                    return;
                 }
 
                 // Update active page index on click
@@ -1137,10 +1185,26 @@ export class DocumentEngine {
         const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
         const container = doc.body.firstElementChild;
 
+        const isMetadataOrSignatureLine = (str) => {
+            if (!str) return false;
+            const clean = str.trim();
+            if (!clean) return false;
+            // Student & employee identification numbers
+            if (/\b(NIM|NPM|NIS|NIK|NIP|NIDN|NRK)\b/i.test(clean)) return true;
+            // Academic and professional degrees / honorifics
+            if (/\b(S\.T\.|M\.T\.|S\.Kom\.|M\.Kom\.|Ph\.D\.|Dr\.|Prof\.|Ir\.|M\.Sc\.|B\.Sc\.|M\.Eng\.|S\.Pd\.|M\.Pd\.|S\.Si\.|M\.Si\.|S\.E\.|M\.M\.)\b/i.test(clean)) return true;
+            // Approval, signature, and committee titles
+            if (/^(OLEH|DISUSUN\s+OLEH|BY|PEMBIMBING|PENGUJI|DEWAN\s+PENGUJI|TIM\s+PENGUJI|KETUA|SEKRETARIS|ANGGOTA|DEKAN|DIREKTUR|WAKIL\s+DEKAN|WAKIL\s+DIREKTUR|KOORDINATOR|MENGETAHUI|MENYETUJUI|DISAHKAN|DOSEN|JURUSAN|PROGRAM\s+STUDI|FAKULTAS|POLITEKNIK|UNIVERSITAS|KEMENTERIAN|TANGGAL\s+LULUS|TANGGAL\s+SEMINAR)\b/i.test(clean)) return true;
+            // Signature lines with dots or underscores
+            if (/^[._\-\s]{4,}$/.test(clean)) return true;
+            return false;
+        };
+
         const isTableOfContentsLine = (str) => {
             if (!str) return false;
             const clean = str.trim();
             if (!clean) return false;
+            if (isMetadataOrSignatureLine(clean)) return false;
             if (/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i.test(clean)) {
                 return false;
             }
@@ -1151,6 +1215,7 @@ export class DocumentEngine {
 
         const allText = container.textContent.toLowerCase();
         const checkFilename = filename.toLowerCase();
+        const isDocx = checkFilename.endsWith('.docx') || checkFilename.endsWith('.doc');
 
         const isAcademic =
             checkFilename.includes('skripsi') ||
@@ -1271,25 +1336,91 @@ export class DocumentEngine {
                 continue;
             }
 
-            // Table of Contents entries: format as clean dot-leader rows (outside cover)
-            if (isTableOfContentsLine(cleanText)) {
-                const match = cleanText.match(/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i);
-                if (match) {
-                    const itemTitle = match[1].trim();
-                    const itemPage = match[2].trim();
-                    const tocDiv = doc.createElement('div');
-                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800';
-                    tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(itemTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span><span class="toc-page font-mono text-xs text-gray-600">${this.escapeHtml(itemPage)}</span>`;
-                    el.replaceWith(tocDiv);
-                    continue;
-                } else {
-                    const cleanTitle = cleanText.replace(/[\s.·…]+$/, '').trim();
-                    const tocDiv = doc.createElement('div');
-                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800';
-                    tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(cleanTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span>`;
-                    el.replaceWith(tocDiv);
-                    continue;
+            // Table of Contents entries: Group contiguous TOC lines into a single seamless table-of-contents block
+            if (isTableOfContentsLine(cleanText) || el.classList?.contains('toc-entry')) {
+                let prevEl = el.previousElementSibling;
+                let tocHeading = 'DAFTAR ISI';
+                if (prevEl && /^(DAFTAR\s+ISI|TABLE\s+OF\s+CONTENTS|KONTEN)$/i.test(getCleanText(prevEl))) {
+                    tocHeading = getCleanText(prevEl).toUpperCase();
+                    prevEl.remove();
                 }
+
+                const tocGroupDiv = doc.createElement('div');
+                tocGroupDiv.className = 'table-of-contents w-full my-6 select-none relative group';
+                tocGroupDiv.setAttribute('data-toc-block', 'true');
+                tocGroupDiv.setAttribute('data-toc-style', 'template');
+                tocGroupDiv.setAttribute('data-toc-leader', 'dots');
+                tocGroupDiv.setAttribute('contenteditable', 'false');
+
+                tocGroupDiv.innerHTML = `
+                    <div class="toc-toolbar absolute -top-4 right-0 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-3 py-1 rounded-md shadow-lg flex items-center gap-2 text-xs opacity-0 group-hover:opacity-100 transition duration-150 z-30 no-print">
+                        <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
+                            <span>🔄 Perbarui Tabel...</span>
+                        </button>
+                        <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
+                        <button type="button" class="btn-toc-customize hover:text-indigo-400 dark:hover:text-indigo-600 flex items-center gap-1 cursor-pointer" title="Kustomisasi Format Daftar Isi">
+                            <span>⚙️ Format</span>
+                        </button>
+                        <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
+                        <button type="button" class="btn-toc-delete hover:text-red-400 text-red-300 dark:text-red-600 cursor-pointer" title="Hapus Daftar Isi dari Dokumen">
+                            <span>🗑️ Hapus</span>
+                        </button>
+                    </div>
+                    <h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif">${this.escapeHtml(tocHeading)}</h1>
+                    <div class="toc-entries space-y-1 font-serif"></div>
+                `;
+
+                const entriesContainer = tocGroupDiv.querySelector('.toc-entries');
+                let currEl = el;
+
+                while (currEl && (isTableOfContentsLine(getCleanText(currEl)) || currEl.classList?.contains('toc-entry'))) {
+                    const lineText = getCleanText(currEl);
+                    const match = lineText.match(/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i);
+                    let itemTitle = lineText.replace(/[\s.·…]+$/, '').trim();
+                    let itemPage = '1';
+
+                    if (match) {
+                        itemTitle = match[1].trim();
+                        itemPage = match[2].trim();
+                    }
+
+                    // Determine level based on numbering
+                    let lvl = 1;
+                    if (/^\d+\.\d+\.\d+\s+/.test(itemTitle)) lvl = 3;
+                    else if (/^\d+\.\d+\s+/.test(itemTitle)) lvl = 2;
+                    else if (/^BAB\b|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA/i.test(itemTitle)) lvl = 1;
+
+                    let levelIndent = 'pl-0 font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide';
+                    if (lvl === 2) levelIndent = 'pl-6 font-medium text-gray-800 dark:text-gray-200 text-xs sm:text-sm';
+                    else if (lvl >= 3) levelIndent = 'pl-12 text-gray-700 dark:text-gray-300 text-xs';
+
+                    const cleanSlug = itemTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').substring(0, 30);
+                    const targetId = `heading-${cleanSlug || 'sec'}`;
+
+                    const itemDiv = doc.createElement('div');
+                    itemDiv.className = `toc-entry toc-item flex items-baseline justify-between py-1 ${levelIndent}`;
+                    itemDiv.setAttribute('data-level', String(lvl));
+                    itemDiv.setAttribute('data-target', targetId);
+                    itemDiv.innerHTML = `
+                        <a href="#${targetId}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%] select-none">${this.escapeHtml(itemTitle)}</a>
+                        <span class="toc-leader flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-500"></span>
+                        <span class="toc-page font-mono text-sm font-semibold text-gray-800 dark:text-gray-200 shrink-0 text-right min-w-[24px]">${this.escapeHtml(itemPage)}</span>
+                    `;
+
+                    entriesContainer.appendChild(itemDiv);
+
+                    const next = currEl.nextElementSibling;
+                    currEl.remove();
+                    currEl = next;
+                }
+
+                if (currEl) {
+                    currEl.before(tocGroupDiv);
+                } else {
+                    container.appendChild(tocGroupDiv);
+                }
+
+                continue;
             }
 
             // Formula / Math: LaTeX Display Equations ($$...$$ or \[...\])
@@ -1355,6 +1486,7 @@ export class DocumentEngine {
             // Academic Preliminaries: ABSTRAK, DAFTAR ISI, LEMBAR PENGESAHAN, etc.
             if (
                 !isTableOfContentsLine(cleanText) &&
+                !isMetadataOrSignatureLine(cleanText) &&
                 isPreliminary &&
                 cleanText.length <= 60 &&
                 !/[.!?]$/.test(cleanText)
@@ -1410,17 +1542,18 @@ export class DocumentEngine {
                 continue;
             }
 
-            // Standalone short uppercase lines
+            // Standalone short uppercase lines (only for non-DOCX formats; DOCX headings are already specified by styles)
             if (
+                !isDocx &&
                 !inCover &&
                 !isTableOfContentsLine(cleanText) &&
+                !isMetadataOrSignatureLine(cleanText) &&
                 cleanText.length > 5 &&
                 cleanText.length < 60 &&
                 cleanText === cleanText.toUpperCase() &&
                 /[a-zA-Z]{3,}/.test(cleanText) &&
                 !/^[\d\s.,:%–=+\/-]+$/.test(cleanText) &&
                 !/[.,;!?]$/.test(cleanText) &&
-                !/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i.test(cleanText) &&
                 !el.querySelector('img')
             ) {
                 headingCount++;
@@ -1437,13 +1570,22 @@ export class DocumentEngine {
 
             // Table styling
             if (el.tagName === 'TABLE') {
-                el.className = 'w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700';
-                el.querySelectorAll('th, td').forEach(cell => {
-                    cell.classList.add('border', 'border-gray-300', 'dark:border-gray-700', 'p-2');
-                });
-                el.querySelectorAll('th').forEach(th => {
-                    th.classList.add('bg-gray-100', 'dark:bg-gray-800', 'font-semibold');
-                });
+                const isBorderless = el.classList?.contains('border-none') || el.getAttribute('border') === '0' || (!el.querySelector('td.border, th.border') && el.classList.contains('border-none'));
+                if (isBorderless) {
+                    el.className = 'w-full border-collapse my-4 text-sm border-none';
+                    el.querySelectorAll('th, td').forEach(cell => {
+                        cell.classList.remove('border', 'border-gray-300', 'dark:border-gray-700');
+                        cell.classList.add('p-2');
+                    });
+                } else {
+                    el.className = 'w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700';
+                    el.querySelectorAll('th, td').forEach(cell => {
+                        cell.classList.add('border', 'border-gray-300', 'dark:border-gray-700', 'p-2');
+                    });
+                    el.querySelectorAll('th').forEach(th => {
+                        th.classList.add('bg-gray-100', 'dark:bg-gray-800', 'font-semibold');
+                    });
+                }
                 continue;
             }
 
@@ -1459,21 +1601,23 @@ export class DocumentEngine {
                 const hasLeft = el.classList.contains('text-left') || el.style.textAlign === 'left';
 
                 if (hasCenter) {
-                    el.className = 'text-center my-2 leading-relaxed text-gray-800';
+                    el.classList.add('text-center', 'my-2', 'leading-relaxed', 'text-gray-800');
                 } else if (hasRight) {
-                    el.className = 'text-right my-2 leading-relaxed text-gray-800';
+                    el.classList.add('text-right', 'my-2', 'leading-relaxed', 'text-gray-800');
                 } else if (hasJustify) {
-                    const indent = (isAcademic && cleanText.length > 100) ? ' indent-8' : '';
-                    el.className = `text-justify my-3 leading-relaxed text-gray-800${indent}`;
+                    const indent = (isAcademic && cleanText.length > 100) ? 'indent-8' : '';
+                    el.classList.add('text-justify', 'my-3', 'leading-relaxed', 'text-gray-800');
+                    if (indent) el.classList.add(indent);
                 } else if (hasLeft) {
-                    el.className = 'text-left my-2 leading-relaxed text-gray-800';
+                    el.classList.add('text-left', 'my-2', 'leading-relaxed', 'text-gray-800');
                 } else {
                     if (isAcademic && cleanText.length > 100) {
-                        el.className = 'text-justify my-3 leading-relaxed text-gray-800 indent-8';
+                        el.classList.add('text-justify', 'my-3', 'leading-relaxed', 'text-gray-800', 'indent-8');
                     } else {
-                        el.className = 'my-2 leading-relaxed text-gray-800';
+                        el.classList.add('my-2', 'leading-relaxed', 'text-gray-800');
                     }
                 }
+                continue;
             }
         }
 
@@ -1637,56 +1781,293 @@ export class DocumentEngine {
      * Table of Contents Generator (Daftar Isi Otomatis)
      * ------------------------------------------------------------- */
 
-    generateTableOfContents() {
+    /* -------------------------------------------------------------
+     * Table of Contents Generator (Microsoft Word Standard)
+     * Supports: Automatic Table 1, Automatic Table 2, Manual Table, Custom TOC,
+     * Tab Leaders (dots, dashes, line, none), Formats, Levels (1-5), and Live Update.
+     * ------------------------------------------------------------- */
+
+    extractHeadings(maxLevels = 3) {
         const headings = [];
         const bodies = this.getAllEditorBodies();
-        let pageCounter = 1;
 
         bodies.forEach((body, bodyIdx) => {
-            const hElements = body.querySelectorAll('h1, h2, h3');
-            hElements.forEach(h => {
+            const pageNum = bodyIdx + 1;
+            const hElements = body.querySelectorAll('h1, h2, h3, h4, h5, .heading-chapter, p.font-bold');
+
+            hElements.forEach((h, hIdx) => {
+                const text = h.textContent.trim();
+                if (!text) return;
+
+                // Never include the TOC title or TOC elements themselves in the TOC
+                if (h.closest('.table-of-contents') || /^(DAFTAR\s+ISI|TABLE\s+OF\s+CONTENTS|KONTEN|CONTENTS)$/i.test(text)) {
+                    return;
+                }
+
+                let level = 1;
+                const tag = h.tagName.toLowerCase();
+                if (tag === 'h1' || /^BAB\s+[I|V|X|0-9]+|LEMBAR\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+PUSTAKA/i.test(text)) {
+                    level = 1;
+                } else if (tag === 'h2' || /^\d+\.\d+\s+[A-Z]/.test(text)) {
+                    level = 2;
+                } else if (tag === 'h3' || /^\d+\.\d+\.\d+\s+[A-Z]/.test(text)) {
+                    level = 3;
+                } else if (tag === 'h4') {
+                    level = 4;
+                } else if (tag === 'h5') {
+                    level = 5;
+                }
+
+                if (level > maxLevels) return;
+
+                let id = h.id;
+                if (!id) {
+                    const cleanSlug = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').substring(0, 30);
+                    id = `heading-${cleanSlug || 'sec'}-${pageNum}-${hIdx}`;
+                    h.id = id;
+                }
+
                 headings.push({
                     el: h,
-                    page: bodyIdx + 1,
-                    text: h.textContent.trim(),
-                    level: h.tagName.toLowerCase(),
+                    id: id,
+                    text: text,
+                    level: level,
+                    page: pageNum,
                 });
             });
         });
 
-        if (headings.length === 0) {
-            return false;
+        return headings;
+    }
+
+    generateTableOfContentsHtml(options = {}) {
+        const headingTitle = (options.heading || 'DAFTAR ISI').trim().toUpperCase();
+        const style = options.style || 'template';
+        const leader = options.leader || 'dots';
+        const levels = parseInt(options.levels || '3', 10);
+        const showPageNumbers = options.showPageNumbers !== false;
+        const rightAlignPageNumbers = options.rightAlignPageNumbers !== false;
+        const templateType = options.templateType || 'auto2';
+
+        let headings = options.headings || this.extractHeadings(levels);
+
+        if (templateType === 'manual' && (!headings || headings.length === 0)) {
+            headings = [
+                { id: 'heading-bab-1', text: 'BAB I PENDAHULUAN', level: 1, page: 1 },
+                { id: 'heading-sub-1-1', text: '1.1 Latar Belakang Masalah', level: 2, page: 1 },
+                { id: 'heading-sub-1-2', text: '1.2 Rumusan Masalah', level: 2, page: 3 },
+                { id: 'heading-bab-2', text: 'BAB II TINJAUAN PUSTAKA', level: 1, page: 5 },
+                { id: 'heading-sub-2-1', text: '2.1 Landasan Teori', level: 2, page: 5 },
+                { id: 'heading-sub-2-1-1', text: '2.1.1 Arsitektur Sistem dan Mikrokontroler', level: 3, page: 7 },
+                { id: 'heading-bab-3', text: 'BAB III METODE PENELITIAN', level: 1, page: 12 },
+                { id: 'heading-daftarpustaka', text: 'DAFTAR PUSTAKA', level: 1, page: 25 },
+            ];
         }
 
-        const tocEntries = [];
-        headings.forEach((item, index) => {
-            const id = item.el.id || `heading-${index}`;
-            item.el.id = id;
+        const filtered = (headings || []).filter(h => (h.level || 1) <= levels);
 
-            const indentClass = item.level === 'h1' ? 'font-bold mt-2' :
-                                item.level === 'h2' ? 'pl-4 text-sm' :
-                                'pl-8 text-xs text-gray-600 dark:text-gray-400';
+        const leaderClass = leader === 'dashes' ? 'border-b border-dashed border-gray-400 dark:border-gray-500' :
+                            leader === 'line' ? 'border-b border-solid border-gray-400 dark:border-gray-500' :
+                            leader === 'none' ? 'border-none' :
+                            'border-b border-dotted border-gray-400 dark:border-gray-500';
+
+        const tocEntries = [];
+        filtered.forEach(item => {
+            const lvl = parseInt(item.level || '1', 10);
+            const id = this.escapeHtml(item.id || '');
+            const text = this.escapeHtml(item.text || '');
+            const page = this.escapeHtml(String(item.page || '1'));
+
+            let levelIndent = 'pl-0 font-bold text-gray-900 dark:text-gray-100';
+            if (lvl === 2) levelIndent = 'pl-6 font-medium text-gray-800 dark:text-gray-200 text-xs sm:text-sm';
+            else if (lvl === 3) levelIndent = 'pl-12 text-gray-700 dark:text-gray-300 text-xs';
+            else if (lvl === 4) levelIndent = 'pl-16 text-gray-600 dark:text-gray-400 text-xs';
+            else if (lvl >= 5) levelIndent = 'pl-20 text-gray-500 text-xs';
+
+            if (style === 'classic') {
+                levelIndent += (lvl === 1 ? ' uppercase tracking-wide font-serif' : ' italic font-serif');
+            } else if (style === 'modern') {
+                levelIndent += ' font-sans';
+            } else if (style === 'formal') {
+                levelIndent += ' font-serif';
+            }
+
+            let pageHtml = '';
+            if (showPageNumbers) {
+                const alignClass = rightAlignPageNumbers ? 'font-mono text-xs font-semibold shrink-0 text-right min-w-[20px]' : 'font-mono text-xs font-semibold ml-2';
+                pageHtml = `<span class="toc-page ${alignClass} text-gray-800 dark:text-gray-200">${page}</span>`;
+            }
+
+            let leaderHtml = '';
+            if (showPageNumbers && rightAlignPageNumbers && leader !== 'none') {
+                leaderHtml = `<span class="toc-leader flex-1 mx-2 ${leaderClass}"></span>`;
+            } else if (showPageNumbers && !rightAlignPageNumbers) {
+                leaderHtml = '&nbsp;';
+            }
 
             tocEntries.push(`
-                <div class="flex items-baseline justify-between py-1 ${indentClass}">
-                    <a href="#${id}" class="hover:text-indigo-600 hover:underline truncate max-w-[80%]">${item.text}</a>
-                    <span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span>
-                    <span class="font-mono text-xs">${item.page}</span>
+                <div class="toc-entry toc-item flex items-baseline justify-between py-1 ${levelIndent}" data-level="${lvl}" data-target="${id}">
+                    <a href="#${id}" class="toc-link hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate max-w-[80%] select-none">${text}</a>
+                    ${leaderHtml}
+                    ${pageHtml}
                 </div>
             `);
         });
 
-        const tocHtml = `
-            <div class="table-of-contents my-8 p-6 border border-gray-300 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 rounded-xl" contenteditable="false">
-                <h2 class="text-center font-bold text-lg mb-4 uppercase tracking-wider text-gray-900 dark:text-gray-100">DAFTAR ISI</h2>
-                <div class="space-y-1 font-serif">
-                    ${tocEntries.join('')}
+        let entriesHtml = tocEntries.join('');
+        if (!entriesHtml) {
+            entriesHtml = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada judul bab atau subbab terdeteksi. Tambahkan Heading (Bab / Subbab) di naskah lalu klik "Perbarui Tabel".</p>';
+        }
+
+        let containerClass = 'w-full my-6 select-none relative group';
+        if (style === 'modern') containerClass = 'w-full my-6 select-none relative group';
+        else if (style === 'formal') containerClass = 'w-full my-6 select-none relative group border-t border-b border-gray-400 dark:border-gray-600 py-4';
+        else if (style === 'simple') containerClass = 'w-full my-4 select-none relative group';
+
+        return `
+            <div class="table-of-contents my-6 ${containerClass} relative shadow-2xs group" data-toc-block="true" data-toc-style="${this.escapeHtml(style)}" data-toc-leader="${this.escapeHtml(leader)}" data-toc-levels="${levels}" data-toc-shownum="${showPageNumbers}" data-toc-rightalign="${rightAlignPageNumbers}" contenteditable="false">
+                <div class="toc-toolbar absolute -top-3 right-4 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2.5 py-1 rounded-md shadow-md flex items-center gap-2 text-[11px] opacity-0 group-hover:opacity-100 transition duration-150 z-20 no-print">
+                    <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
+                        <span>🔄 Perbarui Tabel...</span>
+                    </button>
+                    <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
+                    <button type="button" class="btn-toc-customize hover:text-indigo-400 dark:hover:text-indigo-600 flex items-center gap-1 cursor-pointer" title="Kustomisasi Format Daftar Isi">
+                        <span>⚙️ Format</span>
+                    </button>
+                    <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
+                    <button type="button" class="btn-toc-delete hover:text-red-400 text-red-300 dark:text-red-600 cursor-pointer" title="Hapus Daftar Isi dari Dokumen">
+                        <span>🗑️ Hapus</span>
+                    </button>
+                </div>
+
+                <h2 class="toc-header text-center font-bold text-lg mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif">${this.escapeHtml(headingTitle)}</h2>
+
+                <div class="toc-entries space-y-1 font-serif">
+                    ${entriesHtml}
                 </div>
             </div>
         `;
+    }
 
-        this.insertAtCursor(tocHtml);
+    generateTableOfContents(options = {}) {
+        const levels = parseInt(options.levels || '3', 10);
+        const headings = this.extractHeadings(levels);
+
+        if ((!headings || headings.length === 0) && options.templateType !== 'manual') {
+            return false;
+        }
+
+        const tocHtml = this.generateTableOfContentsHtml({ ...options, headings });
+        const activeContainer = this.pagesWrapper || this.canvasEl || document;
+        const existingToc = activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
+
+        if (existingToc) {
+            const temp = document.createElement('div');
+            temp.innerHTML = tocHtml.trim();
+            const newToc = temp.firstElementChild;
+            existingToc.replaceWith(newToc);
+        } else {
+            const active = this.getActiveEditor();
+            if (active) {
+                this.insertAtCursor(tocHtml + '<p><br></p>');
+            } else {
+                const pages = activeContainer.querySelectorAll('.document-page-sheet');
+                const targetPage = pages.length > 1 ? pages[1] : (pages[0] || activeContainer);
+                const body = targetPage.querySelector('.page-sheet-body') || targetPage;
+                body.insertAdjacentHTML('afterbegin', tocHtml + '<p><br></p>');
+            }
+        }
+
+        this.handleInput();
         return true;
+    }
+
+    updateTableOfContents(updateType = 'entire') {
+        const activeContainer = this.pagesWrapper || this.canvasEl || document;
+        const existingToc = activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
+        if (!existingToc) {
+            return this.generateTableOfContents();
+        }
+
+        const style = existingToc.getAttribute('data-toc-style') || 'template';
+        const leader = existingToc.getAttribute('data-toc-leader') || 'dots';
+        const levels = parseInt(existingToc.getAttribute('data-toc-levels') || '3', 10);
+        const showPageNumbers = existingToc.getAttribute('data-toc-shownum') !== 'false';
+        const rightAlignPageNumbers = existingToc.getAttribute('data-toc-rightalign') !== 'false';
+        const headingEl = existingToc.querySelector('.toc-header, h2');
+        const heading = headingEl ? headingEl.textContent.trim() : 'DAFTAR ISI';
+
+        const headings = this.extractHeadings(levels);
+
+        if (updateType === 'page_numbers') {
+            const pageMap = new Map();
+            headings.forEach(h => {
+                if (h.id) pageMap.set(h.id, h.page);
+                pageMap.set(h.text.toLowerCase().trim(), h.page);
+            });
+
+            const items = existingToc.querySelectorAll('.toc-item');
+            items.forEach(item => {
+                const targetId = item.getAttribute('data-target');
+                const link = item.querySelector('.toc-link');
+                const titleText = link ? link.textContent.toLowerCase().trim() : '';
+                const newPage = pageMap.get(targetId) || pageMap.get(titleText);
+                if (newPage !== undefined) {
+                    const pageSpan = item.querySelector('.toc-page');
+                    if (pageSpan) pageSpan.textContent = String(newPage);
+                }
+            });
+            this.handleInput();
+            return true;
+        }
+
+        // Entire table update
+        const updatedHtml = this.generateTableOfContentsHtml({
+            heading,
+            style,
+            leader,
+            levels,
+            showPageNumbers,
+            rightAlignPageNumbers,
+            headings
+        });
+
+        const temp = document.createElement('div');
+        temp.innerHTML = updatedHtml.trim();
+        const newToc = temp.firstElementChild;
+        existingToc.replaceWith(newToc);
+
+        this.handleInput();
+        return true;
+    }
+
+    removeTableOfContents() {
+        const activeContainer = this.pagesWrapper || this.canvasEl || document;
+        const existingToc = activeContainer.querySelector('.table-of-contents, [data-toc-block="true"]');
+        if (existingToc) {
+            existingToc.remove();
+            this.handleInput();
+            return true;
+        }
+        return false;
+    }
+
+    setSelectionHeadingLevel(level) {
+        const active = this.getActiveEditor();
+        if (!active) return;
+        active.focus();
+
+        const lvl = String(level).toLowerCase();
+        if (lvl === '1') {
+            document.execCommand('formatBlock', false, '<h1>');
+        } else if (lvl === '2') {
+            document.execCommand('formatBlock', false, '<h2>');
+        } else if (lvl === '3') {
+            document.execCommand('formatBlock', false, '<h3>');
+        } else {
+            document.execCommand('formatBlock', false, '<p>');
+        }
+        this.handleInput();
     }
 
     /* -------------------------------------------------------------
@@ -2500,7 +2881,7 @@ ${entriesHtml}    </div>
         }
 
         // 1. Convert display math blocks wrapped in <p> or standalone: <p>$$...$$</p>
-        let result = html.replace(/<p\b[^>]*>\s*(?:\$\$|\\\[)([\s\S]+?)(?:\$\$|\\\])\s*<\/p>/gi, (match, formula) => {
+        let result = html.replace(/<p\b[^>]*>(?:<[^>]+>)*\s*(?:\$\$|\\\[)([\s\S]+?)(?:\$\$|\\\])\s*(?:<[^>]+>)*<\/p>/gi, (match, formula) => {
             const clean = formula.trim();
             if (!clean) return match;
             const rendered = DocumentEngine.renderLatexHtml(clean, true);

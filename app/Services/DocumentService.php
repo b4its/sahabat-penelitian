@@ -412,6 +412,41 @@ class DocumentService
     /**
      * Check if a given line belongs to a Table of Contents (Daftar Isi).
      */
+    /**
+     * Check if a line contains metadata, signature blocks, employee/student numbers,
+     * or committee roles that must never be converted to headings or table of contents entries.
+     */
+    private function isMetadataOrSignatureLine(string $text): bool
+    {
+        if (empty($text)) {
+            return false;
+        }
+
+        $clean = trim($text);
+
+        // Student & employee identification numbers
+        if (preg_match('/\b(NIM|NPM|NIS|NIK|NIP|NIDN|NRK)\b/i', $clean)) {
+            return true;
+        }
+
+        // Academic and professional degrees / honorifics
+        if (preg_match('/\b(S\.T\.|M\.T\.|S\.Kom\.|M\.Kom\.|Ph\.D\.|Dr\.|Prof\.|Ir\.|M\.Sc\.|B\.Sc\.|M\.Eng\.|S\.Pd\.|M\.Pd\.|S\.Si\.|M\.Si\.|S\.E\.|M\.M\.)\b/i', $clean)) {
+            return true;
+        }
+
+        // Approval, signature, and committee titles
+        if (preg_match('/^(OLEH|DISUSUN\s+OLEH|BY|PEMBIMBING|PENGUJI|DEWAN\s+PENGUJI|TIM\s+PENGUJI|KETUA|SEKRETARIS|ANGGOTA|DEKAN|DIREKTUR|WAKIL\s+DEKAN|WAKIL\s+DIREKTUR|KOORDINATOR|MENGETAHUI|MENYETUJUI|DISAHKAN|DOSEN|JURUSAN|PROGRAM\s+STUDI|FAKULTAS|POLITEKNIK|UNIVERSITAS|KEMENTERIAN|TANGGAL\s+LULUS|TANGGAL\s+SEMINAR)\b/i', $clean)) {
+            return true;
+        }
+
+        // Signature lines with dots or underscores
+        if (preg_match('/^[._\-\s]{4,}$/', $clean)) {
+            return true;
+        }
+
+        return false;
+    }
+
     private function isTableOfContentsLine(string $text): bool
     {
         if (empty($text)) {
@@ -419,6 +454,9 @@ class DocumentService
         }
         $clean = trim($text);
         if (empty($clean)) {
+            return false;
+        }
+        if ($this->isMetadataOrSignatureLine($clean)) {
             return false;
         }
         if (preg_match('/^(NIM|NPM|NIS|NIK|OLEH|DISUSUN|BY|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS)\b/i', $clean)) {
@@ -443,7 +481,7 @@ class DocumentService
             return false;
         }
 
-        return (bool) preg_match('/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i', trim($text));
+        return $this->isMetadataOrSignatureLine($text) || (bool) preg_match('/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i', trim($text));
     }
 
     /**
@@ -454,8 +492,8 @@ class DocumentService
     {
         $sanitized = $this->sanitizeHtml($html);
         $isAcademic = false;
-
         $checkFilename = strtolower($filename);
+        $isDocx = str_ends_with($checkFilename, '.docx') || str_ends_with($checkFilename, '.doc');
         $checkBody = strtolower(strip_tags($sanitized));
 
         if (
@@ -612,13 +650,21 @@ class DocumentService
                 continue;
             }
 
-            // If it's a table, PRESERVE IT with borders!
+            // If it's a table, check if it's a borderless table (signature / approval sheets)
             if (str_starts_with($fullTag, '<table')) {
-                $adaptedBlocks[] = preg_replace(
-                    '/<table\b([^>]*)>/i',
-                    '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">',
-                    $fullTag
-                );
+                if (str_contains($fullTag, 'border-none') || str_contains($fullTag, 'border="0"')) {
+                    $adaptedBlocks[] = preg_replace(
+                        '/<table\b([^>]*)>/i',
+                        '<table $1 class="w-full border-collapse my-4 text-sm border-none">',
+                        $fullTag
+                    );
+                } else {
+                    $adaptedBlocks[] = preg_replace(
+                        '/<table\b([^>]*)>/i',
+                        '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">',
+                        $fullTag
+                    );
+                }
 
                 continue;
             }
@@ -631,6 +677,7 @@ class DocumentService
             if (preg_match('/^(?:\$\$|\\\[)(.*?)(?:\$\$|\\\])$/s', $cleanText, $lm)) {
                 $latexExpr = trim($lm[1]);
                 if (! empty($latexExpr)) {
+                    $latexExpr = preg_replace('/(?<!\\\\)%/', '\\%', $latexExpr);
                     $escapedLatex = htmlspecialchars($latexExpr, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                     $adaptedBlocks[] = '<div class="latex-equation display-equation my-4 text-center cursor-pointer select-none" contenteditable="false" data-latex="'.$escapedLatex.'" data-display="true"><div class="latex-math-wrapper inline-block px-3 py-1.5 rounded transition">$$'.$escapedLatex.'$$</div></div>';
 
@@ -728,8 +775,9 @@ class DocumentService
                 continue;
             }
 
-            // Standalone short uppercase lines
+            // Standalone short uppercase lines (only for non-DOCX formats; DOCX headings are already specified by styles)
             if (
+                ! $isDocx &&
                 ! $inCoverPage &&
                 ! $this->isTableOfContentsLine($cleanText) &&
                 ! $this->isCoverMetadataLine($cleanText) &&
@@ -761,7 +809,8 @@ class DocumentService
                 // Detect inline/display LaTeX in paragraphs
                 if (str_contains($bodyHtml, '$$')) {
                     $bodyHtml = preg_replace_callback('/\$\$(.*?)\$\$/s', function ($m) {
-                        $el = htmlspecialchars(trim($m[1]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                        $rawLatex = preg_replace('/(?<!\\\\)%/', '\\%', trim($m[1]));
+                        $el = htmlspecialchars($rawLatex, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
                         return '<div class="latex-equation display-equation my-3 text-center cursor-pointer select-none" contenteditable="false" data-latex="'.$el.'" data-display="true"><div class="latex-math-wrapper inline-block px-3 py-1.5 rounded transition">$$'.$el.'$$</div></div>';
                     }, $bodyHtml);

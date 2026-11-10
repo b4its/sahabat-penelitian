@@ -503,7 +503,7 @@ class DocxImporter
             return false;
         }
         $lower = strtolower(trim($color));
-        if (in_array($lower, ['#ffffff', '#fff', 'white', '#f8f9fa', '#f3f4f6', '#f1f5f9', '#f9fafb'])) {
+        if (in_array($lower, ['#ffffff', '#fff', 'white', '#f8f9fa', '#f3f4f6', '#f1f5f9', '#f9fafb', '#eeece1', '#eee', '#ddd', '#e5e7eb'])) {
             return true;
         }
         if (preg_match('/^#([0-9a-f]{6})$/i', $lower, $m)) {
@@ -511,7 +511,9 @@ class DocxImporter
             $g = hexdec(substr($m[1], 2, 2));
             $b = hexdec(substr($m[1], 4, 2));
 
-            return $r > 240 && $g > 240 && $b > 240;
+            $brightness = ($r * 299 + $g * 587 + $b * 114) / 1000;
+
+            return $brightness > 195 || ($r > 205 && $g > 205 && $b > 205);
         }
 
         return false;
@@ -1230,6 +1232,21 @@ class DocxImporter
             }
         }
 
+        // Check if table borders are explicitly none or nil (borderless layout/signature table)
+        $hasTableBorders = true;
+        $tblBorders = $xpath->query('./w:tblPr/w:tblBorders', $tbl)->item(0);
+        if ($tblBorders) {
+            $topVal = strtolower((string) $xpath->query('./w:top/@w:val', $tblBorders)->item(0)?->nodeValue);
+            $bottomVal = strtolower((string) $xpath->query('./w:bottom/@w:val', $tblBorders)->item(0)?->nodeValue);
+            $insideHVal = strtolower((string) $xpath->query('./w:insideH/@w:val', $tblBorders)->item(0)?->nodeValue);
+            $insideVVal = strtolower((string) $xpath->query('./w:insideV/@w:val', $tblBorders)->item(0)?->nodeValue);
+
+            $isNoBorder = fn (?string $v) => empty($v) || in_array($v, ['none', 'nil']);
+            if ($isNoBorder($topVal) && $isNoBorder($bottomVal) && $isNoBorder($insideHVal) && $isNoBorder($insideVVal)) {
+                $hasTableBorders = false;
+            }
+        }
+
         $headRows = [];
         $bodyRows = [];
 
@@ -1241,7 +1258,7 @@ class DocxImporter
             foreach ($cells as $tc) {
                 $cellTag = $isHeader ? 'th' : 'td';
                 $attrs = [];
-                $classes = ['border', 'border-gray-300', 'dark:border-gray-700', 'p-2'];
+                $classes = $hasTableBorders ? ['border', 'border-gray-300', 'dark:border-gray-700', 'p-2'] : ['p-2'];
                 $styles = [];
 
                 if ($isHeader) {
@@ -1301,7 +1318,8 @@ class DocxImporter
             }
         }
 
-        $tableHtml = "<table class=\"w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700{$tblAlign}\">\n";
+        $tableBorderClass = $hasTableBorders ? 'border border-gray-300 dark:border-gray-700' : 'border-none';
+        $tableHtml = "<table class=\"w-full border-collapse my-4 text-sm {$tableBorderClass}{$tblAlign}\">\n";
         if (! empty($headRows)) {
             $tableHtml .= "<thead>\n".implode("\n", $headRows)."\n</thead>\n";
         }

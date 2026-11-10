@@ -347,12 +347,13 @@ export class DocxImporter {
     static isNearWhiteColor(color) {
         if (!color) return false;
         const cl = color.toLowerCase().trim();
-        if (['#ffffff', '#fff', 'white', '#f8f9fa', '#f3f4f6', '#f1f5f9', '#f9fafb'].includes(cl)) return true;
+        if (['#ffffff', '#fff', 'white', '#f8f9fa', '#f3f4f6', '#f1f5f9', '#f9fafb', '#eeece1', '#eee', '#ddd', '#e5e7eb'].includes(cl)) return true;
         if (/^#([0-9a-f]{6})$/i.test(cl)) {
             const r = parseInt(cl.slice(1, 3), 16);
             const g = parseInt(cl.slice(3, 5), 16);
             const b = parseInt(cl.slice(5, 7), 16);
-            return r > 240 && g > 240 && b > 240;
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 195 || (r > 205 && g > 205 && b > 205);
         }
         return false;
     }
@@ -362,8 +363,11 @@ export class DocxImporter {
         const tag = node.nodeName.toLowerCase().replace(/^m:/, '');
 
         switch (tag) {
-            case 't':
-                return node.textContent || '';
+            case 't': {
+                let text = node.textContent || '';
+                text = text.replace(/(?<!\\)%/g, '\\%');
+                return text;
+            }
             case 'r': {
                 let out = '';
                 for (const c of node.childNodes) out += DocxImporter.ommlToLatex(c);
@@ -758,8 +762,9 @@ export class DocxImporter {
                     inlines.push(`<a href="${this.escapeHtml(targetUrl)}" target="_blank" class="text-indigo-600 dark:text-indigo-400 underline">${linkText}</a>`);
                 }
             } else if (childName === 'm:omath' || childName === 'm:omathpara' || childName === 'omath' || childName === 'omathpara') {
-                const latex = DocxImporter.ommlToLatex(child).trim();
+                let latex = DocxImporter.ommlToLatex(child).trim();
                 if (latex) {
+                    latex = latex.replace(/(?<!\\)%/g, '\\%');
                     inlines.push(` $$${latex}$$ `);
                 }
             }
@@ -1007,6 +1012,21 @@ export class DocxImporter {
             else if (alignVal === 'right') tblAlign = ' ml-auto';
         }
 
+        // Check if table borders are explicitly none or nil (borderless layout/signature table)
+        let hasTableBorders = true;
+        const tblBorders = tbl.getElementsByTagName('w:tblBorders')[0];
+        if (tblBorders) {
+            const topVal = (tblBorders.getElementsByTagName('w:top')[0]?.getAttribute('w:val') || '').toLowerCase();
+            const bottomVal = (tblBorders.getElementsByTagName('w:bottom')[0]?.getAttribute('w:val') || '').toLowerCase();
+            const insideHVal = (tblBorders.getElementsByTagName('w:insideH')[0]?.getAttribute('w:val') || '').toLowerCase();
+            const insideVVal = (tblBorders.getElementsByTagName('w:insideV')[0]?.getAttribute('w:val') || '').toLowerCase();
+
+            const isNoBorder = (v) => !v || v === 'none' || v === 'nil';
+            if (isNoBorder(topVal) && isNoBorder(bottomVal) && isNoBorder(insideHVal) && isNoBorder(insideVVal)) {
+                hasTableBorders = false;
+            }
+        }
+
         const headRows = [];
         const bodyRows = [];
 
@@ -1018,7 +1038,7 @@ export class DocxImporter {
             for (const tc of tcNodes) {
                 const cellTag = isHeader ? 'th' : 'td';
                 const attrs = [];
-                const classes = ['border', 'border-gray-300', 'dark:border-gray-700', 'p-2'];
+                const classes = hasTableBorders ? ['border', 'border-gray-300', 'dark:border-gray-700', 'p-2'] : ['p-2'];
                 const styles = [];
 
                 if (isHeader) {
@@ -1073,7 +1093,8 @@ export class DocxImporter {
             }
         }
 
-        let tableHtml = `<table class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700${tblAlign}">\n`;
+        const tableBorderClass = hasTableBorders ? 'border border-gray-300 dark:border-gray-700' : 'border-none';
+        let tableHtml = `<table class="w-full border-collapse my-4 text-sm ${tableBorderClass}${tblAlign}">\n`;
         if (headRows.length > 0) {
             tableHtml += `<thead>\n${headRows.join('\n')}\n</thead>\n`;
         }

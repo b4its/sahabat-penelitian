@@ -1253,3 +1253,130 @@ test('black-box: editor page renders Microsoft Word style citations and bibliogr
     $response->assertSee('id="btn-insert-bibliography-block"', false);
     $response->assertSee('id="btn-sync-bibliography-block"', false);
 });
+
+test('black-box: user can generate table of contents via api endpoint', function () {
+    $contentHtml = <<<'HTML'
+<div data-page-index="1">
+    <h1>BAB I PENDAHULUAN</h1>
+    <h2>1.1 Latar Belakang</h2>
+</div>
+<div data-page-index="2">
+    <h2>1.2 Rumusan Masalah</h2>
+    <h3>1.2.1 Identifikasi Masalah</h3>
+</div>
+<div data-page-index="3">
+    <h1>BAB II LANDASAN TEORI</h1>
+</div>
+HTML;
+
+    $response = $this->postJson(route('documents.generate-toc'), [
+        'content_html' => $contentHtml,
+        'heading' => 'DAFTAR ISI',
+        'style' => 'template',
+        'leader' => 'dots',
+        'levels' => 3,
+        'showPageNumbers' => true,
+        'rightAlignPageNumbers' => true,
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'count' => 5,
+        ]);
+
+    $html = $response->json('html');
+    expect($html)->toContain('data-toc-block="true"')
+        ->and($html)->toContain('DAFTAR ISI')
+        ->and($html)->toContain('BAB I PENDAHULUAN')
+        ->and($html)->toContain('1.1 Latar Belakang')
+        ->and($html)->toContain('1.2 Rumusan Masalah')
+        ->and($html)->toContain('1.2.1 Identifikasi Masalah')
+        ->and($html)->toContain('BAB II LANDASAN TEORI')
+        ->and($html)->toContain('toc-leader')
+        ->and($html)->toContain('toc-page');
+});
+
+test('black-box: generate toc endpoint validates options', function () {
+    $this->postJson(route('documents.generate-toc'), [
+        'style' => 'invalid_style_xyz',
+    ])->assertStatus(422);
+
+    $this->postJson(route('documents.generate-toc'), [
+        'levels' => 10,
+    ])->assertStatus(422);
+});
+
+test('black-box: user can update table of contents via api endpoint (page numbers and entire)', function () {
+    $initialHeadings = [
+        ['id' => 'heading-bab-1', 'text' => 'BAB I PENDAHULUAN', 'level' => 1, 'page' => 1],
+    ];
+
+    $generateRes = $this->postJson(route('documents.generate-toc'), [
+        'headings' => $initialHeadings,
+        'heading' => 'DAFTAR ISI',
+    ]);
+    $initialHtml = $generateRes->json('html');
+
+    // 1. Update Page Numbers Only
+    $resPage = $this->postJson(route('documents.update-toc'), [
+        'existing_toc_html' => $initialHtml,
+        'headings' => [
+            ['id' => 'heading-bab-1', 'text' => 'BAB I PENDAHULUAN', 'level' => 1, 'page' => 10],
+        ],
+        'update_type' => 'page_numbers',
+    ]);
+
+    $resPage->assertStatus(200)
+        ->assertJson(['success' => true, 'update_type' => 'page_numbers']);
+    expect($resPage->json('html'))->toContain('>10</span>');
+
+    // 2. Update Entire Table
+    $resEntire = $this->postJson(route('documents.update-toc'), [
+        'existing_toc_html' => $initialHtml,
+        'headings' => [
+            ['id' => 'heading-bab-1', 'text' => 'BAB I PENDAHULUAN', 'level' => 1, 'page' => 1],
+            ['id' => 'heading-bab-2', 'text' => 'BAB II METODE RISET', 'level' => 1, 'page' => 15],
+        ],
+        'update_type' => 'entire',
+    ]);
+
+    $resEntire->assertStatus(200)
+        ->assertJson(['success' => true, 'update_type' => 'entire']);
+    expect($resEntire->json('html'))->toContain('BAB II METODE RISET')
+        ->and($resEntire->json('html'))->toContain('>15</span>');
+});
+
+test('black-box: editor page renders Microsoft Word Table of Contents suite across ribbon and modals', function () {
+    $response = $this->get(route('editor.index'));
+    $response->assertStatus(200);
+
+    // 1. References Ribbon Controls
+    $response->assertSee('id="btn-toc-dropdown"', false);
+    $response->assertSee('id="toc-dropdown-menu"', false);
+    $response->assertSee('data-toc-action="insert-auto1"', false);
+    $response->assertSee('data-toc-action="insert-auto2"', false);
+    $response->assertSee('data-toc-action="insert-manual"', false);
+    $response->assertSee('data-action="open-custom-toc-modal"', false);
+    $response->assertSee('data-toc-action="remove-toc"', false);
+    $response->assertSee('id="btn-ribbon-update-toc"', false);
+    $response->assertSee('id="ribbon-toc-level-select"', false);
+
+    // 2. Custom Table of Contents Modal (Modal 14)
+    $response->assertSee('id="modal-custom-toc"', false);
+    $response->assertSee('id="toc-heading-input"', false);
+    $response->assertSee('id="toc-show-page-numbers"', false);
+    $response->assertSee('id="toc-right-align-pages"', false);
+    $response->assertSee('id="toc-tab-leader-select"', false);
+    $response->assertSee('id="toc-style-select"', false);
+    $response->assertSee('id="toc-levels-select"', false);
+    $response->assertSee('id="toc-preview-container"', false);
+    $response->assertSee('id="btn-confirm-insert-toc"', false);
+
+    // 3. Update Table of Contents Modal (Modal 15)
+    $response->assertSee('id="modal-update-toc"', false);
+    $response->assertSee('name="toc-update-scope"', false);
+    $response->assertSee('value="page_numbers"', false);
+    $response->assertSee('value="entire"', false);
+    $response->assertSee('id="btn-confirm-update-toc"', false);
+});

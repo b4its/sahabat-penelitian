@@ -945,6 +945,78 @@
 
         <!-- Ribbon Panel 4: TINJAU & REFERENSI (REVIEW & REFERENCES) -->
         <div data-ribbon-panel="review" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs bg-indigo-50/20 dark:bg-indigo-950/10">
+            <!-- Table of Contents Group (Microsoft Word References Standard) -->
+            <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Daftar Isi:</span>
+
+                <!-- 1. TOC Gallery Dropdown Button -->
+                <div class="relative inline-block" id="toc-dropdown-wrapper">
+                    <button id="btn-toc-dropdown" type="button" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Galeri Format Daftar Isi Microsoft Word">
+                        <span>📑 Daftar Isi</span>
+                        <svg class="w-3.5 h-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="toc-dropdown-menu" class="hidden absolute left-0 mt-1.5 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 py-1.5 text-xs text-gray-800 dark:text-gray-200">
+                        <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tabel Otomatis Word</div>
+
+                        <button type="button" data-toc-action="insert-auto1" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-start gap-2.5 transition cursor-pointer">
+                            <span class="text-base">📋</span>
+                            <div>
+                                <div class="font-bold text-gray-900 dark:text-gray-100">Tabel Otomatis 1</div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400">Judul "Konten", Level 1-3 dengan Titik-titik</div>
+                            </div>
+                        </button>
+
+                        <button type="button" data-toc-action="insert-auto2" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-start gap-2.5 transition cursor-pointer">
+                            <span class="text-base">📑</span>
+                            <div>
+                                <div class="font-bold text-gray-900 dark:text-gray-100">Tabel Otomatis 2 (Standar)</div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400">Judul "Daftar Isi", Format Skripsi & Akademik</div>
+                            </div>
+                        </button>
+
+                        <button type="button" data-toc-action="insert-manual" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-start gap-2.5 transition cursor-pointer">
+                            <span class="text-base">✍️</span>
+                            <div>
+                                <div class="font-bold text-gray-900 dark:text-gray-100">Tabel Manual</div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400">Templat isian manual dengan placeholder</div>
+                            </div>
+                        </button>
+
+                        <div class="my-1 border-t border-gray-100 dark:border-gray-800"></div>
+
+                        <button type="button" data-action="open-custom-toc-modal" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-center gap-2 font-medium text-indigo-600 dark:text-indigo-400 transition cursor-pointer">
+                            <span>⚙️</span>
+                            <span>Kustomisasi Daftar Isi...</span>
+                        </button>
+
+                        <button type="button" data-toc-action="remove-toc" class="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-medium text-red-600 dark:text-red-400 transition cursor-pointer">
+                            <span>🗑️</span>
+                            <span>Hapus Daftar Isi</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Update Table Button (Word Standard) -->
+                <button id="btn-ribbon-update-toc" type="button" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition cursor-pointer border border-gray-200 dark:border-gray-700 shadow-2xs" title="Perbarui Nomor Halaman atau Seluruh Tabel Daftar Isi (F9)">
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Perbarui Tabel...</span>
+                </button>
+
+                <!-- 3. Add Text / Heading Level Selector -->
+                <div class="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 shadow-2xs" title="Atur Level Teks Terpilih untuk Tampil di Daftar Isi">
+                    <span class="text-gray-400 text-[11px] font-medium">Level Teks:</span>
+                    <select id="ribbon-toc-level-select" class="text-xs bg-transparent text-gray-800 dark:text-gray-200 font-semibold outline-none cursor-pointer">
+                        <option value="" disabled selected>Atur Level...</option>
+                        <option value="none">Jangan Tampilkan (Teks Biasa)</option>
+                        <option value="1">Level 1 (Heading 1 / Bab)</option>
+                        <option value="2">Level 2 (Heading 2 / Subbab)</option>
+                        <option value="3">Level 3 (Heading 3 / Anak Subbab)</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- PUEBI & Tata Bahasa -->
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button id="btn-puebi-check" onclick="window.wordcraftAi.executeAction('grammar')" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded font-semibold flex items-center gap-1.5 hover:bg-emerald-100 transition cursor-pointer">
@@ -2241,6 +2313,144 @@
                         Selesai
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 14: Kustomisasi Daftar Isi (Custom Table of Contents - Microsoft Word Standard) -->
+    <div id="modal-custom-toc" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50/70 to-purple-50/70 dark:from-gray-900 dark:to-gray-800">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-1.5 rounded-lg bg-indigo-600 text-white text-sm">📑</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Kustomisasi Format Daftar Isi (Word Standard)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur hierarki level heading, karakter tab leader, dan gaya tipografi daftar isi</p>
+                    </div>
+                </div>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">✕</button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-4 text-xs flex-1">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Left: Configuration Options -->
+                    <div class="space-y-3.5">
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Judul Heading Daftar Isi:</label>
+                            <input type="text" id="toc-heading-input" value="DAFTAR ISI" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-bold outline-none focus:border-indigo-500" />
+                        </div>
+
+                        <div class="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="toc-show-page-numbers" checked class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer" />
+                                <span class="font-medium text-gray-800 dark:text-gray-200">Tampilkan nomor halaman</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="toc-right-align-pages" checked class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer" />
+                                <span class="font-medium text-gray-800 dark:text-gray-200">Rata kanan nomor halaman</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Karakter Tab Leader (Garis Perangkai):</label>
+                            <select id="toc-tab-leader-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium outline-none focus:border-indigo-500">
+                                <option value="dots">Titik-titik (....................)</option>
+                                <option value="dashes">Garis putus-putus (--------------------)</option>
+                                <option value="line">Garis lurus bawah (____________________)</option>
+                                <option value="none">Tanpa garis perangkai (none)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Format Gaya Desain (Formats):</label>
+                            <select id="toc-style-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-semibold outline-none focus:border-indigo-500">
+                                <option value="template">Dari Templat (Standar Akademik & Skripsi 4-4-3-3)</option>
+                                <option value="classic">Klasik (Serif & Kapitalisasi Elegan)</option>
+                                <option value="modern">Modern (Sans-serif & Minimalis)</option>
+                                <option value="formal">Formal (Border Ganda & Serif Presisi)</option>
+                                <option value="simple">Sederhana (Clean Flow)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Tampilkan Level Heading (Show Levels):</label>
+                            <select id="toc-levels-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold outline-none focus:border-indigo-500">
+                                <option value="1">1 Level (Hanya Bab Utama / H1)</option>
+                                <option value="2">2 Level (Bab & Subbab / H1-H2)</option>
+                                <option value="3" selected>3 Level (Bab, Subbab, & Anak Subbab / H1-H3 - Standar Word)</option>
+                                <option value="4">4 Level (H1-H4)</option>
+                                <option value="5">5 Level (H1-H5)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Print & Web Preview -->
+                    <div class="flex flex-col">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-bold text-gray-700 dark:text-gray-300">Pratinjau Hasil Cetak:</span>
+                            <span id="toc-preview-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">Level 1 - 3</span>
+                        </div>
+                        <div id="toc-preview-container" class="flex-1 bg-white dark:bg-gray-800/80 p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-xs overflow-y-auto max-h-72 shadow-inner">
+                            <!-- Live interactive preview loaded by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3.5 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <span class="text-[11px] text-gray-500 dark:text-gray-400">Daftar Isi akan otomatis menghubungkan tautan anchor ke setiap bab.</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">Batal</button>
+                    <button type="button" id="btn-confirm-insert-toc" class="px-4 py-2 text-xs font-bold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer flex items-center gap-1.5">
+                        <span>📑 Sisipkan Daftar Isi</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 15: Perbarui Daftar Isi (Update Table of Contents Dialog - Microsoft Word Standard) -->
+    <div id="modal-update-toc" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-emerald-50/70 to-teal-50/70 dark:from-gray-900 dark:to-gray-800">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-emerald-600 text-white text-xs">🔄</span>
+                    <h3 class="font-bold text-sm text-gray-900 dark:text-white">Perbarui Daftar Isi (Update Table of Contents)</h3>
+                </div>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">✕</button>
+            </div>
+            <div class="p-5 space-y-3.5 text-xs">
+                <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+                    Word sedang memperbarui daftar isi dokumen. Pilih salah satu tindakan yang ingin Anda lakukan:
+                </p>
+
+                <div class="space-y-2.5 pt-1">
+                    <label class="flex items-start gap-2.5 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 cursor-pointer transition">
+                        <input type="radio" name="toc-update-scope" value="page_numbers" checked class="mt-0.5 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-gray-100 block">Hanya perbarui nomor halaman</span>
+                            <span class="text-[11px] text-gray-500 dark:text-gray-400 block mt-0.5">
+                                Gunakan opsi ini jika Anda hanya menambah atau mengurangi teks yang menggeser nomor lembar halaman tanpa mengubah teks judul bab.
+                            </span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-2.5 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 cursor-pointer transition">
+                        <input type="radio" name="toc-update-scope" value="entire" class="mt-0.5 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-gray-100 block">Perbarui seluruh tabel</span>
+                            <span class="text-[11px] text-gray-500 dark:text-gray-400 block mt-0.5">
+                                Memindai ulang seluruh naskah untuk menambahkan judul bab baru, menghapus bab yang telah dihapus, dan menyelaraskan penomoran.
+                            </span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+                <button type="button" data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">Batal</button>
+                <button type="button" id="btn-confirm-update-toc" class="px-4 py-2 text-xs font-bold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer">
+                    OK
+                </button>
             </div>
         </div>
     </div>
