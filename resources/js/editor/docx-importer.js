@@ -357,6 +357,111 @@ export class DocxImporter {
         return false;
     }
 
+    static ommlToLatex(node) {
+        if (!node || node.nodeType !== Node.ELEMENT_NODE) return '';
+        const tag = node.nodeName.toLowerCase().replace(/^m:/, '');
+
+        switch (tag) {
+            case 't':
+                return node.textContent || '';
+            case 'r': {
+                let out = '';
+                for (const c of node.childNodes) out += DocxImporter.ommlToLatex(c);
+                return out;
+            }
+            case 'f': {
+                let num = '';
+                let den = '';
+                for (const c of node.childNodes) {
+                    const ctag = c.nodeName.toLowerCase().replace(/^m:/, '');
+                    if (ctag === 'num') num = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'den') den = DocxImporter.ommlToLatex(c);
+                }
+                return `\\frac{${num.trim()}}{${den.trim()}}`;
+            }
+            case 'ssup': {
+                let base = '';
+                let sup = '';
+                for (const c of node.childNodes) {
+                    const ctag = c.nodeName.toLowerCase().replace(/^m:/, '');
+                    if (ctag === 'e') base = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'sup') sup = DocxImporter.ommlToLatex(c);
+                }
+                return `{${base.trim()}}^{${sup.trim()}}`;
+            }
+            case 'ssub': {
+                let base = '';
+                let sub = '';
+                for (const c of node.childNodes) {
+                    const ctag = c.nodeName.toLowerCase().replace(/^m:/, '');
+                    if (ctag === 'e') base = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'sub') sub = DocxImporter.ommlToLatex(c);
+                }
+                return `{${base.trim()}}_{${sub.trim()}}`;
+            }
+            case 'ssubsup': {
+                let base = '';
+                let sub = '';
+                let sup = '';
+                for (const c of node.childNodes) {
+                    const ctag = c.nodeName.toLowerCase().replace(/^m:/, '');
+                    if (ctag === 'e') base = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'sub') sub = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'sup') sup = DocxImporter.ommlToLatex(c);
+                }
+                return `{${base.trim()}}_{${sub.trim()}}^{${sup.trim()}}`;
+            }
+            case 'rad': {
+                let deg = '';
+                let e = '';
+                for (const c of node.childNodes) {
+                    const ctag = c.nodeName.toLowerCase().replace(/^m:/, '');
+                    if (ctag === 'deg') deg = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'e') e = DocxImporter.ommlToLatex(c);
+                }
+                return deg ? `\\sqrt[${deg.trim()}]{${e.trim()}}` : `\\sqrt{${e.trim()}}`;
+            }
+            case 'nary': {
+                let chr = '\\sum';
+                let sub = '';
+                let sup = '';
+                let e = '';
+                for (const c of node.childNodes) {
+                    const ctag = c.nodeName.toLowerCase().replace(/^m:/, '');
+                    if (ctag === 'narypr') {
+                        const chrEl = c.querySelector('chr, [m\\:val]');
+                        if (chrEl) {
+                            const v = chrEl.getAttribute('m:val') || chrEl.getAttribute('val');
+                            if (v === '∫' || v === 'int') chr = '\\int';
+                            else if (v === '∏' || v === 'prod') chr = '\\prod';
+                            else if (v === '∑' || v === 'sum') chr = '\\sum';
+                            else if (v) chr = v;
+                        }
+                    } else if (ctag === 'sub') sub = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'sup') sup = DocxImporter.ommlToLatex(c);
+                    else if (ctag === 'e') e = DocxImporter.ommlToLatex(c);
+                }
+                let limits = '';
+                if (sub) limits += `_{${sub.trim()}}`;
+                if (sup) limits += `^{${sup.trim()}}`;
+                return `${chr}${limits}{${e.trim()}}`;
+            }
+            case 'd': {
+                let e = '';
+                for (const c of node.childNodes) {
+                    const ctag = c.nodeName.toLowerCase().replace(/^m:/, '');
+                    if (ctag === 'e') e += DocxImporter.ommlToLatex(c);
+                }
+                return `\\left( ${e.trim()} \\right)`;
+            }
+            default: {
+                let result = '';
+                for (const c of node.childNodes) result += DocxImporter.ommlToLatex(c);
+                return result;
+            }
+        }
+    }
+
     static formatFontFamily(fontName) {
         if (!fontName) return '';
         const clean = fontName.replace(/['"]/g, '').trim();
@@ -651,6 +756,11 @@ export class DocxImporter {
                 const linkText = linkParts.join('');
                 if (linkText) {
                     inlines.push(`<a href="${this.escapeHtml(targetUrl)}" target="_blank" class="text-indigo-600 dark:text-indigo-400 underline">${linkText}</a>`);
+                }
+            } else if (childName === 'm:omath' || childName === 'm:omathpara' || childName === 'omath' || childName === 'omathpara') {
+                const latex = DocxImporter.ommlToLatex(child).trim();
+                if (latex) {
+                    inlines.push(` $$${latex}$$ `);
                 }
             }
         }

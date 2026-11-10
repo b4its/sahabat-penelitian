@@ -15,8 +15,37 @@
  */
 
 import { DocxImporter } from './docx-importer.js';
+import katex from 'katex';
 
 export class DocumentEngine {
+    static renderLatexHtml(latex, isDisplay = true) {
+        if (!latex) return '';
+        const clean = latex.trim();
+        try {
+            const k = (typeof window !== 'undefined' && window.katex) ? window.katex : katex;
+            if (k && typeof k.renderToString === 'function') {
+                return k.renderToString(clean, {
+                    displayMode: isDisplay,
+                    throwOnError: false,
+                    output: 'htmlAndMathml',
+                });
+            }
+        } catch (err) {
+            console.warn('KaTeX render error:', err);
+        }
+        return `<span class="katex-fallback font-mono text-sm">${DocumentEngine.escapeHtmlStatic(clean)}</span>`;
+    }
+
+    static escapeHtmlStatic(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     constructor(options = {}) {
         this.pagesWrapper = options.pagesWrapper || document.getElementById('document-pages-wrapper') || document.getElementById('document-canvas-container');
         this.editorEl = options.editorEl;
@@ -116,6 +145,11 @@ export class DocumentEngine {
                     this.hideImageToolbar();
                 }
 
+                const eq = e.target.closest('.latex-equation');
+                if (eq) {
+                    window.dispatchEvent(new CustomEvent('select-latex-equation', { detail: { element: eq } }));
+                }
+
                 // Update active page index on click
                 const clickedSheet = e.target.closest('.document-page-sheet');
                 if (clickedSheet) {
@@ -124,6 +158,14 @@ export class DocumentEngine {
                         this.activePageIndex = pageNum;
                         this.updateStats();
                     }
+                }
+            });
+
+            targetContainer.addEventListener('dblclick', (e) => {
+                const eq = e.target.closest('.latex-equation');
+                if (eq) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('edit-latex-equation', { detail: { element: eq } }));
                 }
             });
 
@@ -307,6 +349,8 @@ export class DocumentEngine {
                 contentHtml: '<p><br></p>',
             }];
         }
+
+        html = this.formatLatexEquationsInHtml(html);
 
         const isTableOfContentsLine = (str) => {
             if (!str) return false;
@@ -597,6 +641,7 @@ export class DocumentEngine {
                 this.canvasEl = sheet;
             }
             body.innerHTML = p.contentHtml;
+            this.renderLatexInContainer(body);
             sheet.appendChild(body);
 
             // Footer (Clean document footer without synthetic page marks or 'halaman dari')
@@ -1245,6 +1290,28 @@ export class DocumentEngine {
                 }
             }
 
+            // Formula / Math: LaTeX Display Equations ($$...$$ or \[...\])
+            const mathMatch = cleanText.match(/^(?:\$\$|\\\[)([\s\S]+?)(?:\$\$|\\\])$/);
+            if (mathMatch) {
+                const formula = mathMatch[1].trim();
+                if (formula) {
+                    const eqDiv = doc.createElement('div');
+                    eqDiv.className = 'latex-equation display-equation my-4 text-center cursor-pointer select-none';
+                    eqDiv.setAttribute('contenteditable', 'false');
+                    eqDiv.setAttribute('data-latex', formula);
+                    eqDiv.setAttribute('data-display', 'true');
+                    eqDiv.setAttribute('title', 'Klik dua kali untuk mengedit rumus LaTeX');
+
+                    const wrap = doc.createElement('div');
+                    wrap.className = 'latex-math-wrapper inline-block px-3 py-1.5 rounded transition';
+                    wrap.innerHTML = DocumentEngine.renderLatexHtml(formula, true);
+                    eqDiv.appendChild(wrap);
+
+                    el.replaceWith(eqDiv);
+                    continue;
+                }
+            }
+
             // Chapter Headings: BAB I, BAB II, BAB 1, etc.
             const babMatch = cleanText.match(/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*(.*)$/i);
             if (!isTableOfContentsLine(cleanText) && babMatch && cleanText.length <= 80 && !/[.!?]$/.test(cleanText)) {
@@ -1380,6 +1447,10 @@ export class DocumentEngine {
 
             // Normal Body Paragraphs
             if (el.tagName === 'P') {
+                if (el.innerHTML.includes('$$') || el.innerHTML.includes('\\[')) {
+                    el.innerHTML = this.formatLatexEquationsInHtml(el.innerHTML);
+                }
+
                 const hasCenter = el.classList.contains('text-center') || el.style.textAlign === 'center';
                 const hasRight = el.classList.contains('text-right') || el.style.textAlign === 'right';
                 const hasJustify = el.classList.contains('text-justify') || el.style.textAlign === 'justify';
@@ -1931,6 +2002,112 @@ export class DocumentEngine {
     insertCitation(author, year, title, source) {
         const biblioEntry = `<p class="citation-entry my-2 pl-8 -indent-8 text-sm text-gray-800 dark:text-gray-200">${this.escapeHtml(author)} (${this.escapeHtml(year)}). <em>${this.escapeHtml(title)}</em>. ${this.escapeHtml(source)}.</p>`;
         this.insertAtCursor(biblioEntry);
+    }
+
+    /* -------------------------------------------------------------
+     * Mathematical Formulas & LaTeX Equations Engine (KaTeX)
+     * ------------------------------------------------------------- */
+
+    insertEquation(latex = '', isDisplay = true) {
+        const cleanLatex = latex.trim();
+        if (!cleanLatex) return;
+
+        const rendered = DocumentEngine.renderLatexHtml(cleanLatex, isDisplay);
+        const tag = isDisplay ? 'div' : 'span';
+        const displayClass = isDisplay ? 'display-equation my-4 text-center' : 'inline-equation mx-0.5 inline-block align-baseline';
+        const safe = DocumentEngine.escapeHtmlStatic(cleanLatex);
+        const html = `<${tag} class="latex-equation ${displayClass} cursor-pointer select-none" contenteditable="false" data-latex="${safe}" data-display="${isDisplay}" title="Klik dua kali untuk mengedit rumus LaTeX"><div class="latex-math-wrapper inline-block px-3 py-1.5 rounded transition">${rendered}</div></${tag}>`;
+
+        this.insertAtCursor(html + (isDisplay ? '<p><br></p>' : '&nbsp;'));
+        this.handleInput();
+    }
+
+    updateEquation(el, newLatex, isDisplay = true) {
+        if (!el) return;
+        const cleanLatex = newLatex.trim();
+        if (!cleanLatex) return;
+
+        const rendered = DocumentEngine.renderLatexHtml(cleanLatex, isDisplay);
+        const safe = DocumentEngine.escapeHtmlStatic(cleanLatex);
+        el.setAttribute('data-latex', safe);
+        el.setAttribute('data-display', String(isDisplay));
+        if (isDisplay) {
+            el.className = 'latex-equation display-equation my-4 text-center cursor-pointer select-none';
+        } else {
+            el.className = 'latex-equation inline-equation mx-0.5 inline-block align-baseline cursor-pointer select-none';
+        }
+        let wrapper = el.querySelector('.latex-math-wrapper');
+        if (!wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'latex-math-wrapper inline-block px-3 py-1.5 rounded transition';
+            el.innerHTML = '';
+            el.appendChild(wrapper);
+        }
+        wrapper.innerHTML = rendered;
+        this.handleInput();
+    }
+
+    deleteEquation(el) {
+        if (!el) return;
+        el.remove();
+        this.handleInput();
+    }
+
+    formatLatexEquationsInHtml(html) {
+        if (!html || typeof html !== 'string') return html || '';
+        if (!html.includes('$$') && !html.includes('\\(') && !html.includes('\\[') && !html.includes('latex-equation') && !html.includes('$')) {
+            return html;
+        }
+
+        // 1. Convert display math blocks wrapped in <p> or standalone: <p>$$...$$</p>
+        let result = html.replace(/<p\b[^>]*>\s*(?:\$\$|\\\[)([\s\S]+?)(?:\$\$|\\\])\s*<\/p>/gi, (match, formula) => {
+            const clean = formula.trim();
+            if (!clean) return match;
+            const rendered = DocumentEngine.renderLatexHtml(clean, true);
+            const safe = DocumentEngine.escapeHtmlStatic(clean);
+            return `<div class="latex-equation display-equation my-4 text-center cursor-pointer select-none" contenteditable="false" data-latex="${safe}" data-display="true" title="Klik dua kali untuk mengedit rumus LaTeX"><div class="latex-math-wrapper inline-block px-3 py-1.5 rounded transition">${rendered}</div></div>`;
+        });
+
+        // 2. Convert display math: $$...$$ or \[...\]
+        result = result.replace(/(?:\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\])/g, (match, f1, f2) => {
+            const clean = (f1 || f2 || '').trim();
+            if (!clean) return match;
+            const rendered = DocumentEngine.renderLatexHtml(clean, true);
+            const safe = DocumentEngine.escapeHtmlStatic(clean);
+            return `<div class="latex-equation display-equation my-4 text-center cursor-pointer select-none" contenteditable="false" data-latex="${safe}" data-display="true" title="Klik dua kali untuk mengedit rumus LaTeX"><div class="latex-math-wrapper inline-block px-3 py-1.5 rounded transition">${rendered}</div></div>`;
+        });
+
+        // 3. Convert inline math: $formula$ (avoid matching currency or plain numbers)
+        result = result.replace(/(?<!\$)\$(?!\$)([^\$\n]+?)(?<!\$)\$(?!\$)/g, (match, formula) => {
+            const clean = formula.trim();
+            if (!clean || /^\d+([.,]\d+)?$/.test(clean)) return match;
+            const isMath = /[\\_{}^=+\-<>*/\(\)\[\]]/.test(clean) || /[a-zA-Z]/.test(clean);
+            if (!isMath) return match;
+            const rendered = DocumentEngine.renderLatexHtml(clean, false);
+            const safe = DocumentEngine.escapeHtmlStatic(clean);
+            return `<span class="latex-equation inline-equation mx-0.5 inline-block align-baseline cursor-pointer select-none" contenteditable="false" data-latex="${safe}" data-display="false" title="Klik dua kali untuk mengedit rumus LaTeX"><span class="latex-math-wrapper inline-block px-1 rounded transition">${rendered}</span></span>`;
+        });
+
+        return result;
+    }
+
+    renderLatexInContainer(container) {
+        if (!container) return;
+        const equations = container.querySelectorAll('.latex-equation');
+        equations.forEach(eq => {
+            const latex = eq.getAttribute('data-latex');
+            const isDisplay = eq.getAttribute('data-display') !== 'false';
+            let wrapper = eq.querySelector('.latex-math-wrapper');
+            if (latex && (!wrapper || !wrapper.querySelector('.katex'))) {
+                if (!wrapper) {
+                    wrapper = document.createElement(isDisplay ? 'div' : 'span');
+                    wrapper.className = 'latex-math-wrapper inline-block px-2 py-1 rounded transition';
+                    eq.innerHTML = '';
+                    eq.appendChild(wrapper);
+                }
+                wrapper.innerHTML = DocumentEngine.renderLatexHtml(latex, isDisplay);
+            }
+        });
     }
 
     readAloud() {

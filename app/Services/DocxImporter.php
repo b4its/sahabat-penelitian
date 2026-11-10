@@ -4,6 +4,7 @@ namespace App\Services;
 
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use Illuminate\Http\UploadedFile;
 use ZipArchive;
@@ -19,6 +20,8 @@ class DocxImporter
     private const PIC_NS = 'http://schemas.openxmlformats.org/drawingml/2006/picture';
 
     private const V_NS = 'urn:schemas-microsoft-com:vml';
+
+    private const M_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/math';
 
     private string $extractedHeader = '';
 
@@ -515,6 +518,170 @@ class DocxImporter
     }
 
     /**
+     * Convert Word Office Math (OMML) XML node to clean LaTeX representation.
+     */
+    public static function ommlToLatex(DOMNode $node): string
+    {
+        if ($node->nodeType !== XML_ELEMENT_NODE) {
+            return '';
+        }
+
+        $tag = strtolower(str_replace('m:', '', $node->nodeName));
+
+        switch ($tag) {
+            case 't':
+                return $node->nodeValue ?? '';
+
+            case 'r':
+                $out = '';
+                foreach ($node->childNodes as $child) {
+                    $out .= self::ommlToLatex($child);
+                }
+
+                return $out;
+
+            case 'f':
+                // Fraction: <m:num> / <m:den>
+                $num = '';
+                $den = '';
+                foreach ($node->childNodes as $child) {
+                    $ctag = strtolower(str_replace('m:', '', $child->nodeName));
+                    if ($ctag === 'num') {
+                        $num = self::ommlToLatex($child);
+                    } elseif ($ctag === 'den') {
+                        $den = self::ommlToLatex($child);
+                    }
+                }
+
+                return '\\frac{'.trim($num).'}{'.trim($den).'}';
+
+            case 'ssup':
+                // Superscript: <m:e> and <m:sup>
+                $base = '';
+                $sup = '';
+                foreach ($node->childNodes as $child) {
+                    $ctag = strtolower(str_replace('m:', '', $child->nodeName));
+                    if ($ctag === 'e') {
+                        $base = self::ommlToLatex($child);
+                    } elseif ($ctag === 'sup') {
+                        $sup = self::ommlToLatex($child);
+                    }
+                }
+
+                return '{'.trim($base).'}^{'.trim($sup).'}';
+
+            case 'ssub':
+                // Subscript: <m:e> and <m:sub>
+                $base = '';
+                $sub = '';
+                foreach ($node->childNodes as $child) {
+                    $ctag = strtolower(str_replace('m:', '', $child->nodeName));
+                    if ($ctag === 'e') {
+                        $base = self::ommlToLatex($child);
+                    } elseif ($ctag === 'sub') {
+                        $sub = self::ommlToLatex($child);
+                    }
+                }
+
+                return '{'.trim($base).'}_{'.trim($sub).'}';
+
+            case 'ssubsup':
+                // Sub & Sup
+                $base = '';
+                $sub = '';
+                $sup = '';
+                foreach ($node->childNodes as $child) {
+                    $ctag = strtolower(str_replace('m:', '', $child->nodeName));
+                    if ($ctag === 'e') {
+                        $base = self::ommlToLatex($child);
+                    } elseif ($ctag === 'sub') {
+                        $sub = self::ommlToLatex($child);
+                    } elseif ($ctag === 'sup') {
+                        $sup = self::ommlToLatex($child);
+                    }
+                }
+
+                return '{'.trim($base).'}_{'.trim($sub).'}^{'.trim($sup).'}';
+
+            case 'rad':
+                // Radical / Square root: <m:deg>, <m:e>
+                $deg = '';
+                $e = '';
+                foreach ($node->childNodes as $child) {
+                    $ctag = strtolower(str_replace('m:', '', $child->nodeName));
+                    if ($ctag === 'deg') {
+                        $deg = self::ommlToLatex($child);
+                    } elseif ($ctag === 'e') {
+                        $e = self::ommlToLatex($child);
+                    }
+                }
+
+                return ! empty($deg) ? '\\sqrt['.trim($deg).']{'.trim($e).'}' : '\\sqrt{'.trim($e).'}';
+
+            case 'nary':
+                // Operators: Sum, Int, Prod
+                $chr = '\\sum';
+                $sub = '';
+                $sup = '';
+                $e = '';
+                foreach ($node->childNodes as $child) {
+                    $ctag = strtolower(str_replace('m:', '', $child->nodeName));
+                    if ($ctag === 'narypr') {
+                        foreach ($child->childNodes as $pr) {
+                            if (strtolower(str_replace('m:', '', $pr->nodeName)) === 'chr' && $pr instanceof DOMElement) {
+                                $v = $pr->getAttribute('m:val') ?: $pr->getAttribute('val');
+                                if ($v === '∫' || $v === 'int') {
+                                    $chr = '\\int';
+                                } elseif ($v === '∏' || $v === 'prod') {
+                                    $chr = '\\prod';
+                                } elseif ($v === '∑' || $v === 'sum') {
+                                    $chr = '\\sum';
+                                } elseif (! empty($v)) {
+                                    $chr = $v;
+                                }
+                            }
+                        }
+                    } elseif ($ctag === 'sub') {
+                        $sub = self::ommlToLatex($child);
+                    } elseif ($ctag === 'sup') {
+                        $sup = self::ommlToLatex($child);
+                    } elseif ($ctag === 'e') {
+                        $e = self::ommlToLatex($child);
+                    }
+                }
+                $limits = '';
+                if (! empty($sub)) {
+                    $limits .= '_{'.trim($sub).'}';
+                }
+                if (! empty($sup)) {
+                    $limits .= '^{'.trim($sup).'}';
+                }
+
+                return "{$chr}{$limits}{".trim($e).'}';
+
+            case 'd':
+                // Delimiter / Parentheses
+                $e = '';
+                foreach ($node->childNodes as $child) {
+                    $ctag = strtolower(str_replace('m:', '', $child->nodeName));
+                    if ($ctag === 'e') {
+                        $e .= self::ommlToLatex($child);
+                    }
+                }
+
+                return '\\left( '.trim($e).' \\right)';
+
+            default:
+                $result = '';
+                foreach ($node->childNodes as $child) {
+                    $result .= self::ommlToLatex($child);
+                }
+
+                return $result;
+        }
+    }
+
+    /**
      * Parse word/styles.xml into style map.
      */
     private function parseStyles(ZipArchive $zip, array $themeColors = []): array
@@ -733,6 +900,11 @@ class DocxImporter
                 $linkText = implode('', $linkContent);
                 if ($linkText !== '') {
                     $inlines[] = '<a href="'.htmlspecialchars($targetUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."\" target=\"_blank\" class=\"text-indigo-600 dark:text-indigo-400 underline\">{$linkText}</a>";
+                }
+            } elseif ($child->nodeName === 'm:oMath' || $child->nodeName === 'm:oMathPara' || $child->localName === 'oMath' || $child->localName === 'oMathPara') {
+                $latex = trim(self::ommlToLatex($child));
+                if ($latex !== '') {
+                    $inlines[] = ' $$'.$latex.'$$ ';
                 }
             }
         }

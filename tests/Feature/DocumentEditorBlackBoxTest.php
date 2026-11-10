@@ -977,3 +977,91 @@ XML;
 
     @unlink($zipPath);
 });
+
+test('black-box: uploading docx with latex formula renders interactive equation with katex markup', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_latex_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:t>$$F1\text {-} Score = 2 \times \frac {1 {,} 0 \times 1 {,} 0} {1 {,} 0 + 1 {,} 0} = 100 {,} 00 \% \quad (4.9)$$</w:t>
+            </w:r>
+        </w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile($zipPath, 'skripsi_formula.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+
+    expect($html)->toContain('latex-equation')
+        ->and($html)->toContain('display-equation')
+        ->and($html)->toContain('data-latex=');
+
+    @unlink($zipPath);
+});
+
+test('black-box: uploading docx with OMML math translates into latex equation', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_omml_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+    <w:body>
+        <w:p>
+            <m:oMath>
+                <m:f>
+                    <m:num><m:r><m:t>a</m:t></m:r></m:num>
+                    <m:den><m:r><m:t>b</m:t></m:r></m:den>
+                </m:f>
+            </m:oMath>
+        </w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile($zipPath, 'skripsi_omml.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+
+    expect($html)->toContain('latex-equation')
+        ->and($html)->toContain('data-latex=')
+        ->and($html)->toContain('\frac{a}{b}');
+
+    @unlink($zipPath);
+});
+
+test('black-box: editor page provides latex equation modal and insert button in insert ribbon', function () {
+    $response = $this->get(route('editor.index'));
+    $response->assertStatus(200);
+
+    $response->assertSee('modal-latex-equation', false);
+    $response->assertSee('insert-equation-modal', false);
+    $response->assertSee('Rumus Matematika (LaTeX)', false);
+    $response->assertSee('latex-preview', false);
+    $response->assertSee('btn-delete-equation', false);
+    $response->assertSee('btn-save-equation', false);
+});

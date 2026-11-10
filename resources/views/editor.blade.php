@@ -189,6 +189,47 @@
             font-family: 'Arial', 'Liberation Sans', 'DejaVu Sans', sans-serif !important;
         }
 
+        /* LaTeX / Mathematical Formula Typography */
+        .latex-equation {
+            user-select: none;
+            transition: all 0.2s ease;
+            border-radius: 6px;
+            border: 1px dashed transparent;
+            padding: 2px 4px;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        .latex-equation:hover {
+            border-color: #6366f1;
+            background-color: rgba(99, 102, 241, 0.06);
+        }
+
+        .latex-equation.display-equation {
+            display: block;
+            text-align: center;
+            margin: 14pt 0;
+            padding: 8pt 12pt;
+            overflow-x: auto;
+            overflow-y: hidden;
+            max-width: 100%;
+        }
+
+        .latex-equation.inline-equation {
+            display: inline-block;
+            margin: 0 2px;
+        }
+
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .katex,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .latex-equation {
+            color: #111827 !important;
+        }
+
+        .document-page-sheet.canvas-dark-sheet .page-sheet-body .katex,
+        .document-page-sheet.canvas-dark-sheet .page-sheet-body .latex-equation {
+            color: #f3f4f6 !important;
+        }
+
         #document-editor h1.heading-chapter,
         #document-editor h1.heading-preliminary,
         .page-sheet-body h1.heading-chapter,
@@ -747,6 +788,11 @@
 
             <button data-action="insert-symbols-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
                 <span>Ω Simbol Khusus</span>
+            </button>
+
+            <button data-action="insert-equation-modal" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition" title="Sisipkan rumus atau persamaan matematika (LaTeX)">
+                <span class="font-bold font-serif text-sm text-indigo-600 dark:text-indigo-400">∑</span>
+                <span>Rumus Matematika (LaTeX)</span>
             </button>
 
             <button data-action="header-footer-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Konfigurasi running header, footer, dan nomor halaman">
@@ -1662,6 +1708,78 @@
                 <div class="flex items-center gap-2">
                     <button data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Batal</button>
                     <button id="btn-apply-header-footer" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">Terapkan Perubahan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 12: Editor Rumus / Persamaan (LaTeX KaTeX) -->
+    <div id="modal-latex-equation" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="p-1 rounded bg-indigo-600 text-white font-serif font-bold text-xs">∑</span>
+                    <span id="latex-modal-title">Rumus & Persamaan Matematika (LaTeX)</span>
+                </h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">✕</button>
+            </div>
+
+            <div class="p-5 space-y-4 text-xs">
+                <!-- Quick Template Toolbar -->
+                <div>
+                    <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Template Simbol Cepat:</label>
+                    <div class="flex flex-wrap gap-1 p-2 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700/80">
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\frac{a}{b}" title="Pecahan (Fraction)">\frac{a}{b}</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\sqrt{x}" title="Akar Kuadrat">\sqrt{x}</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="x^{2}" title="Pangkat / Eksponen">x^{2}</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="x_{i}" title="Indeks / Subskrip">x_{i}</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\sum_{i=1}^{n} x_i" title="Sigma / Penjumlahan">\sum</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\int_{a}^{b} f(x) \, dx" title="Integral">\int</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\times" title="Kali">×</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\pm" title="Plus Minus">±</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\le" title="Kurang dari atau sama dengan">≤</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\ge" title="Lebih dari atau sama dengan">≥</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\alpha" title="Alpha">α</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\beta" title="Beta">β</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\mu" title="Mu">μ</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\sigma" title="Sigma">σ</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\approx" title="Mendekati / Kira-kira">≈</button>
+                        <button type="button" class="latex-tpl-btn px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950 font-mono text-xs cursor-pointer" data-tpl="\infty" title="Tak Hingga">∞</button>
+                    </div>
+                </div>
+
+                <!-- Kode LaTeX -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="font-semibold text-gray-700 dark:text-gray-300">Sintaks Kode LaTeX:</label>
+                        <div class="flex items-center gap-3">
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="latex-mode" value="display" checked class="text-indigo-600 focus:ring-indigo-500" />
+                                <span class="text-gray-600 dark:text-gray-400">Blok Terpusat (Display $$)</span>
+                            </label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="latex-mode" value="inline" class="text-indigo-600 focus:ring-indigo-500" />
+                                <span class="text-gray-600 dark:text-gray-400">Sejajar Teks (Inline $)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <textarea id="latex-input" rows="3" placeholder="Contoh: F1\text{-}Score = 2 \times \frac{Precision \times Recall}{Precision + Recall} \quad (4.9)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 font-mono text-xs outline-none focus:border-indigo-500"></textarea>
+                </div>
+
+                <!-- Live Preview -->
+                <div>
+                    <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Pratinjau Hasil Rumus:</label>
+                    <div id="latex-preview" class="p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 min-h-[60px] flex items-center justify-center overflow-x-auto text-gray-900 dark:text-white">
+                        <span class="text-gray-400 italic text-xs">Pratinjau rumus matematika akan muncul di sini...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <button id="btn-delete-equation" type="button" class="hidden px-3 py-1.5 text-xs font-semibold rounded-md text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer">Hapus Rumus</button>
+                <div class="flex items-center gap-2 ml-auto">
+                    <button data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 cursor-pointer">Batal</button>
+                    <button id="btn-save-equation" type="button" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer">Sisipkan Rumus</button>
                 </div>
             </div>
         </div>

@@ -874,3 +874,49 @@ HTML;
         ->and($adapted['adapted_html'])->toContain('heading-section font-bold text-lg my-4 text-gray-900')
         ->and($adapted['adapted_html'])->toContain('heading-subsection font-semibold text-base my-3 text-gray-800');
 });
+
+test('white-box: DocxImporter ommlToLatex accurately translates Word OMML elements to LaTeX', function () {
+    // 1. Fraction test
+    $dom = new \DOMDocument;
+    $dom->loadXML('<m:f xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:num><m:r><m:t>1</m:t></m:r></m:num><m:den><m:r><m:t>2</m:t></m:r></m:den></m:f>');
+    $latex = DocxImporter::ommlToLatex($dom->documentElement);
+    expect($latex)->toBe('\frac{1}{2}');
+
+    // 2. Superscript and Subscript
+    $dom->loadXML('<m:sSup xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup>');
+    expect(DocxImporter::ommlToLatex($dom->documentElement))->toBe('{x}^{2}');
+
+    $dom->loadXML('<m:sSub xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sub><m:r><m:t>i</m:t></m:r></m:sub></m:sSub>');
+    expect(DocxImporter::ommlToLatex($dom->documentElement))->toBe('{x}_{i}');
+
+    // 3. Radical (Square root)
+    $dom->loadXML('<m:rad xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:deg/><m:e><m:r><m:t>b^2 - 4ac</m:t></m:r></m:e></m:rad>');
+    expect(DocxImporter::ommlToLatex($dom->documentElement))->toBe('\sqrt{b^2 - 4ac}');
+
+    // 4. Delimiters (brackets)
+    $dom->loadXML('<m:d xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:e><m:r><m:t>a + b</m:t></m:r></m:e></m:d>');
+    expect(DocxImporter::ommlToLatex($dom->documentElement))->toBe('\left( a + b \right)');
+});
+
+test('white-box: adaptDocumentStructure detects raw LaTeX formula strings and converts to interactive latex-equation blocks', function () {
+    $rawFormula = '$$F1\text {-} Score = 2 \times \frac {1 {,} 0 \times 1 {,} 0} {1 {,} 0 + 1 {,} 0} = 100 {,} 00 \% \quad (4.9)$$';
+    $inputHtml = '<p>'.$rawFormula.'</p>';
+
+    $adapted = $this->service->adaptDocumentStructure($inputHtml, 'skripsi_formula.docx');
+
+    expect($adapted['adapted_html'])->toContain('latex-equation')
+        ->and($adapted['adapted_html'])->toContain('display-equation')
+        ->and($adapted['adapted_html'])->toContain('contenteditable="false"')
+        ->and($adapted['adapted_html'])->toContain('data-latex=');
+});
+
+test('white-box: convertToMarkdown and convertToPlainText preserve latex-equation formulas', function () {
+    $formula = 'E = mc^2';
+    $html = '<p>Energi relativitas: <span class="latex-equation display-equation" data-latex="'.$formula.'" contenteditable="false">$$'.$formula.'$$</span>.</p>';
+
+    $markdown = $this->service->convertToMarkdown($html);
+    expect($markdown)->toContain('$$'.$formula.'$$');
+
+    $plainText = $this->service->convertToPlainText($html);
+    expect($plainText)->toContain('$$'.$formula.'$$');
+});

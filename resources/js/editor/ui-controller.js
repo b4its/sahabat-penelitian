@@ -40,6 +40,7 @@ export class UiController {
         this.bindCoverPageModal();
         this.bindSymbolsModal();
         this.bindCitationModal();
+        this.bindLatexEquationModal();
         this.bindHeaderFooterModal();
         this.bindDragAndDrop();
         this.bindGlobalKeyboardShortcuts();
@@ -471,6 +472,123 @@ export class UiController {
                 this.engine.insertCitation(author, year, title, source);
                 this.closeModal(modal);
                 this.showToast('Sitasi & Entri Daftar Pustaka berhasil disisipkan!');
+            });
+        }
+    }
+
+    bindLatexEquationModal() {
+        const modal = document.getElementById('modal-latex-equation');
+        if (!modal) return;
+
+        const input = document.getElementById('latex-input');
+        const preview = document.getElementById('latex-preview');
+        const titleEl = document.getElementById('latex-modal-title');
+        const btnSave = document.getElementById('btn-save-equation');
+        const btnDelete = document.getElementById('btn-delete-equation');
+        let activeEquationEl = null;
+
+        const updatePreview = () => {
+            const val = input ? input.value.trim() : '';
+            const isDisplay = document.querySelector('input[name="latex-mode"]:checked')?.value !== 'inline';
+            if (!val) {
+                if (preview) preview.innerHTML = '<span class="text-gray-400 italic text-xs">Pratinjau rumus matematika akan muncul di sini...</span>';
+                return;
+            }
+            if (preview) {
+                preview.innerHTML = this.engine.constructor.renderLatexHtml(val, isDisplay);
+            }
+        };
+
+        const openForNew = () => {
+            activeEquationEl = null;
+            if (titleEl) titleEl.textContent = 'Sisipkan Rumus Matematika (LaTeX)';
+            if (input) input.value = '';
+            const displayRadio = document.querySelector('input[name="latex-mode"][value="display"]');
+            if (displayRadio) displayRadio.checked = true;
+            if (btnDelete) btnDelete.classList.add('hidden');
+            if (btnSave) btnSave.textContent = 'Sisipkan Rumus';
+            updatePreview();
+            this.openModal(modal);
+            setTimeout(() => input?.focus(), 50);
+        };
+
+        const openForEdit = (el) => {
+            if (!el) return;
+            activeEquationEl = el;
+            const latex = el.getAttribute('data-latex') || '';
+            const isDisplay = el.getAttribute('data-display') !== 'false';
+            if (titleEl) titleEl.textContent = 'Ubah Rumus Matematika (LaTeX)';
+            if (input) input.value = latex;
+            const targetRadio = document.querySelector(`input[name="latex-mode"][value="${isDisplay ? 'display' : 'inline'}"]`);
+            if (targetRadio) targetRadio.checked = true;
+            if (btnDelete) btnDelete.classList.remove('hidden');
+            if (btnSave) btnSave.textContent = 'Perbarui Rumus';
+            updatePreview();
+            this.openModal(modal);
+            setTimeout(() => input?.focus(), 50);
+        };
+
+        document.querySelectorAll('[data-action="insert-equation-modal"]').forEach(b => {
+            b.addEventListener('click', openForNew);
+        });
+
+        window.addEventListener('edit-latex-equation', (e) => {
+            if (e.detail?.element) {
+                openForEdit(e.detail.element);
+            }
+        });
+
+        if (input) {
+            input.addEventListener('input', updatePreview);
+            input.addEventListener('keyup', updatePreview);
+        }
+
+        document.querySelectorAll('input[name="latex-mode"]').forEach(r => {
+            r.addEventListener('change', updatePreview);
+        });
+
+        // Quick template buttons
+        document.querySelectorAll('.latex-tpl-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tpl = btn.getAttribute('data-tpl');
+                if (!tpl || !input) return;
+                const start = input.selectionStart || input.value.length;
+                const end = input.selectionEnd || input.value.length;
+                input.value = input.value.substring(0, start) + tpl + input.value.substring(end);
+                input.focus();
+                input.selectionStart = input.selectionEnd = start + tpl.length;
+                updatePreview();
+            });
+        });
+
+        if (btnSave) {
+            btnSave.addEventListener('click', () => {
+                const val = input ? input.value.trim() : '';
+                if (!val) {
+                    this.showToast('Masukkan rumus LaTeX terlebih dahulu.', 'warning');
+                    return;
+                }
+                const isDisplay = document.querySelector('input[name="latex-mode"]:checked')?.value !== 'inline';
+
+                if (activeEquationEl) {
+                    this.engine.updateEquation(activeEquationEl, val, isDisplay);
+                    this.showToast('Rumus matematika berhasil diperbarui!');
+                } else {
+                    this.engine.insertEquation(val, isDisplay);
+                    this.showToast('Rumus matematika berhasil disisipkan!');
+                }
+                this.closeModal(modal);
+            });
+        }
+
+        if (btnDelete) {
+            btnDelete.addEventListener('click', () => {
+                if (activeEquationEl) {
+                    this.engine.deleteEquation(activeEquationEl);
+                    activeEquationEl = null;
+                    this.showToast('Rumus matematika dihapus.');
+                }
+                this.closeModal(modal);
             });
         }
     }

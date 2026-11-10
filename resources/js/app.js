@@ -1,11 +1,14 @@
 import mammoth from 'mammoth';
 import { marked } from 'marked';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { DocumentEngine } from './editor/document-engine.js';
 import { WordcraftAi } from './editor/wordcraft-ai.js';
 import { UiController } from './editor/ui-controller.js';
 
 window.mammoth = mammoth;
 window.marked = marked;
+window.katex = katex;
 
 function escapeHtml(str) {
     if (!str) return '';

@@ -93,10 +93,11 @@ class DocumentService
         $html = preg_replace('/(href|src)\s*=\s*["\']\s*(javascript|vbscript):[^"\']*["\']/i', '$1="#"', $html);
         $html = preg_replace('/href\s*=\s*["\']\s*data:[^"\']*["\']/i', 'href="#"', $html);
 
-        // Allow only standard rich text tags
+        // Allow only standard rich text tags and MathML for LaTeX equations
         $allowedTags = '<h1><h2><h3><h4><h5><h6><p><br><hr><b><strong><i><em><u><s><strike><del><sub><sup>'.
             '<ul><ol><li><blockquote><code><pre><table><thead><tbody><tfoot><tr><th><td>'.
-            '<a><img><span><div><figure><figcaption><section><header><footer>';
+            '<a><img><span><div><figure><figcaption><section><header><footer>'.
+            '<math><semantics><mrow><mi><mn><mo><mtext><mspace><mfrac><msqrt><mroot><msub><msup><msubsup><munder><mover><munderover><mtable><mtr><mtd><annotation>';
 
         $sanitized = strip_tags($html, $allowedTags);
 
@@ -265,6 +266,14 @@ class DocumentService
     {
         $text = $html;
 
+        // Preserve LaTeX equations
+        $text = preg_replace_callback('/<(?:div|span)\b[^>]*\bdata-latex=(["\'])(.*?)\1[^>]*>.*?<\/(?:div|span)>/is', function ($matches) {
+            $rawLatex = html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $isDisplay = str_contains($matches[0], 'display-equation') || str_contains($matches[0], 'data-display="true"');
+
+            return $isDisplay ? "\n\n$$".$rawLatex."$$\n\n" : '$'.$rawLatex.'$';
+        }, $text);
+
         // Headings
         for ($i = 6; $i >= 1; $i--) {
             $hashes = str_repeat('#', $i);
@@ -318,6 +327,14 @@ class DocumentService
      */
     public function convertToPlainText(string $html): string
     {
+        // Preserve LaTeX equations as clean raw syntax
+        $html = preg_replace_callback('/<(?:div|span)\b[^>]*\bdata-latex=(["\'])(.*?)\1[^>]*>.*?<\/(?:div|span)>/is', function ($matches) {
+            $rawLatex = html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $isDisplay = str_contains($matches[0], 'display-equation') || str_contains($matches[0], 'data-display="true"');
+
+            return $isDisplay ? "\n\n$$".$rawLatex."$$\n\n" : '$'.$rawLatex.'$';
+        }, $html);
+
         $text = preg_replace('/<br\s*\/?>/i', "\n", $html);
         $text = preg_replace('/<\/p>/i', "\n\n", $text);
         $text = preg_replace('/<\/h[1-6]>/i', "\n\n", $text);
@@ -610,6 +627,17 @@ class DocumentService
                 continue;
             }
 
+            // Formula / Math: Display LaTeX $$...$$ or \[...\]
+            if (preg_match('/^(?:\$\$|\\\[)(.*?)(?:\$\$|\\\])$/s', $cleanText, $lm)) {
+                $latexExpr = trim($lm[1]);
+                if (! empty($latexExpr)) {
+                    $escapedLatex = htmlspecialchars($latexExpr, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                    $adaptedBlocks[] = '<div class="latex-equation display-equation my-4 text-center cursor-pointer select-none" contenteditable="false" data-latex="'.$escapedLatex.'" data-display="true"><div class="latex-math-wrapper inline-block px-3 py-1.5 rounded transition">$$'.$escapedLatex.'$$</div></div>';
+
+                    continue;
+                }
+            }
+
             // Chapter Headings: BAB I, BAB II, etc. (Handles single line or two-line chapter title)
             if (! $this->isTableOfContentsLine($cleanText) && strlen($cleanText) <= 80 && ! preg_match('/[.!?]$/', $cleanText) && preg_match('/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*(.*)$/i', $cleanText, $bm)) {
                 $chapterPrefix = trim($bm[1]);
@@ -729,6 +757,15 @@ class DocumentService
                 preg_match('/^<p\b([^>]*)>(.*?)<\/p>$/is', $fullTag, $pim);
                 $existingAttrs = $pim[1] ?? '';
                 $bodyHtml = $pim[2] ?? $cleanText;
+
+                // Detect inline/display LaTeX in paragraphs
+                if (str_contains($bodyHtml, '$$')) {
+                    $bodyHtml = preg_replace_callback('/\$\$(.*?)\$\$/s', function ($m) {
+                        $el = htmlspecialchars(trim($m[1]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+                        return '<div class="latex-equation display-equation my-3 text-center cursor-pointer select-none" contenteditable="false" data-latex="'.$el.'" data-display="true"><div class="latex-math-wrapper inline-block px-3 py-1.5 rounded transition">$$'.$el.'$$</div></div>';
+                    }, $bodyHtml);
+                }
 
                 // Detect existing text alignment
                 $hasCenter = str_contains($existingAttrs, 'text-center') || str_contains($existingAttrs, 'text-align: center');
