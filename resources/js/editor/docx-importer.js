@@ -30,7 +30,10 @@ export class DocxImporter {
         // 3. Styles (headings, titles)
         const stylesMap = await this.parseStyles(zip);
 
-        // 4. Parse Document DOM
+        // 4. Extract Header & Footer text from Word archive
+        const { headerText, footerText } = await this.parseHeadersAndFooters(zip);
+
+        // 5. Parse Document DOM
         const parser = new DOMParser();
         const dom = parser.parseFromString(docXml, 'application/xml');
 
@@ -123,11 +126,51 @@ export class DocxImporter {
 
         flushList();
 
-        if (blocks.length === 0) {
-            return '<p>Dokumen Microsoft Word berhasil diimpor.</p>';
+        const finalHtml = blocks.length > 0 ? blocks.join('\n') : '<p>Dokumen Microsoft Word berhasil diimpor.</p>';
+
+        return {
+            html: finalHtml,
+            headerText,
+            footerText,
+            toString() {
+                return this.html;
+            },
+        };
+    }
+
+    async parseHeadersAndFooters(zip) {
+        let headerText = '';
+        let footerText = '';
+
+        for (let i = 1; i <= 6; i++) {
+            const hFile = zip.file(`word/header${i}.xml`);
+            if (hFile && !headerText) {
+                const xml = await hFile.async('string');
+                const parser = new DOMParser();
+                const dom = parser.parseFromString(xml, 'application/xml');
+                const tNodes = Array.from(dom.getElementsByTagName('w:t'));
+                let txt = tNodes.map(n => (n.textContent || '').trim()).filter(Boolean).join(' ');
+                txt = txt.replace(/\bPAGE\b|\bMERGEFORMAT\b|[\\*]/gi, '').replace(/\s+/g, ' ').trim();
+                if (txt && !/^\d+$/.test(txt)) {
+                    headerText = txt;
+                }
+            }
+
+            const fFile = zip.file(`word/footer${i}.xml`);
+            if (fFile && !footerText) {
+                const xml = await fFile.async('string');
+                const parser = new DOMParser();
+                const dom = parser.parseFromString(xml, 'application/xml');
+                const tNodes = Array.from(dom.getElementsByTagName('w:t'));
+                let txt = tNodes.map(n => (n.textContent || '').trim()).filter(Boolean).join(' ');
+                txt = txt.replace(/\bPAGE\b|\bMERGEFORMAT\b|[\\*]/gi, '').replace(/\s+/g, ' ').trim();
+                if (txt && !/^\d+$/.test(txt)) {
+                    footerText = txt;
+                }
+            }
         }
 
-        return blocks.join('\n');
+        return { headerText, footerText };
     }
 
     async parseRelationships(zip) {

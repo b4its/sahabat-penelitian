@@ -52,9 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     h.level === 2 ? 'pl-3 font-medium text-gray-700 dark:text-gray-300 text-[11px]' :
                                     'pl-6 text-gray-500 dark:text-gray-400 text-[11px]';
 
-                li.className = `py-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 truncate transition ${indentClass}`;
-                li.textContent = h.text || 'Judul Kosong';
-                li.title = h.text;
+                li.className = `py-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center justify-between gap-1 transition ${indentClass}`;
+                li.innerHTML = `
+                    <span class="truncate" title="${engine.escapeHtml(h.text || 'Judul Kosong')}">${engine.escapeHtml(h.text || 'Judul Kosong')}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shrink-0 font-mono font-normal">Hal ${h.pageNumber || 1}</span>
+                `;
 
                 li.addEventListener('click', () => {
                     const targetEl = document.getElementById(h.id);

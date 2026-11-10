@@ -42,6 +42,8 @@ export class DocumentEngine {
         this.isPaginating = false;
         this.activeTable = null;
         this.activeImage = null;
+        this.customHeaderText = '';
+        this.customFooterText = '';
 
         this.init();
     }
@@ -313,16 +315,41 @@ export class DocumentEngine {
         let currentChapter = '';
         const MAX_PAGE_WEIGHT = 780; // Printable A4 body height budget in px (approx 220mm at 96dpi)
 
+        const isLikelyCoverPage = (blocks) => {
+            let totalWords = 0;
+            let hasCoverKeyword = false;
+            let longParagraphCount = 0;
+
+            blocks.forEach(b => {
+                const text = (b.textContent || '').trim();
+                const words = text.split(/\s+/).filter(Boolean).length;
+                totalWords += words;
+                if (words > 60) longParagraphCount++;
+                if (/\b(OLEH|DISUSUN\s+OLEH|NIM|NPM|PROGRAM\s+STUDI|FAKULTAS|UNIVERSITAS|POLITEKNIK|INSTITUT|SEKOLAH\s+TINGGI|TUGAS\s+AKHIR|SKRIPSI|THESIS)\b/i.test(text)) {
+                    hasCoverKeyword = true;
+                }
+            });
+
+            if (longParagraphCount > 0) return false;
+            return hasCoverKeyword && totalWords < 180;
+        };
+
         const finalizeCurrentPage = () => {
             if (currentBlocks.length === 0) return;
             const pageNum = pages.length + 1;
-            const hasPreliminary = currentBlocks.some(b => {
+            const hasHeading = currentBlocks.some(b => {
                 if (!b.classList && !b.tagName) return false;
                 return b.classList?.contains('heading-preliminary') ||
                        b.classList?.contains('heading-chapter') ||
                        /^H[1-6]$/.test(b.tagName || '');
             });
-            const isCover = !currentChapter && !hasPreliminary && pageNum <= 3;
+            const hasCoverExplicit = currentBlocks.some(b => {
+                if (!b.classList) return false;
+                return b.classList.contains('academic-cover') ||
+                       b.classList.contains('cover-title') ||
+                       b.classList.contains('cover-badge');
+            });
+            const isCover = pageNum === 1 && (hasCoverExplicit || (!currentChapter && !hasHeading && isLikelyCoverPage(currentBlocks)));
             pages.push({
                 pageNumber: pageNum,
                 chapterName: currentChapter,
@@ -364,26 +391,29 @@ export class DocumentEngine {
             return Math.max(24, Math.ceil(textLen / 75) * 22 + 14);
         };
 
-        const isChapterHeading = (el) => {
+        const isMajorHeading = (el) => {
             const tag = (el.tagName || '').toUpperCase();
             const text = (el.textContent || '').trim();
             if (isTableOfContentsLine(text)) return false;
-            const isHeadingTag = /^H[1-6]$/.test(tag) || el.classList?.contains('heading-chapter');
-            const isShortTitle = text.length <= 80 && !/[.!?]$/.test(text);
-            if (!isHeadingTag && !isShortTitle) return false;
 
-            return /^BAB\s*(?:[IVXLCDM]+|\d+)/i.test(text);
-        };
+            if (el.classList?.contains('heading-chapter') || el.classList?.contains('heading-preliminary')) {
+                return true;
+            }
 
-        const isPreliminaryHeading = (el) => {
-            const tag = (el.tagName || '').toUpperCase();
-            const text = (el.textContent || '').trim();
-            if (isTableOfContentsLine(text)) return false;
-            const isHeadingTag = /^H[1-6]$/.test(tag) || el.classList?.contains('heading-preliminary');
-            const isShortTitle = text.length <= 60 && !/[.!?]$/.test(text);
-            if (!isHeadingTag && !isShortTitle) return false;
+            if (tag === 'H1') {
+                return text.length > 0 && text.length <= 120;
+            }
 
-            return /^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text);
+            if (text.length <= 80 && !/[.!?]$/.test(text)) {
+                if (/^(BAB|CHAPTER|BAGIAN|SECTION)\s*(?:[IVXLCDM]+|\d+)/i.test(text)) {
+                    return true;
+                }
+                if (/^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)(\s+.*)?$/i.test(text)) {
+                    return true;
+                }
+            }
+
+            return false;
         };
 
         const isExplicitPageBreak = (el) => {
@@ -405,29 +435,27 @@ export class DocumentEngine {
                 continue;
             }
 
-            // 2. Chapter Heading
-            if (isChapterHeading(el)) {
+            // 2. Major Heading (H1, Chapter, Preliminary)
+            if (isMajorHeading(el)) {
                 if (currentBlocks.length > 0) {
                     finalizeCurrentPage();
                 }
-                currentChapter = el.textContent.trim().toUpperCase();
+                currentChapter = (el.textContent || '').trim().replace(/\s+/g, ' ');
                 currentBlocks.push(el);
                 currentWeight += estimateElementWeight(el);
                 continue;
             }
 
-            // 3. Academic Preliminary Heading (ABSTRAK, LEMBAR PENGESAHAN, DAFTAR ISI, etc.)
-            if (isPreliminaryHeading(el)) {
-                if (currentBlocks.length > 0) {
-                    finalizeCurrentPage();
+            // Track H2 / H3 if no currentChapter set yet
+            const tag = (el.tagName || '').toUpperCase();
+            if ((tag === 'H2' || tag === 'H3' || el.classList?.contains('heading-section')) && !currentChapter) {
+                const subText = (el.textContent || '').trim().replace(/\s+/g, ' ');
+                if (subText && subText.length <= 80 && !isTableOfContentsLine(subText)) {
+                    currentChapter = subText;
                 }
-                currentChapter = el.textContent.trim().toUpperCase();
-                currentBlocks.push(el);
-                currentWeight += estimateElementWeight(el);
-                continue;
             }
 
-            // 4. Regular Element (p, table, image, list, etc.)
+            // 3. Regular Element (p, table, image, list, etc.)
             const weight = estimateElementWeight(el);
 
             // Check if adding this element overflows the page budget
@@ -508,12 +536,14 @@ export class DocumentEngine {
             }
 
             // Header (Cover page has no running header, just like Word's "Different First Page")
-            const isCoverPage = p.isCover || (pageNum <= 3 && !p.chapterName);
+            const isCoverPage = pageNum === 1 && Boolean(p.isCover);
             const header = document.createElement('header');
-            header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print ${isCoverPage ? 'invisible' : ''}`;
+            header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none ${isCoverPage ? 'invisible' : ''}`;
+            const headerLeft = this.customHeaderText || docTitle;
+            const headerRight = p.chapterName || '';
             header.innerHTML = `
-                <span class="header-doc-title truncate max-w-[60%] font-medium">${this.escapeHtml(docTitle)}</span>
-                <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]">${this.escapeHtml(p.chapterName || '')}</span>
+                <span class="header-doc-title truncate max-w-[55%] font-medium" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
+                <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%]" title="${this.escapeHtml(headerRight)}">${this.escapeHtml(headerRight)}</span>
             `;
             sheet.appendChild(header);
 
@@ -535,10 +565,11 @@ export class DocumentEngine {
 
             // Footer (Cover page has no page number footer)
             const footer = document.createElement('footer');
-            footer.className = `page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print ${isCoverPage ? 'invisible' : ''}`;
+            footer.className = `page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none ${isCoverPage ? 'invisible' : ''}`;
+            const footerLeft = this.customFooterText || 'Dokumen VelScribe Wordcraft';
             footer.innerHTML = `
-                <span class="text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
-                <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono">Halaman ${pageNum} dari ${totalPages}</span>
+                <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[60%]" title="${this.escapeHtml(footerLeft)}">${this.escapeHtml(footerLeft)}</span>
+                <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0">Halaman ${pageNum} dari ${totalPages}</span>
             `;
             sheet.appendChild(footer);
 
@@ -568,6 +599,7 @@ export class DocumentEngine {
         const total = sheets.length;
         const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
 
+        let activeChapter = '';
         sheets.forEach((sheet, idx) => {
             const pageNum = idx + 1;
             sheet.setAttribute('data-page-index', pageNum);
@@ -577,19 +609,41 @@ export class DocumentEngine {
                 sheet.setAttribute('id', `document-page-${pageNum}`);
             }
 
+            const body = sheet.querySelector('.page-sheet-body');
+            if (body) {
+                body.setAttribute('data-page-number', pageNum);
+                const headingEl = body.querySelector('h1, .heading-chapter, .heading-preliminary, h2');
+                if (headingEl) {
+                    const text = (headingEl.textContent || '').trim().replace(/\s+/g, ' ');
+                    if (text && text.length <= 100) {
+                        activeChapter = text;
+                    }
+                }
+            }
+
             const headerTitle = sheet.querySelector('.header-doc-title');
             if (headerTitle) {
-                headerTitle.textContent = docTitle;
+                const leftText = this.customHeaderText || docTitle;
+                headerTitle.textContent = leftText;
+                headerTitle.title = leftText;
+            }
+
+            const headerChapter = sheet.querySelector('.header-chapter-name');
+            if (headerChapter) {
+                headerChapter.textContent = activeChapter;
+                headerChapter.title = activeChapter;
+            }
+
+            const footerTitle = sheet.querySelector('.footer-doc-title');
+            if (footerTitle) {
+                const ftrText = this.customFooterText || 'Dokumen VelScribe Wordcraft';
+                footerTitle.textContent = ftrText;
+                footerTitle.title = ftrText;
             }
 
             const footerNum = sheet.querySelector('.footer-page-num');
             if (footerNum) {
                 footerNum.textContent = `Halaman ${pageNum} dari ${total}`;
-            }
-
-            const body = sheet.querySelector('.page-sheet-body');
-            if (body) {
-                body.setAttribute('data-page-number', pageNum);
             }
         });
 
@@ -641,7 +695,14 @@ export class DocumentEngine {
 
                 try {
                     // Try high-fidelity OpenXML parser first
-                    contentHtml = await DocxImporter.parse(arrayBuffer, filename);
+                    const parsed = await DocxImporter.parse(arrayBuffer, filename);
+                    if (typeof parsed === 'object' && parsed !== null && parsed.html !== undefined) {
+                        contentHtml = parsed.html;
+                        this.customHeaderText = parsed.headerText || '';
+                        this.customFooterText = parsed.footerText || '';
+                    } else {
+                        contentHtml = String(parsed);
+                    }
                 } catch (parseErr) {
                     console.warn('DocxImporter error, falling back to server or mammoth:', parseErr);
                     if (window.mammoth) {
@@ -687,6 +748,8 @@ export class DocumentEngine {
                     } else {
                         const backendResult = await this.uploadToBackend(file);
                         contentHtml = backendResult.content_html;
+                        this.customHeaderText = backendResult.header_text || '';
+                        this.customFooterText = backendResult.footer_text || '';
                     }
                 }
             } else if (['md', 'markdown'].includes(extension)) {
@@ -762,6 +825,8 @@ export class DocumentEngine {
             // Fallback to backend parser
             try {
                 const backendResult = await this.uploadToBackend(file);
+                this.customHeaderText = backendResult.header_text || '';
+                this.customFooterText = backendResult.footer_text || '';
                 this.setContent(backendResult.content_html);
                 this.setTitle(backendResult.title);
                 this.setFormatBadge(backendResult.format);
@@ -900,6 +965,18 @@ export class DocumentEngine {
                     } else {
                         el.className = 'cover-title text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
                     }
+                }
+                continue;
+            }
+
+            // Preserve existing heading elements from OpenXML or markdown parser
+            if (/^H[1-6]$/i.test(el.tagName)) {
+                headingCount++;
+                const lvl = parseInt(el.tagName.replace(/h/i, ''), 10);
+                if (!el.className) {
+                    el.className = lvl === 1
+                        ? 'heading-chapter font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase'
+                        : (lvl === 2 ? 'heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100' : 'heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200');
                 }
                 continue;
             }
@@ -1472,10 +1549,12 @@ export class DocumentEngine {
         this.applyMarginsToSheet(newSheet, this.currentMarginPreset);
 
         const header = document.createElement('header');
-        header.className = 'page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print';
+        header.className = 'page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none';
+        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
+        const hLeft = this.customHeaderText || docTitle;
         header.innerHTML = `
-            <span class="header-doc-title truncate max-w-[60%] font-medium">${this.escapeHtml(this.getTitle())}</span>
-            <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]"></span>
+            <span class="header-doc-title truncate max-w-[55%] font-medium" title="${this.escapeHtml(hLeft)}">${this.escapeHtml(hLeft)}</span>
+            <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%]"></span>
         `;
         newSheet.appendChild(header);
 
@@ -1489,10 +1568,11 @@ export class DocumentEngine {
         newSheet.appendChild(body);
 
         const footer = document.createElement('footer');
-        footer.className = 'page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print';
+        footer.className = 'page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none';
+        const fLeft = this.customFooterText || 'Dokumen VelScribe Wordcraft';
         footer.innerHTML = `
-            <span class="text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
-            <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono"></span>
+            <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[60%]" title="${this.escapeHtml(fLeft)}">${this.escapeHtml(fLeft)}</span>
+            <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono shrink-0"></span>
         `;
         newSheet.appendChild(footer);
 
@@ -1899,6 +1979,8 @@ export class DocumentEngine {
                 content: this.getContent(),
                 format: this.currentFormat,
                 marginPreset: this.currentMarginPreset,
+                customHeaderText: this.customHeaderText || '',
+                customFooterText: this.customFooterText || '',
                 savedAt: new Date().toISOString(),
             };
             localStorage.setItem('velscribe_document_state', JSON.stringify(data));
@@ -1913,6 +1995,8 @@ export class DocumentEngine {
             if (!raw) return false;
             const data = JSON.parse(raw);
             if (data && data.content) {
+                this.customHeaderText = data.customHeaderText || '';
+                this.customFooterText = data.customFooterText || '';
                 this.setTitle(data.title || 'Dokumen Tanpa Judul');
                 this.setContent(data.content);
                 this.setFormatBadge(data.format || 'docx');
@@ -1937,7 +2021,11 @@ export class DocumentEngine {
         const sheets = this.getAllPageSheets();
         sheets.forEach(sheet => {
             const hTitle = sheet.querySelector('.header-doc-title');
-            if (hTitle) hTitle.textContent = title;
+            if (hTitle) {
+                const text = this.customHeaderText || title;
+                hTitle.textContent = text;
+                hTitle.title = text;
+            }
         });
     }
 

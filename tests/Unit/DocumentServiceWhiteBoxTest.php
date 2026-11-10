@@ -3,6 +3,8 @@
 namespace Tests\Unit;
 
 use App\Services\DocumentService;
+use App\Services\DocxImporter;
+use Illuminate\Http\UploadedFile;
 
 /*
 |--------------------------------------------------------------------------
@@ -493,4 +495,102 @@ HTML;
         ->and($result['adapted_html'])->toContain('class="text-right')
         ->and($result['adapted_html'])->not->toContain('cover-badge')
         ->and($result['adapted_html'])->not->toContain('cover-title');
+});
+
+test('white-box: DocxImporter extracts header and footer text while removing PAGE instruction codes', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_hdr_').'.docx';
+    $zip = new \ZipArchive;
+    $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    // Header XML
+    $hdrXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:p><w:r><w:t>Kementerian Pendidikan dan Riset</w:t></w:r></w:p>
+</w:hdr>
+XML;
+    $zip->addFromString('word/header1.xml', $hdrXml);
+
+    // Footer XML with PAGE field code
+    $ftrXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:p>
+        <w:r><w:t>Dokumen Rahasia Perusahaan</w:t></w:r>
+        <w:r><w:t>PAGE \* MERGEFORMAT 1</w:t></w:r>
+    </w:p>
+</w:ftr>
+XML;
+    $zip->addFromString('word/footer1.xml', $ftrXml);
+
+    // Document XML
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Isi Dokumen Utama</w:t></w:r></w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $importer = new DocxImporter;
+    $meta = $importer->parseWithMetadata($zipPath);
+
+    expect($meta['header_text'])->toBe('Kementerian Pendidikan dan Riset')
+        ->and($meta['footer_text'])->toBe('Dokumen Rahasia Perusahaan 1')
+        ->and($meta['html'])->toContain('Isi Dokumen Utama');
+
+    @unlink($zipPath);
+});
+
+test('white-box: parseFile returns extracted header_text and footer_text for DOCX', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_meta_').'.docx';
+    $zip = new \ZipArchive;
+    $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    $hdrXml = '<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>Header Laporan Tahunan</w:t></w:r></w:p></w:hdr>';
+    $ftrXml = '<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>Footer Hak Cipta 2026</w:t></w:r></w:p></w:ftr>';
+    $docXml = '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Konten Dokumen</w:t></w:r></w:p></w:body></w:document>';
+
+    $zip->addFromString('word/header1.xml', $hdrXml);
+    $zip->addFromString('word/footer1.xml', $ftrXml);
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile($zipPath, 'laporan_tahunan.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+    $response = $this->service->parseFile($file);
+
+    expect($response['success'])->toBeTrue()
+        ->and($response['header_text'])->toBe('Header Laporan Tahunan')
+        ->and($response['footer_text'])->toBe('Footer Hak Cipta 2026')
+        ->and($response['content_html'])->toContain('Konten Dokumen');
+
+    @unlink($zipPath);
+});
+
+test('white-box: adaptDocumentStructure registers headings with id and level for outline and running headers', function () {
+    $html = <<<'HTML'
+        <h1>BAB 1 PENDAHULUAN</h1>
+        <p>Pengantar bab 1.</p>
+        <h2>1.1 Latar Belakang</h2>
+        <p>Latar belakang masalah.</p>
+        <h3>1.1.1 Identifikasi Masalah</h3>
+        <p>Identifikasi detil.</p>
+        <h1>BAB 2 KAJIAN PUSTAKA</h1>
+        <p>Pengantar bab 2.</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($html, 'skripsi.docx');
+
+    expect($result['headings'])->toHaveCount(4)
+        ->and($result['headings'][0]['text'])->toBe('BAB 1 PENDAHULUAN')
+        ->and($result['headings'][0]['level'])->toBe(1)
+        ->and($result['headings'][1]['text'])->toBe('1.1 Latar Belakang')
+        ->and($result['headings'][1]['level'])->toBe(2)
+        ->and($result['headings'][2]['text'])->toBe('1.1.1 Identifikasi Masalah')
+        ->and($result['headings'][2]['level'])->toBe(3)
+        ->and($result['headings'][3]['text'])->toBe('BAB 2 KAJIAN PUSTAKA')
+        ->and($result['headings'][3]['level'])->toBe(1);
 });

@@ -540,3 +540,50 @@ test('black-box: user can import a non-academic docx report and typography remai
         ->and($response->json('content_html'))->not->toContain('cover-badge')
         ->and($response->json('content_html'))->not->toContain('cover-title');
 });
+
+test('black-box: user can import docx with headers and footers and receive metadata in response', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_feat_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $hdrXml = '<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>Header Dokumen Resmi</w:t></w:r></w:p></w:hdr>';
+    $ftrXml = '<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>Footer Kerahasiaan Tingkat Tinggi</w:t></w:r></w:p></w:ftr>';
+    $docXml = '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Isi berkas penting.</w:t></w:r></w:p></w:body></w:document>';
+
+    $zip->addFromString('word/header1.xml', $hdrXml);
+    $zip->addFromString('word/footer1.xml', $ftrXml);
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile(
+        $zipPath,
+        'dokumen_resmi.docx',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        null,
+        true
+    );
+
+    $response = $this->postJson('/api/documents/import', ['file' => $file]);
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'header_text' => 'Header Dokumen Resmi',
+            'footer_text' => 'Footer Kerahasiaan Tingkat Tinggi',
+        ]);
+
+    @unlink($zipPath);
+});
+
+test('black-box: editor view renders running header and footer structure without no-print on sheet elements', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    $content = $response->getContent();
+    expect($content)->toContain('class="page-sheet-header')
+        ->and($content)->toContain('class="header-doc-title')
+        ->and($content)->toContain('class="page-sheet-footer')
+        ->and($content)->toContain('class="footer-doc-title')
+        ->and($content)->toContain('class="footer-page-num')
+        ->and($content)->not->toMatch('/class="page-sheet-header[^"]*no-print/')
+        ->and($content)->not->toMatch('/class="page-sheet-footer[^"]*no-print/');
+});

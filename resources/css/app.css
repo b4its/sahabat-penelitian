@@ -39,7 +39,6 @@
     }
     .page-sheet-gap,
     .no-print,
-    header,
     nav,
     aside,
     #ribbon-bar,
@@ -48,6 +47,8 @@
     #wordcraft-sidebar,
     #outline-sidebar,
     #bubble-menu,
+    #floating-table-toolbar,
+    #floating-image-toolbar,
     #ruler-bar,
     .editor-modal,
     .toast-container {
@@ -70,5 +71,25 @@
         min-height: auto !important;
         page-break-after: always !important;
         break-after: page !important;
+    }
+    .page-sheet-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        border-bottom: 1px solid #d1d5db !important;
+        padding-bottom: 6px !important;
+        margin-bottom: 12px !important;
+        font-size: 9pt !important;
+        color: #4b5563 !important;
+    }
+    .page-sheet-footer {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        border-top: 1px solid #d1d5db !important;
+        padding-top: 6px !important;
+        margin-top: 16px !important;
+        font-size: 9pt !important;
+        color: #4b5563 !important;
     }
 }

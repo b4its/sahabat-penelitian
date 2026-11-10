@@ -799,7 +799,11 @@ class DocumentService
                 break;
 
             case 'docx':
-                $contentHtml = $this->extractDocxText($file);
+                $docxImporter = new DocxImporter;
+                $docxMeta = $docxImporter->parseWithMetadata($file);
+                $contentHtml = $docxMeta['html'];
+                $extractedHeader = $docxMeta['header_text'];
+                $extractedFooter = $docxMeta['footer_text'];
                 break;
 
             case 'txt':
@@ -829,6 +833,8 @@ class DocumentService
             'format' => $format,
             'content_html' => $contentHtml,
             'headings' => $adapted['headings'],
+            'header_text' => $extractedHeader ?? '',
+            'footer_text' => $extractedFooter ?? '',
             'stats' => $stats,
             'adapted_settings' => $adapted['presets'],
             'message' => $adapted['presets']['is_academic']

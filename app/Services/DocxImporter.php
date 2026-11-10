@@ -20,11 +20,42 @@ class DocxImporter
 
     private const V_NS = 'urn:schemas-microsoft-com:vml';
 
+    private string $extractedHeader = '';
+
+    private string $extractedFooter = '';
+
+    public function getExtractedHeader(): string
+    {
+        return $this->extractedHeader;
+    }
+
+    public function getExtractedFooter(): string
+    {
+        return $this->extractedFooter;
+    }
+
+    /**
+     * Parse DOCX with extracted headers and footers metadata.
+     */
+    public function parseWithMetadata(UploadedFile|string $file): array
+    {
+        $html = $this->parse($file);
+
+        return [
+            'html' => $html,
+            'header_text' => $this->extractedHeader,
+            'footer_text' => $this->extractedFooter,
+        ];
+    }
+
     /**
      * Parse DOCX file into high-fidelity semantic HTML with full formatting preservation.
      */
     public function parse(UploadedFile|string $file): string
     {
+        $this->extractedHeader = '';
+        $this->extractedFooter = '';
+
         $filePath = ($file instanceof UploadedFile) ? $file->getRealPath() : (is_string($file) && file_exists($file) ? $file : null);
         $raw = $filePath && file_exists($filePath) ? @file_get_contents($filePath) : (is_string($file) ? $file : '');
 
@@ -36,6 +67,9 @@ class DocxImporter
         if ($zip->open($filePath) !== true) {
             return $this->fallbackRawContent($raw);
         }
+
+        // Extract Running Headers and Footers from Word archive
+        $this->parseHeadersAndFooters($zip);
 
         $docXml = $zip->getFromName('word/document.xml');
         if ($docXml === false) {
@@ -158,6 +192,50 @@ class DocxImporter
         }
 
         return implode("\n", $blocks);
+    }
+
+    /**
+     * Parse running headers and footers from Word archive.
+     */
+    private function parseHeadersAndFooters(ZipArchive $zip): void
+    {
+        for ($i = 1; $i <= 6; $i++) {
+            $hdrXml = $zip->getFromName("word/header{$i}.xml");
+            if ($hdrXml !== false && empty($this->extractedHeader)) {
+                $hDom = new DOMDocument;
+                @$hDom->loadXML($hdrXml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+                $hXpath = new DOMXPath($hDom);
+                $hXpath->registerNamespace('w', self::W_NS);
+                $texts = [];
+                foreach ($hXpath->query('//w:t') as $tNode) {
+                    $texts[] = trim($tNode->nodeValue);
+                }
+                $joined = trim(implode(' ', array_filter($texts)));
+                $cleaned = preg_replace('/\bPAGE\b|\bMERGEFORMAT\b|[\\\\*]/i', '', $joined);
+                $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned ?? ''));
+                if (! empty($cleaned) && ! preg_match('/^\d+$/', $cleaned)) {
+                    $this->extractedHeader = $cleaned;
+                }
+            }
+
+            $ftrXml = $zip->getFromName("word/footer{$i}.xml");
+            if ($ftrXml !== false && empty($this->extractedFooter)) {
+                $fDom = new DOMDocument;
+                @$fDom->loadXML($ftrXml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+                $fXpath = new DOMXPath($fDom);
+                $fXpath->registerNamespace('w', self::W_NS);
+                $texts = [];
+                foreach ($fXpath->query('//w:t') as $tNode) {
+                    $texts[] = trim($tNode->nodeValue);
+                }
+                $joined = trim(implode(' ', array_filter($texts)));
+                $cleaned = preg_replace('/\bPAGE\b|\bMERGEFORMAT\b|[\\\\*]/i', '', $joined);
+                $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned ?? ''));
+                if (! empty($cleaned) && ! preg_match('/^\d+$/', $cleaned)) {
+                    $this->extractedFooter = $cleaned;
+                }
+            }
+        }
     }
 
     /**

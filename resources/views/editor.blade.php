@@ -780,7 +780,7 @@
                 <!-- Initial / SSR Document Page Sheet -->
                 <article id="document-page-canvas" class="document-page-sheet page-a4 relative flex flex-col justify-between" data-page-index="1">
                     <!-- Page Sheet Header -->
-                    <header class="page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none no-print">
+                    <header class="page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none">
                         <span class="header-doc-title truncate max-w-[60%] font-medium">{{ $initialTitle }}</span>
                         <span class="header-chapter-name text-gray-400 font-serif italic text-[11px]"></span>
                     </header>
@@ -798,8 +798,8 @@
                     </div>
 
                     <!-- Page Footer Simulation (Print Layout) -->
-                    <footer class="page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none no-print">
-                        <span class="text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
+                    <footer class="page-sheet-footer flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none">
+                        <span class="footer-doc-title text-[11px] text-gray-400 font-mono">Dokumen VelScribe Wordcraft</span>
                         <span class="footer-page-num text-xs font-semibold text-gray-500 font-mono">Halaman 1 dari 1</span>
                     </footer>
                 </article>
