@@ -14,8 +14,7 @@ class DocumentController extends Controller
     public function __construct(
         protected DocumentService $documentService,
         protected AiService $aiService,
-    ) {
-    }
+    ) {}
 
     /**
      * Display the document modification editor view.

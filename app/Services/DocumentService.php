@@ -94,8 +94,8 @@ class DocumentService
         $html = preg_replace('/href\s*=\s*["\']\s*data:[^"\']*["\']/i', 'href="#"', $html);
 
         // Allow only standard rich text tags
-        $allowedTags = '<h1><h2><h3><h4><h5><h6><p><br><hr><b><strong><i><em><u><s><strike><del><sub><sup>' .
-            '<ul><ol><li><blockquote><code><pre><table><thead><tbody><tfoot><tr><th><td>' .
+        $allowedTags = '<h1><h2><h3><h4><h5><h6><p><br><hr><b><strong><i><em><u><s><strike><del><sub><sup>'.
+            '<ul><ol><li><blockquote><code><pre><table><thead><tbody><tfoot><tr><th><td>'.
             '<a><img><span><div><figure><figcaption><section><header><footer>';
 
         $sanitized = strip_tags($html, $allowedTags);
@@ -121,8 +121,8 @@ class DocumentService
             // Code blocks ```
             if (str_starts_with($trimmed, '```')) {
                 if ($inCodeBlock) {
-                    $html[] = '<pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-md font-mono text-sm overflow-x-auto my-3"><code>' .
-                        htmlspecialchars(implode("\n", $codeBuffer), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .
+                    $html[] = '<pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-md font-mono text-sm overflow-x-auto my-3"><code>'.
+                        htmlspecialchars(implode("\n", $codeBuffer), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').
                         '</code></pre>';
                     $codeBuffer = [];
                     $inCodeBlock = false;
@@ -133,11 +133,13 @@ class DocumentService
                     }
                     $inCodeBlock = true;
                 }
+
                 continue;
             }
 
             if ($inCodeBlock) {
                 $codeBuffer[] = $line;
+
                 continue;
             }
 
@@ -147,6 +149,7 @@ class DocumentService
                     $html[] = ($listType === 'ul') ? '</ul>' : '</ol>';
                     $inList = false;
                 }
+
                 continue;
             }
 
@@ -159,6 +162,7 @@ class DocumentService
                 $level = strlen($matches[1]);
                 $headingText = $this->formatInlineMarkdown(htmlspecialchars($matches[2], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
                 $html[] = "<h{$level}>{$headingText}</h{$level}>";
+
                 continue;
             }
 
@@ -169,6 +173,7 @@ class DocumentService
                     $inList = false;
                 }
                 $html[] = '<hr class="my-4 border-gray-300 dark:border-gray-700" />';
+
                 continue;
             }
 
@@ -180,12 +185,13 @@ class DocumentService
                 }
                 $quoteText = $this->formatInlineMarkdown(htmlspecialchars(trim(substr($trimmed, 1)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
                 $html[] = "<blockquote class=\"border-l-4 border-indigo-500 pl-4 py-1 italic my-3 text-gray-700 dark:text-gray-300\">{$quoteText}</blockquote>";
+
                 continue;
             }
 
             // Bullet List (- or *)
             if (preg_match('/^[\*\-]\s+(.*)$/', $trimmed, $matches)) {
-                if (!$inList || $listType !== 'ul') {
+                if (! $inList || $listType !== 'ul') {
                     if ($inList) {
                         $html[] = '</ol>';
                     }
@@ -195,12 +201,13 @@ class DocumentService
                 }
                 $itemText = $this->formatInlineMarkdown(htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
                 $html[] = "<li>{$itemText}</li>";
+
                 continue;
             }
 
             // Numbered List (1. )
             if (preg_match('/^\d+\.\s+(.*)$/', $trimmed, $matches)) {
-                if (!$inList || $listType !== 'ol') {
+                if (! $inList || $listType !== 'ol') {
                     if ($inList) {
                         $html[] = '</ul>';
                     }
@@ -210,6 +217,7 @@ class DocumentService
                 }
                 $itemText = $this->formatInlineMarkdown(htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
                 $html[] = "<li>{$itemText}</li>";
+
                 continue;
             }
 
@@ -226,9 +234,9 @@ class DocumentService
             $html[] = ($listType === 'ul') ? '</ul>' : '</ol>';
         }
 
-        if ($inCodeBlock && !empty($codeBuffer)) {
-            $html[] = '<pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-md font-mono text-sm overflow-x-auto my-3"><code>' .
-                htmlspecialchars(implode("\n", $codeBuffer), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .
+        if ($inCodeBlock && ! empty($codeBuffer)) {
+            $html[] = '<pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-md font-mono text-sm overflow-x-auto my-3"><code>'.
+                htmlspecialchars(implode("\n", $codeBuffer), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').
                 '</code></pre>';
         }
 
@@ -355,7 +363,7 @@ class DocumentService
             'char_without_spaces' => $charWithoutSpaces,
             'paragraph_count' => $paragraphCount,
             'reading_time_minutes' => $readingTimeMinutes,
-            'reading_time' => $readingTimeMinutes . ' min baca',
+            'reading_time' => $readingTimeMinutes.' min baca',
             'page_estimate' => $pageEstimate,
         ];
     }
@@ -368,15 +376,16 @@ class DocumentService
         // Try to get from first H1 tag in content
         if (preg_match('/<h1[^>]*>(.*?)<\/h1>/is', $html, $matches)) {
             $heading = trim(strip_tags($matches[1]));
-            if (!empty($heading)) {
+            if (! empty($heading)) {
                 return $heading;
             }
         }
 
         // Try to get from filename without extension
         $basename = pathinfo($filename, PATHINFO_FILENAME);
-        if (!empty($basename)) {
+        if (! empty($basename)) {
             $readable = preg_replace('/[-_]+/', ' ', $basename);
+
             return ucwords(trim($readable));
         }
 
@@ -404,6 +413,7 @@ class DocumentService
         if (preg_match('/[\s\t]{2,}(\d+|[ivxlcdm]+)$/i', $clean)) {
             return true;
         }
+
         return false;
     }
 
@@ -415,6 +425,7 @@ class DocumentService
         if (empty($text)) {
             return false;
         }
+
         return (bool) preg_match('/^(OLEH|DISUSUN|BY|NIM|NPM|NIS|NIK|PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM|SEKOLAH\s+TINGGI|INSTITUT|SEBAGAI\s+SALAH\s+SATU\s+SYARAT|SUBMITTED\s+AS|KEMENTERIAN|\d{4})\b/i', trim($text));
     }
 
@@ -427,17 +438,29 @@ class DocumentService
         $sanitized = $this->sanitizeHtml($html);
         $isAcademic = false;
 
-        $checkText = strtolower($filename . ' ' . strip_tags($sanitized));
+        $checkFilename = strtolower($filename);
+        $checkBody = strtolower(strip_tags($sanitized));
+
         if (
-            str_contains($checkText, 'skripsi') ||
-            str_contains($checkText, 'tesis') ||
-            str_contains($checkText, 'thesis') ||
-            str_contains($checkText, 'disertasi') ||
-            str_contains($checkText, 'politeknik') ||
-            str_contains($checkText, 'universitas') ||
-            str_contains($checkText, 'nim.') ||
-            str_contains($checkText, 'bab i') ||
-            str_contains($checkText, 'latar belakang')
+            str_contains($checkFilename, 'skripsi') ||
+            str_contains($checkFilename, 'tesis') ||
+            str_contains($checkFilename, 'thesis') ||
+            str_contains($checkFilename, 'disertasi') ||
+            str_contains($checkFilename, 'tugas-akhir') ||
+            str_contains($checkFilename, 'tugas_akhir')
+        ) {
+            $isAcademic = true;
+        } elseif (
+            preg_match('/^(?:.*?)(bab\s*(?:\d+|[ivxlcdm]+))/i', $checkBody) &&
+            (
+                str_contains($checkBody, 'skripsi') ||
+                str_contains($checkBody, 'tesis') ||
+                str_contains($checkBody, 'thesis') ||
+                str_contains($checkBody, 'disertasi') ||
+                str_contains($checkBody, 'lembar pengesahan') ||
+                str_contains($checkBody, 'pernyataan keaslian') ||
+                str_contains($checkBody, 'nim.')
+            )
         ) {
             $isAcademic = true;
         }
@@ -446,7 +469,22 @@ class DocumentService
         $tokens = preg_split('/(<\/(?:h[1-6]|p|div|blockquote|table|ul|ol|pre)>)/i', $sanitized, -1, PREG_SPLIT_DELIM_CAPTURE);
         $adaptedBlocks = [];
         $headings = [];
-        $inCoverPage = $isAcademic;
+
+        $inCoverPage = false;
+        if ($isAcademic) {
+            $firstFewText = substr($checkBody, 0, 1500);
+            if (
+                str_contains($firstFewText, 'skripsi') ||
+                str_contains($firstFewText, 'tesis') ||
+                str_contains($firstFewText, 'thesis') ||
+                str_contains($firstFewText, 'disusun') ||
+                str_contains($firstFewText, 'oleh :') ||
+                str_contains($firstFewText, 'oleh:') ||
+                str_contains($firstFewText, 'nim')
+            ) {
+                $inCoverPage = true;
+            }
+        }
         $coverParagraphCount = 0;
         $consecutiveEmpty = 0;
 
@@ -457,11 +495,12 @@ class DocumentService
                 continue;
             }
 
-            $fullTag = $block . $closer;
+            $fullTag = $block.$closer;
 
             // 1. Explicit Page Break: Preserve it immediately and continue
             if (str_contains($fullTag, 'page-break') || str_contains($fullTag, 'data-page-break') || trim(strip_tags($fullTag)) === 'Pemisah Halaman' || trim(strip_tags($fullTag)) === 'Pemisah Halaman (Akhir Sampul)') {
                 $adaptedBlocks[] = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>';
+
                 continue;
             }
 
@@ -469,7 +508,7 @@ class DocumentService
             $cleanText = preg_replace('/\s+/', ' ', $cleanText);
 
             // Collapse excessive empty paragraphs
-            if ($cleanText === '' && !str_contains($fullTag, '<img')) {
+            if ($cleanText === '' && ! str_contains($fullTag, '<img')) {
                 $consecutiveEmpty++;
                 if ($consecutiveEmpty > 1) {
                     continue;
@@ -490,7 +529,7 @@ class DocumentService
             if ($inCoverPage) {
                 $coverParagraphCount++;
 
-                if (!empty($cleanText)) {
+                if (! empty($cleanText)) {
                     preg_match('/^<p\b[^>]*>(.*?)<\/p>$/is', $fullTag, $im);
                     $innerHtml = $im[1] ?? $cleanText;
 
@@ -510,6 +549,7 @@ class DocumentService
                 } elseif (str_contains($fullTag, '<img')) {
                     $adaptedBlocks[] = preg_replace('/<img\b([^>]*)>/i', '<figure class="my-6 text-center"><img $1 class="cover-logo mx-auto max-h-40 object-contain" /></figure>', $fullTag);
                 }
+
                 continue;
             }
 
@@ -523,6 +563,7 @@ class DocumentService
                     $cleanTitle = trim(preg_replace('/[\s.·…]+$/', '', $cleanText));
                     $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200\"><span class=\"toc-title truncate max-w-[80%]\">{$cleanTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600\"></span></div>";
                 }
+
                 continue;
             }
 
@@ -530,19 +571,22 @@ class DocumentService
             if (preg_match('/^<h([1-6])\b([^>]*)>(.*?)<\/h\1>$/is', $fullTag, $m)) {
                 if ($this->isCoverMetadataLine($cleanText)) {
                     $adaptedBlocks[] = "<p class=\"cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-relaxed\">{$cleanText}</p>";
+
                     continue;
                 }
                 $lvl = (int) $m[1];
-                $hId = 'heading-' . count($headings);
+                $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => $lvl, 'text' => $cleanText];
                 $hClass = $lvl === 1 ? 'heading-chapter font-bold text-xl my-6 text-center uppercase' : ($lvl === 2 ? 'heading-section font-bold text-lg my-4' : 'heading-subsection font-semibold text-base my-3');
                 $adaptedBlocks[] = "<h{$lvl} id=\"{$hId}\" class=\"{$hClass} text-gray-900 dark:text-gray-100\">{$m[3]}</h{$lvl}>";
+
                 continue;
             }
 
             // If it's a list (ul or ol), PRESERVE IT!
             if (str_starts_with($fullTag, '<ul') || str_starts_with($fullTag, '<ol')) {
                 $adaptedBlocks[] = $fullTag;
+
                 continue;
             }
 
@@ -553,110 +597,141 @@ class DocumentService
                     '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">',
                     $fullTag
                 );
+
                 continue;
             }
 
-            if ($cleanText === '' && !str_contains($fullTag, '<img')) {
+            if ($cleanText === '' && ! str_contains($fullTag, '<img')) {
                 continue;
             }
 
             // Chapter Headings: BAB I, BAB II, etc. (Handles single line or two-line chapter title)
-            if (!$this->isTableOfContentsLine($cleanText) && strlen($cleanText) <= 80 && !preg_match('/[.!?]$/', $cleanText) && preg_match('/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*(.*)$/i', $cleanText, $bm)) {
+            if (! $this->isTableOfContentsLine($cleanText) && strlen($cleanText) <= 80 && ! preg_match('/[.!?]$/', $cleanText) && preg_match('/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*(.*)$/i', $cleanText, $bm)) {
                 $chapterPrefix = trim($bm[1]);
                 $chapterSuffix = trim($bm[2]);
 
                 // If suffix is empty, look ahead at the next token to see if it's the chapter title (e.g. PENDAHULUAN)
                 if (empty($chapterSuffix) && isset($tokens[$i + 2])) {
                     $nextCandidate = trim(strip_tags(preg_replace('/<br\s*\/?>/i', ' ', $tokens[$i + 2])));
-                    if (!empty($nextCandidate) && strlen($nextCandidate) < 100 && !str_starts_with($nextCandidate, '<') && !preg_match('/^\d+\.\d+/', $nextCandidate)) {
-                        $titleText = $chapterPrefix . ' ' . $nextCandidate;
+                    if (! empty($nextCandidate) && strlen($nextCandidate) < 100 && ! str_starts_with($nextCandidate, '<') && ! preg_match('/^\d+\.\d+/', $nextCandidate)) {
+                        $titleText = $chapterPrefix.' '.$nextCandidate;
                         $i += 2; // consume next token
                     } else {
                         $titleText = $chapterPrefix;
                     }
                 } else {
-                    $titleText = trim($chapterPrefix . ' ' . $chapterSuffix);
+                    $titleText = trim($chapterPrefix.' '.$chapterSuffix);
                 }
 
                 $titleText = preg_replace('/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*([A-Za-z])/i', '$1 $2', $titleText);
 
-                $hId = 'heading-' . count($headings);
+                $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 1, 'text' => $titleText];
 
                 $lastBlock = end($adaptedBlocks);
-                if ($lastBlock === false || !str_contains($lastBlock, 'data-page-break')) {
-                    $adaptedBlocks[] = "<div class=\"page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none\" data-page-break=\"true\"><span class=\"text-[10px] text-gray-400 font-mono\">Awal Bab Baru</span></div>";
+                if ($lastBlock === false || ! str_contains($lastBlock, 'data-page-break')) {
+                    $adaptedBlocks[] = '<div class="page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none" data-page-break="true"><span class="text-[10px] text-gray-400 font-mono">Awal Bab Baru</span></div>';
                 }
                 $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\">{$titleText}</h1>";
+
                 continue;
             }
 
             // Academic Preliminaries: ABSTRAK, DAFTAR ISI, KATA PENGANTAR, LEMBAR PENGESAHAN, etc.
             if (
-                !$this->isTableOfContentsLine($cleanText) &&
+                ! $this->isTableOfContentsLine($cleanText) &&
                 $isPreliminary &&
                 strlen($cleanText) <= 60 &&
-                !preg_match('/[.!?]$/', $cleanText)
+                ! preg_match('/[.!?]$/', $cleanText)
             ) {
                 $titleText = strtoupper(trim($cleanText));
-                $hId = 'heading-' . count($headings);
+                $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 1, 'text' => $titleText];
 
                 $lastBlock = end($adaptedBlocks);
-                if ($lastBlock === false || !str_contains($lastBlock, 'data-page-break')) {
-                    $adaptedBlocks[] = "<div class=\"page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none\" data-page-break=\"true\"><span class=\"text-[10px] text-gray-400 font-mono\">Halaman Baru</span></div>";
+                if ($lastBlock === false || ! str_contains($lastBlock, 'data-page-break')) {
+                    $adaptedBlocks[] = '<div class="page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none" data-page-break="true"><span class="text-[10px] text-gray-400 font-mono">Halaman Baru</span></div>';
                 }
                 $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\">{$titleText}</h1>";
+
                 continue;
             }
 
             // Subsections: 1.1 Latar Belakang, 2.1 Teori
-            if (!$this->isTableOfContentsLine($cleanText) && preg_match('/^(\d+\.\d+)\s+(.+)$/', $cleanText)) {
+            if (! $this->isTableOfContentsLine($cleanText) && preg_match('/^(\d+\.\d+)\s+(.+)$/', $cleanText)) {
                 $titleText = trim($cleanText);
-                $hId = 'heading-' . count($headings);
+                $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 2, 'text' => $titleText];
 
                 $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100\">{$titleText}</h2>";
+
                 continue;
             }
 
             // Sub-subsections: 1.1.1, 2.1.1
-            if (!$this->isTableOfContentsLine($cleanText) && preg_match('/^(\d+\.\d+\.\d+)\s+(.+)$/', $cleanText)) {
+            if (! $this->isTableOfContentsLine($cleanText) && preg_match('/^(\d+\.\d+\.\d+)\s+(.+)$/', $cleanText)) {
                 $titleText = trim($cleanText);
-                $hId = 'heading-' . count($headings);
+                $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 3, 'text' => $titleText];
 
                 $adaptedBlocks[] = "<h3 id=\"{$hId}\" class=\"heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200\">{$titleText}</h3>";
+
                 continue;
             }
 
             // Standalone short uppercase lines
             if (
-                !$inCoverPage &&
-                !$this->isTableOfContentsLine($cleanText) &&
-                !$this->isCoverMetadataLine($cleanText) &&
+                ! $inCoverPage &&
+                ! $this->isTableOfContentsLine($cleanText) &&
+                ! $this->isCoverMetadataLine($cleanText) &&
                 strlen($cleanText) > 5 &&
                 strlen($cleanText) < 60 &&
                 $cleanText === strtoupper($cleanText) &&
                 preg_match('/[a-zA-Z]{3,}/', $cleanText) &&
-                !preg_match('/^[\d\s.,:%–=+\/-]+$/', $cleanText) &&
-                !preg_match('/[.,;!?]$/', $cleanText) &&
-                !str_contains($fullTag, '<img')
+                ! preg_match('/^[\d\s.,:%–=+\/-]+$/', $cleanText) &&
+                ! preg_match('/[.,;!?]$/', $cleanText) &&
+                ! str_contains($fullTag, '<img')
             ) {
-                $hId = 'heading-' . count($headings);
+                $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 2, 'text' => $cleanText];
                 $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase\">{$cleanText}</h2>";
+
                 continue;
             }
 
             // Normal paragraphs
-            if (!empty($cleanText)) {
-                preg_match('/^<p\b[^>]*>(.*?)<\/p>$/is', $fullTag, $pim);
-                $bodyHtml = $pim[1] ?? $cleanText;
-                if ($isAcademic) {
-                    $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200 indent-8\">{$bodyHtml}</p>";
+            if (! empty($cleanText)) {
+                preg_match('/^<p\b([^>]*)>(.*?)<\/p>$/is', $fullTag, $pim);
+                $existingAttrs = $pim[1] ?? '';
+                $bodyHtml = $pim[2] ?? $cleanText;
+
+                // Detect existing text alignment
+                $hasCenter = str_contains($existingAttrs, 'text-center') || str_contains($existingAttrs, 'text-align: center');
+                $hasRight = str_contains($existingAttrs, 'text-right') || str_contains($existingAttrs, 'text-align: right');
+                $hasJustify = str_contains($existingAttrs, 'text-justify') || str_contains($existingAttrs, 'text-align: justify');
+                $hasLeft = str_contains($existingAttrs, 'text-left') || str_contains($existingAttrs, 'text-align: left');
+
+                // Extract style attribute if any
+                $styleMatch = '';
+                if (preg_match('/style=["\']([^"\']*)["\']/i', $existingAttrs, $sm)) {
+                    $styleMatch = ' style="'.htmlspecialchars($sm[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'"';
+                }
+
+                if ($hasCenter) {
+                    $adaptedBlocks[] = "<p class=\"text-center my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
+                } elseif ($hasRight) {
+                    $adaptedBlocks[] = "<p class=\"text-right my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
+                } elseif ($hasJustify) {
+                    $indentClass = ($isAcademic && strlen($cleanText) > 100) ? ' indent-8' : '';
+                    $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200{$indentClass}\"{$styleMatch}>{$bodyHtml}</p>";
+                } elseif ($hasLeft) {
+                    $adaptedBlocks[] = "<p class=\"text-left my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
                 } else {
-                    $adaptedBlocks[] = "<p class=\"my-2 leading-relaxed text-gray-800 dark:text-gray-200\">{$bodyHtml}</p>";
+                    if ($isAcademic && strlen($cleanText) > 100) {
+                        $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200 indent-8\"{$styleMatch}>{$bodyHtml}</p>";
+                    } else {
+                        $adaptedBlocks[] = "<p class=\"my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
+                    }
                 }
             }
         }
@@ -719,7 +794,7 @@ class DocumentService
                         $filename = $titleCandidate;
                     }
                 } else {
-                    $contentHtml = '<p>' . htmlspecialchars($rawContent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
+                    $contentHtml = '<p>'.htmlspecialchars($rawContent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</p>';
                 }
                 break;
 
@@ -730,19 +805,19 @@ class DocumentService
             case 'txt':
             default:
                 $paragraphs = preg_split('/\n\s*\n/', trim($rawContent), -1, PREG_SPLIT_NO_EMPTY);
-                if (!empty($paragraphs)) {
+                if (! empty($paragraphs)) {
                     $contentHtml = implode("\n", array_map(function ($p) {
-                        return '<p>' . nl2br(htmlspecialchars(trim($p), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+                        return '<p>'.nl2br(htmlspecialchars(trim($p), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')).'</p>';
                     }, $paragraphs));
                 } else {
-                    $contentHtml = '<p>' . nl2br(htmlspecialchars(trim($rawContent), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+                    $contentHtml = '<p>'.nl2br(htmlspecialchars(trim($rawContent), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')).'</p>';
                 }
                 break;
         }
 
         // Apply intelligent document structure adaptation
         $adapted = $this->adaptDocumentStructure($contentHtml, $filename);
-        $contentHtml = !empty($adapted['adapted_html']) ? $adapted['adapted_html'] : $contentHtml;
+        $contentHtml = ! empty($adapted['adapted_html']) ? $adapted['adapted_html'] : $contentHtml;
 
         $title = $this->extractTitle($filename, $contentHtml);
         $stats = $this->calculateStats($contentHtml);
@@ -763,102 +838,11 @@ class DocumentService
     }
 
     /**
-     * Fallback extractor for docx files on server-side when mammoth is not running in node.
+     * High-fidelity OpenXML docx extractor preserving tables, lists, alignments, typography, and images.
      */
     private function extractDocxText(UploadedFile|string $file): string
     {
-        $filePath = ($file instanceof UploadedFile) ? $file->getRealPath() : (is_string($file) && file_exists($file) ? $file : null);
-        $raw = $filePath && file_exists($filePath) ? @file_get_contents($filePath) : (is_string($file) ? $file : '');
-
-        if ($filePath && class_exists('\ZipArchive')) {
-            $zip = new \ZipArchive();
-            if ($zip->open($filePath) === true) {
-                $xml = $zip->getFromName('word/document.xml');
-                $zip->close();
-
-                if ($xml !== false) {
-                    $dom = new \DOMDocument();
-                    @$dom->loadXML($xml, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
-                    $xpath = new \DOMXPath($dom);
-                    $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
-
-                    $paragraphs = $xpath->query('//w:p');
-                    $htmlParas = [];
-
-                    foreach ($paragraphs as $p) {
-                        // Check if paragraph contains an explicit page break
-                        $pageBrs = $xpath->query('.//w:br[@w:type="page"]', $p);
-                        if ($pageBrs->length > 0) {
-                            $htmlParas[] = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>';
-                        }
-
-                        $runs = $xpath->query('.//w:r', $p);
-                        $paraText = '';
-                        $isHeading = false;
-
-                        $pStyle = $xpath->query('.//w:pStyle/@w:val', $p);
-                        if ($pStyle->length > 0) {
-                            $styleVal = strtolower($pStyle->item(0)->nodeValue);
-                            if (str_contains($styleVal, 'heading1') || str_contains($styleVal, 'title')) {
-                                $isHeading = 1;
-                            } elseif (str_contains($styleVal, 'heading2')) {
-                                $isHeading = 2;
-                            } elseif (str_contains($styleVal, 'heading3')) {
-                                $isHeading = 3;
-                            }
-                        }
-
-                        foreach ($runs as $r) {
-                            $isBold = $xpath->query('.//w:b', $r)->length > 0;
-                            $isItalic = $xpath->query('.//w:i', $r)->length > 0;
-
-                            foreach ($r->childNodes as $child) {
-                                if ($child->nodeName === 'w:t') {
-                                    $t = $child->nodeValue;
-                                    $escaped = htmlspecialchars($t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                                    if ($isBold) {
-                                        $escaped = "<strong>{$escaped}</strong>";
-                                    }
-                                    if ($isItalic) {
-                                        $escaped = "<em>{$escaped}</em>";
-                                    }
-                                    $paraText .= $escaped;
-                                } elseif ($child->nodeName === 'w:br') {
-                                    $brType = $child->getAttribute('w:type');
-                                    if ($brType !== 'page') {
-                                        $paraText .= '<br />';
-                                    }
-                                }
-                            }
-                        }
-
-                        $trimmed = trim($paraText);
-                        if ($trimmed !== '') {
-                            if ($isHeading === 1) {
-                                $htmlParas[] = "<h1>{$trimmed}</h1>";
-                            } elseif ($isHeading === 2) {
-                                $htmlParas[] = "<h2>{$trimmed}</h2>";
-                            } elseif ($isHeading === 3) {
-                                $htmlParas[] = "<h3>{$trimmed}</h3>";
-                            } else {
-                                $htmlParas[] = "<p>{$trimmed}</p>";
-                            }
-                        }
-                    }
-
-                    if (!empty($htmlParas)) {
-                        return implode("\n", $htmlParas);
-                    }
-                }
-            }
-        }
-
-        // If not a valid zip archive (e.g. simulated docx or text/html formatted content)
-        if (!empty($raw) && (str_contains($raw, '<p>') || str_contains($raw, '<div') || str_contains($raw, 'BAB '))) {
-            return $raw;
-        }
-
-        return '<p>Dokumen Microsoft Word berhasil diimpor.</p>';
+        return (new DocxImporter)->parse($file);
     }
 
     /**
@@ -876,7 +860,8 @@ class DocumentService
         switch (strtolower($format)) {
             case 'markdown':
             case 'md':
-                $content = "# {$title}\n\n" . $this->convertToMarkdown($sanitizedHtml);
+                $content = "# {$title}\n\n".$this->convertToMarkdown($sanitizedHtml);
+
                 return [
                     'content' => $content,
                     'mime' => 'text/markdown; charset=UTF-8',
@@ -885,7 +870,8 @@ class DocumentService
 
             case 'txt':
             case 'text':
-                $content = "{$title}\n" . str_repeat('=', mb_strlen($title)) . "\n\n" . $this->convertToPlainText($sanitizedHtml);
+                $content = "{$title}\n".str_repeat('=', mb_strlen($title))."\n\n".$this->convertToPlainText($sanitizedHtml);
+
                 return [
                     'content' => $content,
                     'mime' => 'text/plain; charset=UTF-8',
@@ -902,6 +888,7 @@ class DocumentService
                     'exported_at' => now()->toIso8601String(),
                     'app' => 'VelScribe Wordcraft Studio',
                 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
                 return [
                     'content' => $content,
                     'mime' => 'application/json; charset=UTF-8',
@@ -976,6 +963,7 @@ th {
 </body>
 </html>
 XML;
+
                 return [
                     'content' => $wordContent,
                     'mime' => 'application/msword; charset=UTF-8',
@@ -1009,6 +997,7 @@ XML;
 </body>
 </html>
 HTML;
+
                 return [
                     'content' => $fullHtml,
                     'mime' => 'text/html; charset=UTF-8',

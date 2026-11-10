@@ -122,7 +122,7 @@ test('black-box: user can import a local plain text file and paragraphs are form
 });
 
 test('black-box: user can import a local skripsi document and academic presets are applied', function () {
-    $skripsiContent = <<<HTML
+    $skripsiContent = <<<'HTML'
         <p>SKRIPSI</p>
         <p>PENERAPAN ALGORITMA SISTEM MONITORING</p>
         <p>Oleh : BAITS RIKA SAPUTRA</p>
@@ -160,7 +160,7 @@ HTML;
 });
 
 test('black-box: user can import a multi-page skripsi with preliminaries and receive partitioned page breaks', function () {
-    $thesisDoc = <<<HTML
+    $thesisDoc = <<<'HTML'
         <p>SKRIPSI</p>
         <p>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</p>
         <p>Oleh : BAITS RIKA SAPUTRA</p>
@@ -206,7 +206,7 @@ HTML;
 });
 
 test('black-box: user can import docx with table of contents and ensure dot-leader entries are rendered as toc-entry without outline pollution', function () {
-    $thesisWithToc = <<<HTML
+    $thesisWithToc = <<<'HTML'
         <p>SKRIPSI</p>
         <p>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</p>
         <p>Oleh : BAITS RIKA SAPUTRA</p>
@@ -384,7 +384,7 @@ test('black-box: wordcraft ai assistant rejects invalid action with 422', functi
 });
 
 test('black-box: user can import multi-cover academic document with NIM and verify page breaks and no false TOC', function () {
-    $multiCoverDoc = <<<HTML
+    $multiCoverDoc = <<<'HTML'
         <p><strong>SKRIPSI</strong></p>
         <p><strong>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL BERBASIS SENSOR WARNA</strong></p>
         <figure><img src="data:image/png;base64,sample" /></figure>
@@ -434,4 +434,109 @@ HTML;
         ->and($headings)->toContain('1.1 Latar Belakang')
         ->and($headings)->not->toContain('SKRIPSI')
         ->and($headings)->not->toContain('THESIS');
+});
+
+test('black-box: user can upload real docx with tables and receive parsed table elements in json response', function () {
+    $tableDocxPath = base_path('node_modules/mammoth/test/test-data/tables.docx');
+    expect(file_exists($tableDocxPath))->toBeTrue();
+
+    $file = new UploadedFile(
+        $tableDocxPath,
+        'tabel_evaluasi.docx',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        null,
+        true
+    );
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'format' => 'docx',
+            'filename' => 'tabel_evaluasi.docx',
+        ]);
+
+    $html = $response->json('content_html');
+    expect($html)->toContain('<table')
+        ->and($html)->toContain('<tbody>')
+        ->and($html)->toContain('Top left')
+        ->and($html)->toContain('Top right')
+        ->and($html)->toContain('Bottom left')
+        ->and($html)->toContain('Bottom right')
+        ->and($html)->toContain('Above')
+        ->and($html)->toContain('Below');
+});
+
+test('black-box: user can upload real docx with underlines and lists and receive formatted html', function () {
+    $uPath = base_path('node_modules/mammoth/test/test-data/underline.docx');
+    $uFile = new UploadedFile(
+        $uPath,
+        'dokumen_garis_bawah.docx',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        null,
+        true
+    );
+
+    $uRes = $this->postJson('/api/documents/import', ['file' => $uFile]);
+    $uRes->assertStatus(200);
+    $uHtml = $uRes->json('content_html');
+    expect($uHtml)->toContain('<u>')
+        ->and($uHtml)->toContain('Sunset')
+        ->and($uHtml)->toContain('<strong>');
+
+    $lPath = base_path('node_modules/mammoth/test/test-data/simple-list.docx');
+    $lFile = new UploadedFile(
+        $lPath,
+        'daftar_belanja.docx',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        null,
+        true
+    );
+
+    $lRes = $this->postJson('/api/documents/import', ['file' => $lFile]);
+    $lRes->assertStatus(200);
+    $lHtml = $lRes->json('content_html');
+    expect($lHtml)->toContain('<ul')
+        ->and($lHtml)->toContain('<li>Apple</li>')
+        ->and($lHtml)->toContain('<li>Banana</li>');
+});
+
+test('black-box: user can upload real docx with embedded images and receive base64 image', function () {
+    $picPath = base_path('node_modules/mammoth/test/test-data/tiny-picture.docx');
+    $picFile = new UploadedFile(
+        $picPath,
+        'dokumen_bergambar.docx',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        null,
+        true
+    );
+
+    $response = $this->postJson('/api/documents/import', ['file' => $picFile]);
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+    expect($html)->toContain('<img src="data:image/png;base64,')
+        ->and($html)->toContain('alt="Dokumen Gambar"');
+});
+
+test('black-box: user can import a non-academic docx report and typography remains normal without false cover page', function () {
+    $reportDocxPath = base_path('node_modules/mammoth/test/test-data/single-paragraph.docx');
+    $reportFile = new UploadedFile(
+        $reportDocxPath,
+        'laporan_harian_kantor.docx',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        null,
+        true
+    );
+
+    $response = $this->postJson('/api/documents/import', ['file' => $reportFile]);
+    $response->assertStatus(200);
+
+    $presets = $response->json('adapted_settings');
+    expect($presets['is_academic'])->toBeFalse()
+        ->and($presets['margins'])->toBe('normal')
+        ->and($response->json('content_html'))->not->toContain('cover-badge')
+        ->and($response->json('content_html'))->not->toContain('cover-title');
 });

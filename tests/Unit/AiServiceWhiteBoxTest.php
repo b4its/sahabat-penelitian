@@ -13,7 +13,7 @@ use App\Services\AiService;
 */
 
 beforeEach(function () {
-    $this->aiService = new AiService();
+    $this->aiService = new AiService;
 });
 
 test('white-box: ai service continue generates contextual sentence completions', function () {

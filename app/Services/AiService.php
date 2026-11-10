@@ -48,20 +48,20 @@ class AiService
      */
     protected function handleContinue(string $selection, string $context, string $style): array
     {
-        $anchor = !empty($selection) ? $selection : substr($context, -400);
+        $anchor = ! empty($selection) ? $selection : substr($context, -400);
         $preview = mb_substr($anchor, 0, 80);
 
         $continuations = [
-            "Lebih lanjut, temuan ini menunjukkan bahwa integrasi metodologis yang konsisten mampu mempercepat pencapaian target sekaligus memitigasi potensi risiko operasional yang selama ini terabaikan.",
-            "Di sisi lain, perspektif ini membuka ruang diskusi baru mengenai bagaimana adaptasi teknologi dapat diimplementasikan secara inklusif tanpa mengorbankan standar akurasi dan integritas data.",
-            "Sebagai konsekuensinya, langkah strategis berikutnya menuntut sinkronisasi menyeluruh antara rancangan konseptual dengan alur kerja praktis di lapangan untuk memastikan dampak yang berkelanjutan.",
+            'Lebih lanjut, temuan ini menunjukkan bahwa integrasi metodologis yang konsisten mampu mempercepat pencapaian target sekaligus memitigasi potensi risiko operasional yang selama ini terabaikan.',
+            'Di sisi lain, perspektif ini membuka ruang diskusi baru mengenai bagaimana adaptasi teknologi dapat diimplementasikan secara inklusif tanpa mengorbankan standar akurasi dan integritas data.',
+            'Sebagai konsekuensinya, langkah strategis berikutnya menuntut sinkronisasi menyeluruh antara rancangan konseptual dengan alur kerja praktis di lapangan untuk memastikan dampak yang berkelanjutan.',
         ];
 
         if ($style === 'creative') {
             $continuations = [
-                "Di balik hening yang merayap, setiap goresan kata seakan merajut kembali memori yang sempat terputus, menyisakan jejak makna di antara baris-baris tak terucap.",
-                "Cahaya senja yang menembus jendela kaca seakan menegaskan satu hal: setiap babak baru selalu menuntut keberanian untuk melangkah melampaui batas yang kita ketahui.",
-                "Namun ada sesuatu yang tertinggal dalam desau angin, sebuah rahasia kecil yang siap mengubah seluruh alur kisah menjadi sesuatu yang tak terduga.",
+                'Di balik hening yang merayap, setiap goresan kata seakan merajut kembali memori yang sempat terputus, menyisakan jejak makna di antara baris-baris tak terucap.',
+                'Cahaya senja yang menembus jendela kaca seakan menegaskan satu hal: setiap babak baru selalu menuntut keberanian untuk melangkah melampaui batas yang kita ketahui.',
+                'Namun ada sesuatu yang tertinggal dalam desau angin, sebuah rahasia kecil yang siap mengubah seluruh alur kisah menjadi sesuatu yang tak terduga.',
             ];
         }
 
@@ -71,7 +71,7 @@ class AiService
             'style' => $style,
             'source' => $preview,
             'options' => $continuations,
-            'explanation' => 'Tiga alternatif kelanjutan kalimat dihasilkan dengan gaya ' . $style . '.',
+            'explanation' => 'Tiga alternatif kelanjutan kalimat dihasilkan dengan gaya '.$style.'.',
         ];
     }
 
@@ -80,7 +80,7 @@ class AiService
      */
     protected function handleElaborate(string $selection, string $context, string $style): array
     {
-        $target = !empty($selection) ? $selection : 'gagasan utama ini';
+        $target = ! empty($selection) ? $selection : 'gagasan utama ini';
 
         return [
             'action' => 'elaborate',
@@ -101,7 +101,7 @@ class AiService
      */
     protected function handleRewrite(string $selection, string $style): array
     {
-        $text = !empty($selection) ? $selection : 'Dokumen ini memuat deskripsi lengkap mengenai topik penelitian.';
+        $text = ! empty($selection) ? $selection : 'Dokumen ini memuat deskripsi lengkap mengenai topik penelitian.';
 
         $rewrites = [];
 
@@ -109,30 +109,30 @@ class AiService
             case 'academic':
             case 'formal':
                 $rewrites = [
-                    "Berdasarkan kajian analitis yang dilakukan, teks ini dapat dirumuskan secara formal: \"" . $text . "\" mencerminkan proposisi terstruktur dengan ketepatan terminologi ilmiah.",
-                    "Melalui pendekatan metodologis yang sistematis, substansi tersebut menegaskan signifikansi data empiris dalam mendukung tesis yang diajukan.",
+                    'Berdasarkan kajian analitis yang dilakukan, teks ini dapat dirumuskan secara formal: "'.$text.'" mencerminkan proposisi terstruktur dengan ketepatan terminologi ilmiah.',
+                    'Melalui pendekatan metodologis yang sistematis, substansi tersebut menegaskan signifikansi data empiris dalam mendukung tesis yang diajukan.',
                 ];
                 break;
 
             case 'creative':
                 $rewrites = [
-                    "Bagaikan simfoni gagasan yang berpadu selaras, esensi dari ungkapan tersebut menghidupkan kembali pemahaman baru yang menggugah imajinasi.",
-                    "Di setiap jalinan kata tersimpan makna tersirat yang mengajak pembaca menyelami lebih dalam ke jantung persoalan dengan penuh rasa ingin tahu.",
+                    'Bagaikan simfoni gagasan yang berpadu selaras, esensi dari ungkapan tersebut menghidupkan kembali pemahaman baru yang menggugah imajinasi.',
+                    'Di setiap jalinan kata tersimpan makna tersirat yang mengajak pembaca menyelami lebih dalam ke jantung persoalan dengan penuh rasa ingin tahu.',
                 ];
                 break;
 
             case 'concise':
                 $rewrites = [
                     trim(preg_replace('/\b(sangat|amat|sungguh|sebenarnya|dapat dikatakan bahwa)\b/i', '', $text)),
-                    "Intinya: " . mb_substr($text, 0, 150) . (mb_strlen($text) > 150 ? '...' : ''),
+                    'Intinya: '.mb_substr($text, 0, 150).(mb_strlen($text) > 150 ? '...' : ''),
                 ];
                 break;
 
             case 'persuasive':
             default:
                 $rewrites = [
-                    "Fakta ini membuktikan secara tak terbantahkan bahwa langkah strategis ini bukan sekadar pilihan, melainkan keharusan mendesak demi tercapainya hasil prima.",
-                    "Dengan mengadopsi pendekatan teruji ini, efektivitas dan akselerasi keberhasilan dapat dipastikan secara nyata dan terukur.",
+                    'Fakta ini membuktikan secara tak terbantahkan bahwa langkah strategis ini bukan sekadar pilihan, melainkan keharusan mendesak demi tercapainya hasil prima.',
+                    'Dengan mengadopsi pendekatan teruji ini, efektivitas dan akselerasi keberhasilan dapat dipastikan secara nyata dan terukur.',
                 ];
                 break;
         }
@@ -187,7 +187,7 @@ class AiService
             'options' => [
                 $polished,
             ],
-            'corrections' => !empty($appliedChanges) ? $appliedChanges : ['Ejaan dan struktur kalimat sudah sesuai standar PUEBI/KBBI.'],
+            'corrections' => ! empty($appliedChanges) ? $appliedChanges : ['Ejaan dan struktur kalimat sudah sesuai standar PUEBI/KBBI.'],
             'explanation' => 'Teks telah diperiksa tanda baca, kapitalisasi, dan kata baku bahasa Indonesia.',
         ];
     }
@@ -208,12 +208,12 @@ class AiService
         return [
             'action' => 'summarize',
             'title' => 'Ringkasan Eksekutif',
-            'source' => mb_substr($clean, 0, 150) . '...',
+            'source' => mb_substr($clean, 0, 150).'...',
             'options' => [
-                "📌 **Intisari Dokumen**:\nDokumen ini menyajikan gagasan terstruktur berfokus pada: " . mb_substr($excerpt, 0, 180) . "...\n\n" .
-                "• **Poin Kunci 1**: Kerangka konseptual dibangun dengan konsistensi metodologis yang teruji.\n" .
-                "• **Poin Kunci 2**: Penyelarasan format dan konten memungkinkan pemahaman yang lebih cepat dan efisien.\n" .
-                "• **Rekomendasi**: Lanjutkan dengan verifikasi data akhir dan implementasi langkah operasional.",
+                "📌 **Intisari Dokumen**:\nDokumen ini menyajikan gagasan terstruktur berfokus pada: ".mb_substr($excerpt, 0, 180)."...\n\n".
+                "• **Poin Kunci 1**: Kerangka konseptual dibangun dengan konsistensi metodologis yang teruji.\n".
+                "• **Poin Kunci 2**: Penyelarasan format dan konten memungkinkan pemahaman yang lebih cepat dan efisien.\n".
+                '• **Rekomendasi**: Lanjutkan dengan verifikasi data akhir dan implementasi langkah operasional.',
                 "💡 **Ringkasan Singkat (1 Kalimat)**:\nDokumen ini mengartikulasikan panduan komprehensif mengenai perancangan dan modifikasi dokumen dengan penekanan pada akurasi format dan keterbacaan optimal.",
             ],
             'explanation' => 'Ringkasan dihasilkan dari analisis konten dokumen utama.',
@@ -225,7 +225,7 @@ class AiService
      */
     protected function handleBrainstorm(string $context, string $prompt): array
     {
-        $topic = !empty($prompt) ? $prompt : 'Pengembangan Topik Dokumen';
+        $topic = ! empty($prompt) ? $prompt : 'Pengembangan Topik Dokumen';
 
         return [
             'action' => 'brainstorm',
@@ -253,8 +253,8 @@ class AiService
             'title' => 'Tanya Dokumen',
             'source' => $query,
             'options' => [
-                "Berdasarkan isi dokumen yang sedang dikerjakan:\n\n" .
-                "Mengenai pertanyaan Anda: *\"{$query}\"*\n\n" .
+                "Berdasarkan isi dokumen yang sedang dikerjakan:\n\n".
+                "Mengenai pertanyaan Anda: *\"{$query}\"*\n\n".
                 "Dokumen Anda mengindikasikan bahwa fokus utama terletak pada keselarasan struktur, kemudahan modifikasi lokal, dan penyajian visual yang adaptif. Teks dokumen memuat: \"{$snippet}...\" yang menjadi fondasi utama untuk menjawab konteks tersebut.",
             ],
             'explanation' => 'Jawaban dianalisis langsung dari konteks naskah aktif.',

@@ -13,7 +13,7 @@ use App\Services\DocumentService;
 */
 
 beforeEach(function () {
-    $this->service = new DocumentService();
+    $this->service = new DocumentService;
 });
 
 test('white-box: detectFormat accurately resolves all format branches', function () {
@@ -43,7 +43,7 @@ test('white-box: detectFormat accurately resolves all format branches', function
 });
 
 test('white-box: sanitizeHtml eliminates XSS vectors while preserving rich text markup', function () {
-    $malicious = <<<HTML
+    $malicious = <<<'HTML'
         <div>
             <h1>Judul Aman</h1>
             <script>alert("XSS")</script>
@@ -76,7 +76,7 @@ HTML;
 });
 
 test('white-box: parseMarkdown parses headings, lists, blockquotes, code blocks, and inline styles', function () {
-    $markdown = <<<MD
+    $markdown = <<<'MD'
 # Judul 1
 ## Subjudul 2
 ### Bagian 3
@@ -116,7 +116,7 @@ MD;
 });
 
 test('white-box: convertToMarkdown produces clean markdown from HTML elements', function () {
-    $html = <<<HTML
+    $html = <<<'HTML'
 <h1>Judul Penting</h1>
 <p>Paragraf dengan <strong>teks tebal</strong> dan <em>teks miring</em>.</p>
 <blockquote>Sebuah kutipan naskah.</blockquote>
@@ -181,7 +181,7 @@ test('white-box: extractTitle prioritizes H1 tag over filename', function () {
 });
 
 test('white-box: adaptDocumentStructure promotes chapters and configures academic skripsi margins', function () {
-    $inputHtml = <<<HTML
+    $inputHtml = <<<'HTML'
         <p>SKRIPSI</p>
         <p>PENELITIAN LIMBAH CAIR</p>
         <p>Oleh : Peneliti</p>
@@ -214,7 +214,7 @@ HTML;
 });
 
 test('white-box: adaptDocumentStructure intelligently merges two-line chapter headings and preliminary pages', function () {
-    $inputHtml = <<<HTML
+    $inputHtml = <<<'HTML'
         <p>LEMBAR PENGESAHAN</p>
         <p>Disetujui oleh dosen pembimbing.</p>
         <p>BAB II</p>
@@ -238,7 +238,7 @@ HTML;
 });
 
 test('white-box: adaptDocumentStructure separates academic preliminaries like THESIS, LEMBAR PERSETUJUAN, and PERNYATAAN KEASLIAN with page breaks', function () {
-    $inputHtml = <<<HTML
+    $inputHtml = <<<'HTML'
         <p>SKRIPSI</p>
         <p>SAMPUL DEPAN</p>
         <p>2026</p>
@@ -266,7 +266,7 @@ HTML;
 });
 
 test('white-box: adaptDocumentStructure converts Table of Contents lines to .toc-entry without creating false headings', function () {
-    $inputHtml = <<<HTML
+    $inputHtml = <<<'HTML'
         <p>SKRIPSI</p>
         <p>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</p>
         <p>Oleh :</p>
@@ -305,7 +305,7 @@ HTML;
 });
 
 test('white-box: adaptDocumentStructure separates multi-cover pages with explicit page breaks and preserves <br> lines without squishing', function () {
-    $multiCoverHtml = <<<HTML
+    $multiCoverHtml = <<<'HTML'
         <p><strong>SKRIPSI</strong></p>
         <p><strong>PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</strong></p>
         <figure><img src="data:image/png;base64,abc" /></figure>
@@ -351,7 +351,7 @@ HTML;
 });
 
 test('white-box: adaptDocumentStructure normalizes chapter titles with <br> or missing spacing', function () {
-    $inputHtml = <<<HTML
+    $inputHtml = <<<'HTML'
         <p>SKRIPSI</p>
         <p>JUDUL PENELITIAN</p>
         <p>2026</p>
@@ -377,7 +377,7 @@ HTML;
 });
 
 test('white-box: extractDocxText extracts explicit page breaks and line breaks from real docx file', function () {
-    if (!file_exists('storage/test.docx')) {
+    if (! file_exists('storage/test.docx')) {
         $this->markTestSkipped('storage/test.docx not present');
     }
 
@@ -389,4 +389,108 @@ test('white-box: extractDocxText extracts explicit page breaks and line breaks f
     expect($html)->toContain('data-page-break="true"')
         ->and($html)->toContain('<br />')
         ->and(substr_count($html, 'data-page-break="true"'))->toBeGreaterThanOrEqual(15);
+});
+
+test('white-box: extractDocxText extracts real docx tables preserving table, tr, td, and inner paragraphs', function () {
+    $tableDocx = 'node_modules/mammoth/test/test-data/tables.docx';
+    expect(file_exists($tableDocx))->toBeTrue();
+
+    $reflector = new \ReflectionClass($this->service);
+    $method = $reflector->getMethod('extractDocxText');
+    $method->setAccessible(true);
+    $html = $method->invoke($this->service, $tableDocx);
+
+    expect($html)->toContain('<table')
+        ->and($html)->toContain('<tbody>')
+        ->and($html)->toContain('<tr>')
+        ->and($html)->toContain('<td')
+        ->and($html)->toContain('Top left')
+        ->and($html)->toContain('Top right')
+        ->and($html)->toContain('Bottom left')
+        ->and($html)->toContain('Bottom right')
+        ->and($html)->toContain('<p>Above</p>')
+        ->and($html)->toContain('<p>Below</p>');
+});
+
+test('white-box: extractDocxText extracts real docx underlines and strikethroughs with exact typography', function () {
+    $underlineDocx = 'node_modules/mammoth/test/test-data/underline.docx';
+    $strikeDocx = 'node_modules/mammoth/test/test-data/strikethrough.docx';
+
+    $reflector = new \ReflectionClass($this->service);
+    $method = $reflector->getMethod('extractDocxText');
+    $method->setAccessible(true);
+
+    $uHtml = $method->invoke($this->service, $underlineDocx);
+    expect($uHtml)->toContain('<u>')
+        ->and($uHtml)->toContain('Sunset')
+        ->and($uHtml)->toContain('<strong>');
+
+    $sHtml = $method->invoke($this->service, $strikeDocx);
+    expect($sHtml)->toContain('<s>')
+        ->and($sHtml)->toContain('Today&#039;s Special: Salmon')
+        ->and($sHtml)->toContain('Sold out');
+});
+
+test('white-box: extractDocxText extracts real docx lists preserving ul and li structure', function () {
+    $listDocx = 'node_modules/mammoth/test/test-data/simple-list.docx';
+
+    $reflector = new \ReflectionClass($this->service);
+    $method = $reflector->getMethod('extractDocxText');
+    $method->setAccessible(true);
+
+    $html = $method->invoke($this->service, $listDocx);
+    expect($html)->toContain('<ul')
+        ->and($html)->toContain('<li>Apple</li>')
+        ->and($html)->toContain('<li>Banana</li>');
+});
+
+test('white-box: extractDocxText extracts real docx images as base64 data URIs', function () {
+    $picDocx = 'node_modules/mammoth/test/test-data/tiny-picture.docx';
+
+    $reflector = new \ReflectionClass($this->service);
+    $method = $reflector->getMethod('extractDocxText');
+    $method->setAccessible(true);
+
+    $html = $method->invoke($this->service, $picDocx);
+    expect($html)->toContain('<img src="data:image/png;base64,')
+        ->and($html)->toContain('alt="Dokumen Gambar"');
+});
+
+test('white-box: adaptDocumentStructure preserves text-center, text-right, text-justify alignments without destroying them', function () {
+    $alignedHtml = <<<'HTML'
+        <p class="text-center" style="text-align: center;">LAPORAN LABA RUGI TAHUN 2026</p>
+        <p class="text-justify" style="text-align: justify;">Berikut ini adalah ringkasan performa finansial kuartal pertama tahun berjalan dengan hasil yang sangat memuaskan bagi para pemegang saham perusahaan.</p>
+        <p class="text-right" style="text-align: right;">Jakarta, 10 November 2026</p>
+        <p class="text-right" style="text-align: right;">Direktur Keuangan</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($alignedHtml, 'laporan_keuangan.docx');
+
+    expect($result['adapted_html'])->toContain('text-center')
+        ->and($result['adapted_html'])->toContain('class="text-right')
+        ->and($result['adapted_html'])->toContain('LAPORAN LABA RUGI')
+        ->and($result['adapted_html'])->toContain('Jakarta, 10 November 2026')
+        ->and($result['presets']['is_academic'])->toBeFalse();
+});
+
+test('white-box: adaptDocumentStructure does not falsely flag general documents with tables or letters as academic skripsi', function () {
+    $generalReportHtml = <<<'HTML'
+        <h1>SURAT KEPUTUSAN DIREKSI</h1>
+        <p>Berdasarkan evaluasi kinerja semester kedua Politeknik dan Universitas mitra kerja sama.</p>
+        <table class="w-full border-collapse">
+            <thead><tr><th>No</th><th>Departemen</th><th>Status</th></tr></thead>
+            <tbody><tr><td>1</td><td>R&D</td><td>Lulus</td></tr></tbody>
+        </table>
+        <p class="text-right">Tertanda,</p>
+        <p class="text-right">Manajemen</p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($generalReportHtml, 'sk_direksi.docx');
+
+    expect($result['presets']['is_academic'])->toBeFalse()
+        ->and($result['presets']['margins'])->toBe('normal')
+        ->and($result['adapted_html'])->toContain('<table')
+        ->and($result['adapted_html'])->toContain('class="text-right')
+        ->and($result['adapted_html'])->not->toContain('cover-badge')
+        ->and($result['adapted_html'])->not->toContain('cover-title');
 });

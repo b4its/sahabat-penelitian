@@ -14,6 +14,8 @@
  * - Multi-format export (DOCX, PDF, MD, HTML, TXT, JSON)
  */
 
+import { DocxImporter } from './docx-importer.js';
+
 export class DocumentEngine {
     constructor(options = {}) {
         this.pagesWrapper = options.pagesWrapper || document.getElementById('document-pages-wrapper') || document.getElementById('document-canvas-container');
@@ -637,50 +639,55 @@ export class DocumentEngine {
                 detectedFormat = 'docx';
                 const arrayBuffer = await file.arrayBuffer();
 
-                if (window.mammoth) {
-                    const styleMap = [
-                        "p[style-name='Title'] => h1.doc-title.text-center:fresh",
-                        "p[style-name='Subtitle'] => p.doc-subtitle.text-center:fresh",
-                        "p[style-name='Heading 1'] => h1.heading-chapter:fresh",
-                        "p[style-name='Heading 2'] => h2.heading-section:fresh",
-                        "p[style-name='Heading 3'] => h3.heading-subsection:fresh",
-                        "p[style-name='Heading 4'] => h4:fresh",
-                        "p[style-name='Heading 5'] => h5:fresh",
-                        "p[style-name='Heading 6'] => h6:fresh",
-                        "r[style-name='Strong'] => strong",
-                        "p[style-name^='toc'] => p.toc-entry:fresh",
-                        "p[style-name^='TOC'] => p.toc-entry:fresh",
-                        "p[style-name='Table of Figures'] => p.toc-entry:fresh",
-                        "p[style-name='Daftar Isi'] => p.toc-entry:fresh",
-                        "p:has(w:jc[w:val='center']) => p.text-center:fresh",
-                        "p:has(w:jc[w:val='right']) => p.text-right:fresh",
-                        "p:has(w:jc[w:val='both']) => p.text-justify:fresh",
-                    ];
+                try {
+                    // Try high-fidelity OpenXML parser first
+                    contentHtml = await DocxImporter.parse(arrayBuffer, filename);
+                } catch (parseErr) {
+                    console.warn('DocxImporter error, falling back to server or mammoth:', parseErr);
+                    if (window.mammoth) {
+                        const styleMap = [
+                            "p[style-name='Title'] => h1.doc-title.text-center:fresh",
+                            "p[style-name='Subtitle'] => p.doc-subtitle.text-center:fresh",
+                            "p[style-name='Heading 1'] => h1.heading-chapter:fresh",
+                            "p[style-name='Heading 2'] => h2.heading-section:fresh",
+                            "p[style-name='Heading 3'] => h3.heading-subsection:fresh",
+                            "p[style-name='Heading 4'] => h4:fresh",
+                            "p[style-name='Heading 5'] => h5:fresh",
+                            "p[style-name='Heading 6'] => h6:fresh",
+                            "u => u",
+                            "strike => s",
+                            "r[style-name='Strong'] => strong",
+                            "p[style-name^='toc'] => p.toc-entry:fresh",
+                            "p[style-name^='TOC'] => p.toc-entry:fresh",
+                            "p[style-name='Table of Figures'] => p.toc-entry:fresh",
+                            "p[style-name='Daftar Isi'] => p.toc-entry:fresh",
+                        ];
 
-                    const transformElement = (element) => {
-                        if (element.children) {
-                            element.children = element.children.map(transformElement);
-                        }
-                        if (element.type === 'break' && element.breakType === 'page') {
-                            return {
-                                type: 'text',
-                                value: '[[WORD_PAGE_BREAK]]'
-                            };
-                        }
-                        return element;
-                    };
+                        const transformElement = (element) => {
+                            if (element.children) {
+                                element.children = element.children.map(transformElement);
+                            }
+                            if (element.type === 'break' && element.breakType === 'page') {
+                                return {
+                                    type: 'text',
+                                    value: '[[WORD_PAGE_BREAK]]'
+                                };
+                            }
+                            return element;
+                        };
 
-                    const result = await window.mammoth.convertToHtml({
-                        arrayBuffer,
-                        styleMap,
-                        transformDocument: transformElement,
-                    });
-                    contentHtml = result.value
-                        .replace(/<p>\s*\[\[WORD_PAGE_BREAK\]\]\s*<\/p>/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>')
-                        .replace(/\[\[WORD_PAGE_BREAK\]\]/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>');
-                } else {
-                    const backendResult = await this.uploadToBackend(file);
-                    contentHtml = backendResult.content_html;
+                        const result = await window.mammoth.convertToHtml({
+                            arrayBuffer,
+                            styleMap,
+                            transformDocument: transformElement,
+                        });
+                        contentHtml = result.value
+                            .replace(/<p>\s*\[\[WORD_PAGE_BREAK\]\]\s*<\/p>/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>')
+                            .replace(/\[\[WORD_PAGE_BREAK\]\]/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>');
+                    } else {
+                        const backendResult = await this.uploadToBackend(file);
+                        contentHtml = backendResult.content_html;
+                    }
                 }
             } else if (['md', 'markdown'].includes(extension)) {
                 detectedFormat = 'markdown';
@@ -788,18 +795,40 @@ export class DocumentEngine {
         };
 
         const allText = container.textContent.toLowerCase();
-        const isAcademic =
-            allText.includes('skripsi') ||
-            allText.includes('tesis') ||
-            allText.includes('thesis') ||
-            allText.includes('disertasi') ||
-            allText.includes('politeknik') ||
-            allText.includes('universitas') ||
-            allText.includes('nim.') ||
-            allText.includes('bab i') ||
-            filename.toLowerCase().includes('skripsi');
+        const checkFilename = filename.toLowerCase();
 
-        let inCover = isAcademic;
+        const isAcademic =
+            checkFilename.includes('skripsi') ||
+            checkFilename.includes('tesis') ||
+            checkFilename.includes('thesis') ||
+            checkFilename.includes('disertasi') ||
+            checkFilename.includes('tugas-akhir') ||
+            checkFilename.includes('tugas_akhir') ||
+            (/bab\s*(?:\d+|[ivxlcdm]+)/i.test(allText) && (
+                allText.includes('skripsi') ||
+                allText.includes('tesis') ||
+                allText.includes('thesis') ||
+                allText.includes('disertasi') ||
+                allText.includes('lembar pengesahan') ||
+                allText.includes('pernyataan keaslian') ||
+                allText.includes('nim.')
+            ));
+
+        let inCover = false;
+        if (isAcademic) {
+            const firstFew = allText.slice(0, 1500);
+            if (
+                firstFew.includes('skripsi') ||
+                firstFew.includes('tesis') ||
+                firstFew.includes('thesis') ||
+                firstFew.includes('disusun') ||
+                firstFew.includes('oleh :') ||
+                firstFew.includes('oleh:') ||
+                firstFew.includes('nim')
+            ) {
+                inCover = true;
+            }
+        }
         let coverCount = 0;
         let headingCount = 0;
         let consecutiveEmpty = 0;
@@ -1001,20 +1030,36 @@ export class DocumentEngine {
             if (el.tagName === 'TABLE') {
                 el.className = 'w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700';
                 el.querySelectorAll('th, td').forEach(cell => {
-                    cell.className = 'border border-gray-300 dark:border-gray-700 p-2 text-left';
+                    cell.classList.add('border', 'border-gray-300', 'dark:border-gray-700', 'p-2');
                 });
                 el.querySelectorAll('th').forEach(th => {
-                    th.className = 'border border-gray-300 dark:border-gray-700 p-2 text-left bg-gray-100 dark:bg-gray-800 font-semibold';
+                    th.classList.add('bg-gray-100', 'dark:bg-gray-800', 'font-semibold');
                 });
                 continue;
             }
 
             // Normal Body Paragraphs
             if (el.tagName === 'P') {
-                if (isAcademic) {
-                    el.className = 'text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200 indent-8';
+                const hasCenter = el.classList.contains('text-center') || el.style.textAlign === 'center';
+                const hasRight = el.classList.contains('text-right') || el.style.textAlign === 'right';
+                const hasJustify = el.classList.contains('text-justify') || el.style.textAlign === 'justify';
+                const hasLeft = el.classList.contains('text-left') || el.style.textAlign === 'left';
+
+                if (hasCenter) {
+                    el.className = 'text-center my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                } else if (hasRight) {
+                    el.className = 'text-right my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                } else if (hasJustify) {
+                    const indent = (isAcademic && cleanText.length > 100) ? ' indent-8' : '';
+                    el.className = `text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200${indent}`;
+                } else if (hasLeft) {
+                    el.className = 'text-left my-2 leading-relaxed text-gray-800 dark:text-gray-200';
                 } else {
-                    el.className = 'my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                    if (isAcademic && cleanText.length > 100) {
+                        el.className = 'text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200 indent-8';
+                    } else {
+                        el.className = 'my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                    }
                 }
             }
         }
