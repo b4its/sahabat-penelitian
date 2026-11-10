@@ -575,10 +575,15 @@ class DocumentService
                     continue;
                 }
                 $lvl = (int) $m[1];
+                $hAttrs = $m[2];
                 $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => $lvl, 'text' => $cleanText];
                 $hClass = $lvl === 1 ? 'heading-chapter font-bold text-xl my-6 text-center uppercase' : ($lvl === 2 ? 'heading-section font-bold text-lg my-4' : 'heading-subsection font-semibold text-base my-3');
-                $adaptedBlocks[] = "<h{$lvl} id=\"{$hId}\" class=\"{$hClass} text-gray-900 dark:text-gray-100\">{$m[3]}</h{$lvl}>";
+                $hStyle = '';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $hAttrs, $sm)) {
+                    $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
+                }
+                $adaptedBlocks[] = "<h{$lvl} id=\"{$hId}\" class=\"{$hClass} text-gray-900 dark:text-gray-100\"{$hStyle}>{$m[3]}</h{$lvl}>";
 
                 continue;
             }
@@ -632,7 +637,11 @@ class DocumentService
                 if ($lastBlock === false || ! str_contains($lastBlock, 'data-page-break')) {
                     $adaptedBlocks[] = '<div class="page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none" data-page-break="true"><span class="text-[10px] text-gray-400 font-mono">Awal Bab Baru</span></div>';
                 }
-                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\">{$titleText}</h1>";
+                $hStyle = '';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
+                    $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
+                }
+                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\"{$hStyle}>{$titleText}</h1>";
 
                 continue;
             }
@@ -652,7 +661,11 @@ class DocumentService
                 if ($lastBlock === false || ! str_contains($lastBlock, 'data-page-break')) {
                     $adaptedBlocks[] = '<div class="page-break my-6 border-b border-dashed border-gray-300 dark:border-gray-700 text-center py-1 select-none" data-page-break="true"><span class="text-[10px] text-gray-400 font-mono">Halaman Baru</span></div>';
                 }
-                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\">{$titleText}</h1>";
+                $hStyle = '';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
+                    $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
+                }
+                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\"{$hStyle}>{$titleText}</h1>";
 
                 continue;
             }
@@ -662,8 +675,12 @@ class DocumentService
                 $titleText = trim($cleanText);
                 $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 2, 'text' => $titleText];
+                $hStyle = '';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
+                    $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
+                }
 
-                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100\">{$titleText}</h2>";
+                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100\"{$hStyle}>{$titleText}</h2>";
 
                 continue;
             }
@@ -673,8 +690,12 @@ class DocumentService
                 $titleText = trim($cleanText);
                 $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 3, 'text' => $titleText];
+                $hStyle = '';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
+                    $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
+                }
 
-                $adaptedBlocks[] = "<h3 id=\"{$hId}\" class=\"heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200\">{$titleText}</h3>";
+                $adaptedBlocks[] = "<h3 id=\"{$hId}\" class=\"heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200\"{$hStyle}>{$titleText}</h3>";
 
                 continue;
             }
@@ -694,7 +715,11 @@ class DocumentService
             ) {
                 $hId = 'heading-'.count($headings);
                 $headings[] = ['id' => $hId, 'level' => 2, 'text' => $cleanText];
-                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase\">{$cleanText}</h2>";
+                $hStyle = '';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
+                    $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
+                }
+                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase\"{$hStyle}>{$cleanText}</h2>";
 
                 continue;
             }
@@ -713,8 +738,8 @@ class DocumentService
 
                 // Extract style attribute if any
                 $styleMatch = '';
-                if (preg_match('/style=["\']([^"\']*)["\']/i', $existingAttrs, $sm)) {
-                    $styleMatch = ' style="'.htmlspecialchars($sm[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'"';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $existingAttrs, $sm)) {
+                    $styleMatch = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
 
                 if ($hasCenter) {
@@ -805,6 +830,7 @@ class DocumentService
                 $extractedHeader = $docxMeta['header_text'];
                 $extractedFooter = $docxMeta['footer_text'];
                 $differentFirstPage = $docxMeta['different_first_page'] ?? false;
+                $defaultFontFamily = $docxMeta['default_font_family'] ?? null;
                 break;
 
             case 'txt':
@@ -837,6 +863,7 @@ class DocumentService
             'header_text' => $extractedHeader ?? '',
             'footer_text' => $extractedFooter ?? '',
             'different_first_page' => $differentFirstPage ?? false,
+            'default_font_family' => $defaultFontFamily ?? null,
             'stats' => $stats,
             'adapted_settings' => $adapted['presets'],
             'message' => $adapted['presets']['is_academic']

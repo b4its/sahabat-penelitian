@@ -21,22 +21,27 @@ export class DocxImporter {
 
         const docXml = await docFile.async('string');
 
+        this.defaultFontFamily = null;
+
         // 1. Relationships (hyperlinks & images)
         const rels = await this.parseRelationships(zip);
 
-        // 2. Numbering (bullet & ordered list definitions)
+        // 2. Theme colors
+        const themeColors = await this.parseThemeColors(zip);
+
+        // 3. Numbering (bullet & ordered list definitions)
         const numberingMap = await this.parseNumbering(zip);
 
-        // 3. Styles (headings, titles)
-        const stylesMap = await this.parseStyles(zip);
+        // 4. Styles (headings, titles, font, colors)
+        const stylesMap = await this.parseStyles(zip, themeColors);
 
-        // 4. Extract Header & Footer text from Word archive
+        // 5. Extract Header & Footer text from Word archive
         const { headerText, footerText } = await this.parseHeadersAndFooters(zip, rels, docXml);
 
-        // 5. Extract "Different First Page" setting from Word section properties
+        // 6. Extract "Different First Page" setting from Word section properties
         const differentFirstPage = /<w:titlePg\s*\/?>/i.test(docXml);
 
-        // 6. Parse Document DOM
+        // 7. Parse Document DOM
         const parser = new DOMParser();
         const dom = parser.parseFromString(docXml, 'application/xml');
 
@@ -74,7 +79,7 @@ export class DocxImporter {
             const nodeName = node.nodeName.toLowerCase();
 
             if (nodeName === 'w:p') {
-                const pResult = await this.parseParagraph(node, zip, rels, numberingMap, stylesMap);
+                const pResult = await this.parseParagraph(node, zip, rels, numberingMap, stylesMap, themeColors);
 
                 if (pResult.pageBreakBefore) {
                     flushList();
@@ -101,7 +106,7 @@ export class DocxImporter {
                 }
             } else if (nodeName === 'w:tbl') {
                 flushList();
-                const tblHtml = await this.parseTable(node, zip, rels, numberingMap, stylesMap);
+                const tblHtml = await this.parseTable(node, zip, rels, numberingMap, stylesMap, themeColors);
                 if (tblHtml) {
                     blocks.push(tblHtml);
                 }
@@ -114,12 +119,12 @@ export class DocxImporter {
                         if (sc.nodeType !== Node.ELEMENT_NODE) continue;
                         const scName = sc.nodeName.toLowerCase();
                         if (scName === 'w:p') {
-                            const pResult = await this.parseParagraph(sc, zip, rels, numberingMap, stylesMap);
+                            const pResult = await this.parseParagraph(sc, zip, rels, numberingMap, stylesMap, themeColors);
                             flushList();
                             if (pResult.html) blocks.push(pResult.html);
                         } else if (scName === 'w:tbl') {
                             flushList();
-                            const tblHtml = await this.parseTable(sc, zip, rels, numberingMap, stylesMap);
+                            const tblHtml = await this.parseTable(sc, zip, rels, numberingMap, stylesMap, themeColors);
                             if (tblHtml) blocks.push(tblHtml);
                         }
                     }
@@ -136,6 +141,7 @@ export class DocxImporter {
             headerText,
             footerText,
             differentFirstPage,
+            defaultFontFamily: this.defaultFontFamily,
             toString() {
                 return this.html;
             },
@@ -338,7 +344,92 @@ export class DocxImporter {
         return map;
     }
 
-    async parseStyles(zip) {
+    static formatFontFamily(fontName) {
+        if (!fontName) return '';
+        const clean = fontName.replace(/['"]/g, '').trim();
+        if (!clean) return '';
+        const lower = clean.toLowerCase();
+        const sansFonts = [
+            'arial', 'calibri', 'helvetica', 'segoe ui', 'tahoma', 'verdana',
+            'trebuchet ms', 'open sans', 'roboto', 'century gothic', 'instrument sans',
+            'aptos', 'sans-serif',
+        ];
+        const monoFonts = [
+            'courier', 'courier new', 'consolas', 'monaco', 'menlo',
+            'liberation mono', 'source code pro', 'monospace',
+        ];
+
+        let fallback = 'serif';
+        for (const sans of sansFonts) {
+            if (lower.includes(sans)) {
+                fallback = 'sans-serif';
+                break;
+            }
+        }
+        if (fallback === 'serif') {
+            for (const mono of monoFonts) {
+                if (lower.includes(mono)) {
+                    fallback = 'monospace';
+                    break;
+                }
+            }
+        }
+        return `'${clean}', ${fallback}`;
+    }
+
+    async parseThemeColors(zip) {
+        const colors = {
+            dark1: '#000000',
+            light1: '#ffffff',
+            dark2: '#1f497d',
+            light2: '#eeece1',
+            accent1: '#4f81bd',
+            accent2: '#c0504d',
+            accent3: '#9bbb59',
+            accent4: '#8064a2',
+            accent5: '#4bacc6',
+            accent6: '#f79646',
+            hlink: '#0563c1',
+            folHlink: '#954f72',
+        };
+
+        const themeFile = zip.file('word/theme/theme1.xml');
+        if (themeFile) {
+            try {
+                const xml = await themeFile.async('string');
+                const parser = new DOMParser();
+                const dom = parser.parseFromString(xml, 'application/xml');
+                const schemeNodes = dom.querySelectorAll('clrScheme > *');
+                for (const node of schemeNodes) {
+                    const colorName = node.localName;
+                    const srgb = node.querySelector('srgbClr');
+                    if (srgb && srgb.getAttribute('val')) {
+                        colors[colorName] = `#${srgb.getAttribute('val')}`;
+                    } else {
+                        const sys = node.querySelector('sysClr');
+                        if (sys && sys.getAttribute('lastClr')) {
+                            colors[colorName] = `#${sys.getAttribute('lastClr')}`;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed parsing theme colors:', e);
+            }
+        }
+        return colors;
+    }
+
+    resolveColor(val, themeColor, themeColors = {}) {
+        if (val && val.toLowerCase() !== 'auto') {
+            return `#${val.replace(/^#/, '')}`;
+        }
+        if (themeColor && themeColors[themeColor]) {
+            return themeColors[themeColor];
+        }
+        return null;
+    }
+
+    async parseStyles(zip, themeColors = {}) {
         const map = {};
         const styleFile = zip.file('word/styles.xml');
         if (!styleFile) return map;
@@ -347,32 +438,83 @@ export class DocxImporter {
         const parser = new DOMParser();
         const dom = parser.parseFromString(xml, 'application/xml');
 
+        // Document defaults
+        const docDefFontEl = dom.querySelector('docDefaults rFonts');
+        if (docDefFontEl) {
+            const fontName = docDefFontEl.getAttribute('w:ascii') || docDefFontEl.getAttribute('w:hAnsi');
+            if (fontName) {
+                this.defaultFontFamily = DocxImporter.formatFontFamily(fontName);
+            }
+        }
+
         const styles = Array.from(dom.getElementsByTagName('w:style'));
         for (const style of styles) {
             const type = style.getAttribute('w:type');
-            if (type !== 'paragraph') continue;
+            if (type !== 'paragraph' && type !== 'character') continue;
 
             const styleId = style.getAttribute('w:styleId');
             const nameEl = style.getElementsByTagName('w:name')[0];
             const name = (nameEl ? nameEl.getAttribute('w:val') : styleId || '').toLowerCase();
 
             let headingLevel = null;
-            const hMatch = name.match(/heading\s*(\d)/i) || name.match(/judul\s*(\d)/i);
-            if (hMatch) {
-                headingLevel = parseInt(hMatch[1], 10);
-            } else if (name === 'title' || styleId === 'Title' || name === 'judul') {
-                headingLevel = 1;
-            } else if (name === 'subtitle' || styleId === 'Subtitle' || name === 'subjudul') {
-                headingLevel = 2;
+            if (type === 'paragraph') {
+                const hMatch = name.match(/heading\s*(\d)/i) || name.match(/judul\s*(\d)/i);
+                if (hMatch) {
+                    headingLevel = parseInt(hMatch[1], 10);
+                } else if (name === 'title' || styleId === 'Title' || name === 'judul') {
+                    headingLevel = 1;
+                } else if (name === 'subtitle' || styleId === 'Subtitle' || name === 'subjudul') {
+                    headingLevel = 2;
+                }
             }
 
-            map[styleId] = { name, headingLevel };
+            // Extract rPr from style
+            let font = null;
+            const rfEl = style.getElementsByTagName('w:rFonts')[0];
+            if (rfEl) {
+                font = rfEl.getAttribute('w:ascii') || rfEl.getAttribute('w:hAnsi');
+                if (!this.defaultFontFamily && (styleId === 'Normal' || name === 'normal')) {
+                    this.defaultFontFamily = DocxImporter.formatFontFamily(font);
+                }
+            }
+
+            let color = null;
+            const colEl = style.getElementsByTagName('w:color')[0];
+            if (colEl) {
+                color = this.resolveColor(colEl.getAttribute('w:val'), colEl.getAttribute('w:themeColor'), themeColors);
+            }
+
+            let fontSize = null;
+            const szEl = style.getElementsByTagName('w:sz')[0];
+            if (szEl) {
+                const halfPts = parseInt(szEl.getAttribute('w:val') || '0', 10);
+                if (halfPts >= 16 && halfPts <= 144) {
+                    fontSize = `${halfPts / 2}pt`;
+                }
+            }
+
+            const bEl = style.getElementsByTagName('w:b')[0];
+            const isBold = bEl && bEl.getAttribute('w:val') !== '0' && bEl.getAttribute('w:val') !== 'false';
+
+            const iEl = style.getElementsByTagName('w:i')[0];
+            const isItalic = iEl && iEl.getAttribute('w:val') !== '0' && iEl.getAttribute('w:val') !== 'false';
+
+            map[styleId] = {
+                type,
+                name,
+                headingLevel,
+                fontFamily: font,
+                color,
+                fontSize,
+                isBold: Boolean(isBold),
+                isItalic: Boolean(isItalic),
+            };
         }
 
         return map;
     }
 
-    async parseParagraph(p, zip, rels, numberingMap, stylesMap) {
+    async parseParagraph(p, zip, rels, numberingMap, stylesMap, themeColors = {}) {
         let pageBreakBefore = false;
         let pageBreakAfter = false;
         let headingLevel = null;
@@ -381,6 +523,14 @@ export class DocxImporter {
         let listType = 'ul';
         let listLevel = 0;
         let pStyle = '';
+
+        const pDefaults = {
+            fontFamily: null,
+            color: null,
+            fontSize: null,
+            isBold: false,
+            isItalic: false,
+        };
 
         // Check paragraph properties
         const pPr = this.findFirstDirectChild(p, ['w:pPr', 'pPr']);
@@ -429,6 +579,42 @@ export class DocxImporter {
             }
         }
 
+        // If style defines font, color, etc., seed pDefaults
+        if (pStyle && stylesMap[pStyle]) {
+            const sMeta = stylesMap[pStyle];
+            if (sMeta.fontFamily) pDefaults.fontFamily = sMeta.fontFamily;
+            if (sMeta.color) pDefaults.color = sMeta.color;
+            if (sMeta.fontSize) pDefaults.fontSize = sMeta.fontSize;
+            if (sMeta.isBold) pDefaults.isBold = true;
+            if (sMeta.isItalic) pDefaults.isItalic = true;
+        }
+
+        // Check paragraph-level run properties <w:pPr><w:rPr>
+        if (pPr) {
+            const pPrRPr = pPr.getElementsByTagName('w:rPr')[0] || pPr.getElementsByTagName('rPr')[0];
+            if (pPrRPr) {
+                const pRf = pPrRPr.getElementsByTagName('w:rFonts')[0] || pPrRPr.getElementsByTagName('rFonts')[0];
+                if (pRf) {
+                    const pFont = pRf.getAttribute('w:ascii') || pRf.getAttribute('w:hAnsi');
+                    if (pFont) pDefaults.fontFamily = pFont;
+                }
+                const pCol = pPrRPr.getElementsByTagName('w:color')[0] || pPrRPr.getElementsByTagName('color')[0];
+                if (pCol) {
+                    const cVal = pCol.getAttribute('w:val');
+                    const tCol = pCol.getAttribute('w:themeColor');
+                    const resolved = this.resolveColor(cVal, tCol, themeColors);
+                    if (resolved) pDefaults.color = resolved;
+                }
+                const pSz = pPrRPr.getElementsByTagName('w:sz')[0] || pPrRPr.getElementsByTagName('sz')[0];
+                if (pSz) {
+                    const halfPts = parseInt(pSz.getAttribute('w:val') || '0', 10);
+                    if (halfPts >= 16 && halfPts <= 144) {
+                        pDefaults.fontSize = `${halfPts / 2}pt`;
+                    }
+                }
+            }
+        }
+
         // Parse runs and inline children
         const inlines = [];
         const childNodes = Array.from(p.childNodes);
@@ -437,7 +623,7 @@ export class DocxImporter {
             const childName = child.nodeName.toLowerCase();
 
             if (childName === 'w:r') {
-                const rRes = await this.parseRun(child, zip, rels);
+                const rRes = await this.parseRun(child, zip, rels, pDefaults, themeColors);
                 if (rRes.isPageBreak) pageBreakAfter = true;
                 if (rRes.html) inlines.push(rRes.html);
             } else if (childName === 'w:hyperlink') {
@@ -446,7 +632,7 @@ export class DocxImporter {
                 const linkParts = [];
                 const subRuns = Array.from(child.getElementsByTagName('w:r'));
                 for (const sr of subRuns) {
-                    const srRes = await this.parseRun(sr, zip, rels);
+                    const srRes = await this.parseRun(sr, zip, rels, pDefaults, themeColors);
                     if (srRes.html) linkParts.push(srRes.html);
                 }
                 const linkText = linkParts.join('');
@@ -507,8 +693,17 @@ export class DocxImporter {
                 ? 'heading-chapter font-bold text-xl my-6 ' + (align === 'center' ? 'text-center uppercase' : '')
                 : ((headingLevel === 2) ? 'heading-section font-bold text-lg my-4' : 'heading-subsection font-semibold text-base my-3');
 
+            const hStyles = [...styles];
+            if (pDefaults.color && pDefaults.color !== '#000000' && pDefaults.color !== '#111827') {
+                hStyles.push(`color: ${pDefaults.color};`);
+            }
+            if (pDefaults.fontFamily) {
+                hStyles.push(`font-family: ${DocxImporter.formatFontFamily(pDefaults.fontFamily)};`);
+            }
+
             const fullClass = `${hBaseClass} ${classes.join(' ')}`.trim();
-            const hHtml = `<${hTag} class="${fullClass}"${styleStr}>${innerHtml}</${hTag}>`;
+            const hStyleStr = hStyles.length > 0 ? ` style="${hStyles.join(' ')}"` : '';
+            const hHtml = `<${hTag} class="${fullClass}"${hStyleStr}>${innerHtml}</${hTag}>`;
             return {
                 html: hHtml,
                 htmlContent: innerHtml,
@@ -547,31 +742,33 @@ export class DocxImporter {
         };
     }
 
-    async parseRun(r, zip, rels) {
+    async parseRun(r, zip, rels, pDefaults = {}, themeColors = {}) {
         let isPageBreak = false;
         const htmlParts = [];
 
-        let isBold = false;
-        let isItalic = false;
+        let isBold = Boolean(pDefaults.isBold);
+        let isItalic = Boolean(pDefaults.isItalic);
         let isUnderline = false;
         let isStrike = false;
         let vertAlign = null;
-        let color = null;
+        let color = pDefaults.color || null;
         let highlight = null;
-        let fontSize = null;
-        let fontFamily = null;
+        let fontSize = pDefaults.fontSize || null;
+        let fontFamily = pDefaults.fontFamily || null;
 
         const rPr = this.findFirstDirectChild(r, ['w:rPr', 'rPr']);
         if (rPr) {
             // Bold
             const bEl = rPr.getElementsByTagName('w:b')[0];
-            if (bEl && bEl.getAttribute('w:val') !== '0' && bEl.getAttribute('w:val') !== 'false') {
-                isBold = true;
+            if (bEl) {
+                const bVal = bEl.getAttribute('w:val');
+                isBold = (bVal !== '0' && bVal !== 'false');
             }
             // Italic
             const iEl = rPr.getElementsByTagName('w:i')[0];
-            if (iEl && iEl.getAttribute('w:val') !== '0' && iEl.getAttribute('w:val') !== 'false') {
-                isItalic = true;
+            if (iEl) {
+                const iVal = iEl.getAttribute('w:val');
+                isItalic = (iVal !== '0' && iVal !== 'false');
             }
             // Underline
             const uEl = rPr.getElementsByTagName('w:u')[0];
@@ -592,8 +789,10 @@ export class DocxImporter {
             const colEl = rPr.getElementsByTagName('w:color')[0];
             if (colEl) {
                 const cVal = colEl.getAttribute('w:val') || '';
-                if (cVal && cVal.toLowerCase() !== 'auto') {
-                    color = '#' + cVal.replace(/^#/, '');
+                const tCol = colEl.getAttribute('w:themeColor') || '';
+                const resolved = this.resolveColor(cVal, tCol, themeColors);
+                if (resolved) {
+                    color = resolved;
                 }
             }
             // Highlight
@@ -615,7 +814,7 @@ export class DocxImporter {
             // Font family
             const rfEl = rPr.getElementsByTagName('w:rFonts')[0];
             if (rfEl) {
-                fontFamily = rfEl.getAttribute('w:ascii') || rfEl.getAttribute('w:hAnsi');
+                fontFamily = rfEl.getAttribute('w:ascii') || rfEl.getAttribute('w:hAnsi') || fontFamily;
             }
         }
 
@@ -655,10 +854,14 @@ export class DocxImporter {
         else if (vertAlign === 'subscript') content = `<sub>${content}</sub>`;
 
         const styles = [];
-        if (color) styles.push(`color: ${color};`);
+        if (color && color !== '#000000' && color !== '#111827') {
+            styles.push(`color: ${color};`);
+        }
         if (highlight) styles.push(`background-color: ${highlight};`);
         if (fontSize) styles.push(`font-size: ${fontSize};`);
-        if (fontFamily) styles.push(`font-family: '${fontFamily}', serif;`);
+        if (fontFamily) {
+            styles.push(`font-family: ${DocxImporter.formatFontFamily(fontFamily)};`);
+        }
 
         if (styles.length > 0) {
             content = `<span style="${styles.join(' ')}">${content}</span>`;
@@ -667,7 +870,7 @@ export class DocxImporter {
         return { html: content, isPageBreak };
     }
 
-    async parseTable(tbl, zip, rels, numberingMap, stylesMap) {
+    async parseTable(tbl, zip, rels, numberingMap, stylesMap, themeColors = {}) {
         const trNodes = Array.from(tbl.getElementsByTagName('w:tr'));
         if (trNodes.length === 0) return '';
 
@@ -725,7 +928,7 @@ export class DocxImporter {
                 const cellBlocks = [];
                 const tcParas = Array.from(tc.getElementsByTagName('w:p'));
                 for (const tcp of tcParas) {
-                    const pRes = await this.parseParagraph(tcp, zip, rels, numberingMap, stylesMap);
+                    const pRes = await this.parseParagraph(tcp, zip, rels, numberingMap, stylesMap, themeColors);
                     if (pRes.html) cellBlocks.push(pRes.html);
                 }
 

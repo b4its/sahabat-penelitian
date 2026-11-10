@@ -132,7 +132,9 @@ export class DocumentEngine {
                         this.updateStats();
                     }
                 }
-                this.onSelectionChange(this.getSelectionState());
+                const state = this.getSelectionState();
+                this.updateToolbarSelectionState(state);
+                this.onSelectionChange(state);
             }
         });
 
@@ -874,6 +876,7 @@ export class DocumentEngine {
         const extension = filename.split('.').pop().toLowerCase();
         let contentHtml = '';
         let detectedFormat = extension;
+        let importedFont = null;
 
         try {
             if (['docx', 'doc'].includes(extension)) {
@@ -888,6 +891,9 @@ export class DocumentEngine {
                         this.customHeaderText = parsed.headerText || '';
                         this.customFooterText = parsed.footerText || '';
                         this.differentFirstPage = Boolean(parsed.differentFirstPage);
+                        if (parsed.defaultFontFamily) {
+                            importedFont = parsed.defaultFontFamily;
+                        }
                     } else {
                         contentHtml = String(parsed);
                     }
@@ -940,6 +946,9 @@ export class DocumentEngine {
                         this.customFooterText = backendResult.footer_text || '';
                         if (backendResult.different_first_page !== undefined) {
                             this.differentFirstPage = Boolean(backendResult.different_first_page);
+                        }
+                        if (backendResult.default_font_family) {
+                            importedFont = backendResult.default_font_family;
                         }
                     }
                 }
@@ -999,15 +1008,19 @@ export class DocumentEngine {
             // Apply adapted typography and margins
             if (adapted.isAcademic) {
                 this.setMarginPreset('skripsi');
-                this.setFontFamily("'Times New Roman', serif");
+                const academicFont = importedFont ? DocxImporter.formatFontFamily(importedFont) : "'Times New Roman', serif";
+                this.setFontFamily(academicFont);
                 this.setFontSize('12pt');
                 this.setLineSpacing('1.5');
                 this.onAdaptationNotice({
                     type: 'academic',
-                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font Times New Roman 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.${hfDetail}`,
+                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font ${importedFont || 'Times New Roman'} 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.${hfDetail}`,
                 });
             } else {
                 this.setMarginPreset('normal');
+                if (importedFont) {
+                    this.setFontFamily(DocxImporter.formatFontFamily(importedFont));
+                }
                 this.onAdaptationNotice({
                     type: 'normal',
                     message: `Format ${detectedFormat.toUpperCase()} berhasil dimuat dan diselaraskan ke dalam lembar halaman A4.${hfDetail}`,
@@ -1225,6 +1238,10 @@ export class DocumentEngine {
                 const h1 = doc.createElement('h1');
                 h1.className = 'heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
                 h1.textContent = titleText;
+                const elStyle = el.getAttribute('style');
+                if (elStyle) {
+                    h1.setAttribute('style', elStyle);
+                }
 
                 const prevEl = el.previousElementSibling;
                 const hasPageBreakBefore = prevEl && (prevEl.classList?.contains('page-break') || prevEl.hasAttribute('data-page-break'));
@@ -1251,6 +1268,10 @@ export class DocumentEngine {
                 const h1 = doc.createElement('h1');
                 h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
                 h1.textContent = cleanText.toUpperCase();
+                const elStyle = el.getAttribute('style');
+                if (elStyle) {
+                    h1.setAttribute('style', elStyle);
+                }
 
                 const prevEl = el.previousElementSibling;
                 const hasPageBreakBefore = prevEl && (prevEl.classList?.contains('page-break') || prevEl.hasAttribute('data-page-break'));
@@ -1272,6 +1293,10 @@ export class DocumentEngine {
                 const h2 = doc.createElement('h2');
                 h2.className = 'heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100';
                 h2.innerHTML = el.innerHTML;
+                const elStyle = el.getAttribute('style');
+                if (elStyle) {
+                    h2.setAttribute('style', elStyle);
+                }
                 el.replaceWith(h2);
                 continue;
             }
@@ -1282,6 +1307,10 @@ export class DocumentEngine {
                 const h3 = doc.createElement('h3');
                 h3.className = 'heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200';
                 h3.innerHTML = el.innerHTML;
+                const elStyle = el.getAttribute('style');
+                if (elStyle) {
+                    h3.setAttribute('style', elStyle);
+                }
                 el.replaceWith(h3);
                 continue;
             }
@@ -1303,6 +1332,10 @@ export class DocumentEngine {
                 const h2 = doc.createElement('h2');
                 h2.className = 'heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase';
                 h2.innerHTML = cleanText;
+                const elStyle = el.getAttribute('style');
+                if (elStyle) {
+                    h2.setAttribute('style', elStyle);
+                }
                 el.replaceWith(h2);
                 continue;
             }
@@ -1415,18 +1448,29 @@ export class DocumentEngine {
     }
 
     setFontFamily(fontName) {
-        this.getAllEditorBodies().forEach(b => {
-            b.style.fontFamily = fontName;
-        });
-
         const active = this.getActiveEditor();
         if (active) active.focus();
-        document.execCommand('fontName', false, fontName);
+
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && !sel.isCollapsed && this.isEditorFocused()) {
+            const range = sel.getRangeAt(0);
+            const span = document.createElement('span');
+            span.style.fontFamily = fontName;
+            span.appendChild(range.extractContents());
+            range.insertNode(span);
+        } else {
+            this.getAllEditorBodies().forEach(b => {
+                b.style.fontFamily = fontName;
+            });
+        }
 
         const fontSelect = document.getElementById('font-family-select');
         if (fontSelect) {
+            const cleanFont = fontName.toLowerCase().replace(/['"]/g, '');
             for (let i = 0; i < fontSelect.options.length; i++) {
-                if (fontSelect.options[i].value.includes(fontName) || fontName.includes(fontSelect.options[i].text) || (fontName.includes('Times') && fontSelect.options[i].value.includes('Times'))) {
+                const optVal = fontSelect.options[i].value.toLowerCase().replace(/['"]/g, '');
+                const optText = fontSelect.options[i].text.toLowerCase();
+                if (optVal.includes(cleanFont) || cleanFont.includes(optText) || (cleanFont.includes('times') && optVal.includes('times'))) {
                     fontSelect.selectedIndex = i;
                     break;
                 }
@@ -1694,10 +1738,22 @@ export class DocumentEngine {
     }
 
     setTextColor(hexColor) {
+        const active = this.getActiveEditor();
+        if (active) active.focus();
+        try {
+            document.execCommand('styleWithCSS', false, true);
+        } catch (e) {}
         this.execute('foreColor', hexColor);
+        const picker = document.getElementById('text-color-picker');
+        if (picker) picker.value = hexColor;
     }
 
     setHighlightColor(hexColor) {
+        const active = this.getActiveEditor();
+        if (active) active.focus();
+        try {
+            document.execCommand('styleWithCSS', false, true);
+        } catch (e) {}
         this.execute('hiliteColor', hexColor);
     }
 
@@ -2121,6 +2177,20 @@ export class DocumentEngine {
             rect = range.getBoundingClientRect();
         }
 
+        let computedFont = '';
+        let computedSize = '';
+        let computedColor = '';
+        const node = sel.anchorNode;
+        const elem = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+        if (elem) {
+            try {
+                const cs = window.getComputedStyle(elem);
+                computedFont = cs.fontFamily || '';
+                computedSize = cs.fontSize || '';
+                computedColor = cs.color || '';
+            } catch (e) {}
+        }
+
         return {
             hasSelection,
             text,
@@ -2134,7 +2204,73 @@ export class DocumentEngine {
             alignCenter: document.queryCommandState('justifyCenter'),
             alignRight: document.queryCommandState('justifyRight'),
             alignJustify: document.queryCommandState('justifyFull'),
+            fontFamily: computedFont,
+            fontSize: computedSize,
+            color: computedColor,
         };
+    }
+
+    updateToolbarSelectionState(state) {
+        if (!state) return;
+
+        // Sync font family select
+        const fontSelect = document.getElementById('font-family-select');
+        if (fontSelect && state.fontFamily) {
+            const cleanComputed = state.fontFamily.toLowerCase().replace(/['"]/g, '');
+            for (let i = 0; i < fontSelect.options.length; i++) {
+                const optVal = fontSelect.options[i].value.toLowerCase().replace(/['"]/g, '');
+                const optText = fontSelect.options[i].text.toLowerCase();
+                if (cleanComputed.includes(optText) || optVal.includes(cleanComputed.split(',')[0].trim())) {
+                    fontSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        // Sync font size select
+        const sizeSelect = document.getElementById('font-size-select');
+        if (sizeSelect && state.fontSize) {
+            const px = parseFloat(state.fontSize);
+            if (!isNaN(px)) {
+                const pt = Math.round(px * 0.75);
+                const targetVal = `${pt}pt`;
+                for (let i = 0; i < sizeSelect.options.length; i++) {
+                    if (sizeSelect.options[i].value === targetVal) {
+                        sizeSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Sync text color picker
+        const colorPicker = document.getElementById('text-color-picker');
+        if (colorPicker && state.color) {
+            const rgbMatch = state.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+            if (rgbMatch) {
+                const r = parseInt(rgbMatch[1], 10).toString(16).padStart(2, '0');
+                const g = parseInt(rgbMatch[2], 10).toString(16).padStart(2, '0');
+                const b = parseInt(rgbMatch[3], 10).toString(16).padStart(2, '0');
+                colorPicker.value = `#${r}${g}${b}`;
+            }
+        }
+
+        // Sync formatting buttons active state
+        const boldBtn = document.querySelector('[data-cmd="bold"]');
+        if (boldBtn) {
+            boldBtn.classList.toggle('bg-gray-200', Boolean(state.isBold));
+            boldBtn.classList.toggle('dark:bg-gray-700', Boolean(state.isBold));
+        }
+        const italicBtn = document.querySelector('[data-cmd="italic"]');
+        if (italicBtn) {
+            italicBtn.classList.toggle('bg-gray-200', Boolean(state.isItalic));
+            italicBtn.classList.toggle('dark:bg-gray-700', Boolean(state.isItalic));
+        }
+        const underlineBtn = document.querySelector('[data-cmd="underline"]');
+        if (underlineBtn) {
+            underlineBtn.classList.toggle('bg-gray-200', Boolean(state.isUnderline));
+            underlineBtn.classList.toggle('dark:bg-gray-700', Boolean(state.isUnderline));
+        }
     }
 
     recordHistory() {

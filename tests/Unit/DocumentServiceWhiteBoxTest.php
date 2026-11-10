@@ -700,3 +700,130 @@ test('white-box: exportDocument embeds Word MsoHeader and MsoFooter when headerT
         ->and($exported['content'])->toContain('Hak Cipta 2026 Dilindungi')
         ->and($exported['content'])->not->toContain('Halaman <span style="mso-field-code: PAGE "></span> dari');
 });
+
+test('white-box: DocxImporter::formatFontFamily correctly assigns sans-serif, monospace, and serif fallbacks', function () {
+    // Sans-serif fonts
+    expect(DocxImporter::formatFontFamily('Arial'))->toBe("'Arial', sans-serif")
+        ->and(DocxImporter::formatFontFamily('Calibri'))->toBe("'Calibri', sans-serif")
+        ->and(DocxImporter::formatFontFamily('Aptos'))->toBe("'Aptos', sans-serif")
+        ->and(DocxImporter::formatFontFamily('Segoe UI'))->toBe("'Segoe UI', sans-serif")
+        ->and(DocxImporter::formatFontFamily('Verdana'))->toBe("'Verdana', sans-serif")
+        ->and(DocxImporter::formatFontFamily('Tahoma'))->toBe("'Tahoma', sans-serif")
+        ->and(DocxImporter::formatFontFamily('Instrument Sans'))->toBe("'Instrument Sans', sans-serif");
+
+    // Monospace fonts
+    expect(DocxImporter::formatFontFamily('Courier New'))->toBe("'Courier New', monospace")
+        ->and(DocxImporter::formatFontFamily('Consolas'))->toBe("'Consolas', monospace");
+
+    // Serif fonts
+    expect(DocxImporter::formatFontFamily('Times New Roman'))->toBe("'Times New Roman', serif")
+        ->and(DocxImporter::formatFontFamily('Georgia'))->toBe("'Georgia', serif")
+        ->and(DocxImporter::formatFontFamily('Cambria'))->toBe("'Cambria', serif")
+        ->and(DocxImporter::formatFontFamily('Garamond'))->toBe("'Garamond', serif");
+
+    // Empty or sanitized inputs
+    expect(DocxImporter::formatFontFamily(''))->toBe('')
+        ->and(DocxImporter::formatFontFamily("'Calibri'"))->toBe("'Calibri', sans-serif");
+});
+
+test('white-box: DocxImporter resolves theme colors and extracts styles with font family and colors', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_whitebox_font_').'.docx';
+    $zip = new \ZipArchive;
+    $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    // Theme XML defining custom accent colors
+    $themeXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+    <a:themeElements>
+        <a:clrScheme name="Office">
+            <a:dark1><a:sysClr val="windowText" lastClr="000000"/></a:dark1>
+            <a:light1><a:sysClr val="window" lastClr="FFFFFF"/></a:light1>
+            <a:dark2><a:srgbClr val="1F497D"/></a:dark2>
+            <a:light2><a:srgbClr val="EEECE1"/></a:light2>
+            <a:accent1><a:srgbClr val="2F5496"/></a:accent1>
+            <a:accent2><a:srgbClr val="C00000"/></a:accent2>
+        </a:clrScheme>
+    </a:themeElements>
+</a:theme>
+XML;
+    $zip->addFromString('word/theme/theme1.xml', $themeXml);
+
+    // Styles XML defining docDefaults and Heading1 style with accent1
+    $stylesXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:docDefaults>
+        <w:rPrDefault>
+            <w:rPr>
+                <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>
+                <w:sz w:val="22"/>
+            </w:rPr>
+        </w:rPrDefault>
+    </w:docDefaults>
+    <w:style w:type="paragraph" w:styleId="Heading1">
+        <w:name w:val="heading 1"/>
+        <w:rPr>
+            <w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/>
+            <w:color w:val="2F5496" w:themeColor="accent1"/>
+            <w:sz w:val="32"/>
+            <w:b/>
+        </w:rPr>
+    </w:style>
+</w:styles>
+XML;
+    $zip->addFromString('word/styles.xml', $stylesXml);
+
+    // Document XML with a heading using Heading1 style and runs with custom color
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p>
+            <w:pPr>
+                <w:pStyle w:val="Heading1"/>
+            </w:pPr>
+            <w:r>
+                <w:t>BAB I PENDAHULUAN</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:t>Teks biasa tanpa warna khusus.</w:t>
+            </w:r>
+            <w:r>
+                <w:rPr>
+                    <w:color w:val="C00000" w:themeColor="accent2"/>
+                    <w:rFonts w:ascii="Arial"/>
+                </w:rPr>
+                <w:t>Teks merah penting.</w:t>
+            </w:r>
+        </w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $importer = new DocxImporter;
+    $meta = $importer->parseWithMetadata($zipPath);
+
+    expect($importer->getDefaultFontFamily())->toBe("'Calibri', sans-serif")
+        ->and($meta['default_font_family'])->toBe("'Calibri', sans-serif")
+        ->and($meta['html'])->toContain('style="color: #2F5496; font-family: \'Calibri Light\', sans-serif;"')
+        ->and($meta['html'])->toContain('color: #C00000;')
+        ->and($meta['html'])->toContain('font-family: \'Arial\', sans-serif;')
+        ->and(str_contains($meta['html'], 'color: #000000;'))->toBeFalse()
+        ->and(str_contains($meta['html'], ", serif;'"))->toBeFalse();
+
+    @unlink($zipPath);
+});
+
+test('white-box: adaptDocumentStructure preserves inline heading styles without escaping quotes', function () {
+    $html = '<h1 style="color: #2F5496; font-family: \'Calibri Light\', sans-serif;" class="heading-chapter">BAB I PENDAHULUAN</h1><p>Isi bab 1.</p>';
+    $adapted = $this->service->adaptDocumentStructure($html, 'laporan.docx');
+
+    expect(str_contains($adapted['adapted_html'], 'style="color: #2F5496; font-family: \'Calibri Light\', sans-serif;"'))->toBeTrue();
+    expect(str_contains($adapted['adapted_html'], '&#039;'))->toBeFalse();
+    expect(count($adapted['headings']))->toBe(1);
+});

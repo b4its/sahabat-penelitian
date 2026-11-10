@@ -42,10 +42,13 @@
         }
 
         #document-page-canvas.canvas-dark-sheet #document-editor,
-        #document-page-canvas.canvas-dark-sheet #document-editor *,
-        .document-page-sheet.canvas-dark-sheet .page-sheet-body,
-        .document-page-sheet.canvas-dark-sheet .page-sheet-body * {
-            color: #f3f4f6 !important;
+        .document-page-sheet.canvas-dark-sheet .page-sheet-body {
+            color: #f3f4f6;
+        }
+
+        #document-page-canvas.canvas-dark-sheet #document-editor *:not([style*="color"]),
+        .document-page-sheet.canvas-dark-sheet .page-sheet-body *:not([style*="color"]) {
+            color: #f3f4f6;
         }
 
         /* Page Sheet Gap / Margin */
@@ -504,11 +507,18 @@
             <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <select id="font-family-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-36">
                     <option value="'Times New Roman', serif" selected>Times New Roman</option>
-                    <option value="'Instrument Sans', sans-serif">Instrument Sans</option>
                     <option value="Arial, sans-serif">Arial</option>
                     <option value="Calibri, sans-serif">Calibri</option>
+                    <option value="Aptos, 'Segoe UI', sans-serif">Aptos</option>
+                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
                     <option value="Georgia, serif">Georgia</option>
+                    <option value="Garamond, serif">Garamond</option>
+                    <option value="Cambria, Georgia, serif">Cambria</option>
+                    <option value="Verdana, sans-serif">Verdana</option>
+                    <option value="Tahoma, sans-serif">Tahoma</option>
+                    <option value="'Instrument Sans', sans-serif">Instrument Sans</option>
                     <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Consolas, 'Courier New', monospace">Consolas</option>
                 </select>
 
                 <select id="font-size-select" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs outline-none focus:border-indigo-500 w-16">

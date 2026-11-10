@@ -26,6 +26,8 @@ class DocxImporter
 
     private bool $differentFirstPage = false;
 
+    private ?string $defaultFontFamily = null;
+
     public function getExtractedHeader(): string
     {
         return $this->extractedHeader;
@@ -41,6 +43,11 @@ class DocxImporter
         return $this->differentFirstPage;
     }
 
+    public function getDefaultFontFamily(): ?string
+    {
+        return $this->defaultFontFamily;
+    }
+
     /**
      * Parse DOCX with extracted headers and footers metadata.
      */
@@ -53,6 +60,7 @@ class DocxImporter
             'header_text' => $this->extractedHeader,
             'footer_text' => $this->extractedFooter,
             'different_first_page' => $this->differentFirstPage,
+            'default_font_family' => $this->defaultFontFamily,
         ];
     }
 
@@ -64,6 +72,7 @@ class DocxImporter
         $this->extractedHeader = '';
         $this->extractedFooter = '';
         $this->differentFirstPage = false;
+        $this->defaultFontFamily = null;
 
         $filePath = ($file instanceof UploadedFile) ? $file->getRealPath() : (is_string($file) && file_exists($file) ? $file : null);
         $raw = $filePath && file_exists($filePath) ? @file_get_contents($filePath) : (is_string($file) ? $file : '');
@@ -93,11 +102,14 @@ class DocxImporter
         // 3. Extract Running Headers and Footers from Word archive
         $this->parseHeadersAndFooters($zip, $rels, $docXml);
 
-        // 4. Parse Numbering formats (bullet vs ordered lists)
+        // 4. Parse Theme Colors
+        $themeColors = $this->parseThemeColors($zip);
+
+        // 5. Parse Numbering formats (bullet vs ordered lists)
         $numberingMap = $this->parseNumbering($zip);
 
-        // 5. Parse Styles (Heading levels, Title, Subtitle, etc.)
-        $stylesMap = $this->parseStyles($zip);
+        // 6. Parse Styles (Heading levels, Title, Subtitle, fonts, colors)
+        $stylesMap = $this->parseStyles($zip, $themeColors);
 
         // 4. Parse Main Document XML
         $dom = new DOMDocument;
@@ -138,7 +150,7 @@ class DocxImporter
             }
 
             if ($node->nodeName === 'w:p') {
-                $pResult = $this->parseParagraph($node, $xpath, $zip, $rels, $numberingMap, $stylesMap);
+                $pResult = $this->parseParagraph($node, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
 
                 if (! empty($pResult['page_break_before'])) {
                     $flushList();
@@ -166,7 +178,7 @@ class DocxImporter
                 }
             } elseif ($node->nodeName === 'w:tbl') {
                 $flushList();
-                $tblHtml = $this->parseTable($node, $xpath, $zip, $rels, $numberingMap, $stylesMap);
+                $tblHtml = $this->parseTable($node, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
                 if (! empty($tblHtml)) {
                     $blocks[] = $tblHtml;
                 }
@@ -179,14 +191,14 @@ class DocxImporter
                             continue;
                         }
                         if ($sdtChild->nodeName === 'w:p') {
-                            $pResult = $this->parseParagraph($sdtChild, $xpath, $zip, $rels, $numberingMap, $stylesMap);
+                            $pResult = $this->parseParagraph($sdtChild, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
                             $flushList();
                             if (! empty($pResult['html'])) {
                                 $blocks[] = $pResult['html'];
                             }
                         } elseif ($sdtChild->nodeName === 'w:tbl') {
                             $flushList();
-                            $tblHtml = $this->parseTable($sdtChild, $xpath, $zip, $rels, $numberingMap, $stylesMap);
+                            $tblHtml = $this->parseTable($sdtChild, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
                             if (! empty($tblHtml)) {
                                 $blocks[] = $tblHtml;
                             }
@@ -377,9 +389,112 @@ class DocxImporter
     }
 
     /**
+     * Parse word/theme/theme1.xml to resolve Word theme colors.
+     */
+    private function parseThemeColors(ZipArchive $zip): array
+    {
+        $colors = [
+            'dark1' => '#000000',
+            'light1' => '#ffffff',
+            'dark2' => '#1f497d',
+            'light2' => '#eeece1',
+            'accent1' => '#4f81bd',
+            'accent2' => '#c0504d',
+            'accent3' => '#9bbb59',
+            'accent4' => '#8064a2',
+            'accent5' => '#4bacc6',
+            'accent6' => '#f79646',
+            'hlink' => '#0563c1',
+            'folHlink' => '#954f72',
+        ];
+
+        $themeXml = $zip->getFromName('word/theme/theme1.xml');
+        if ($themeXml !== false) {
+            $dom = new DOMDocument;
+            @$dom->loadXML($themeXml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+            $xpath = new DOMXPath($dom);
+            $xpath->registerNamespace('a', 'http://schemas.openxmlformats.org/drawingml/2006/main');
+
+            $schemeNodes = $xpath->query('//a:clrScheme/*');
+            if ($schemeNodes) {
+                foreach ($schemeNodes as $node) {
+                    $colorName = $node->localName;
+                    $srgb = $xpath->query('.//a:srgbClr/@val', $node)->item(0);
+                    if ($srgb) {
+                        $colors[$colorName] = '#'.$srgb->nodeValue;
+                    } else {
+                        $sys = $xpath->query('.//a:sysClr/@lastClr', $node)->item(0);
+                        if ($sys) {
+                            $colors[$colorName] = '#'.$sys->nodeValue;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $colors;
+    }
+
+    /**
+     * Resolve hex color from val or themeColor.
+     */
+    private function resolveColor(?string $val, ?string $themeColor, array $themeColors): ?string
+    {
+        if ($val && strtolower($val) !== 'auto') {
+            return '#'.ltrim($val, '#');
+        }
+
+        if ($themeColor && isset($themeColors[$themeColor])) {
+            return $themeColors[$themeColor];
+        }
+
+        return null;
+    }
+
+    /**
+     * Format font family with appropriate CSS generic fallback.
+     */
+    public static function formatFontFamily(string $fontName): string
+    {
+        $clean = trim(str_replace(["'", '"'], '', $fontName));
+        if ($clean === '') {
+            return '';
+        }
+
+        $lower = strtolower($clean);
+        $sansFonts = [
+            'arial', 'calibri', 'helvetica', 'segoe ui', 'tahoma', 'verdana',
+            'trebuchet ms', 'open sans', 'roboto', 'century gothic', 'instrument sans',
+            'aptos', 'sans-serif',
+        ];
+        $monoFonts = [
+            'courier', 'courier new', 'consolas', 'monaco', 'menlo',
+            'liberation mono', 'source code pro', 'monospace',
+        ];
+
+        $fallback = 'serif';
+        foreach ($sansFonts as $sans) {
+            if (str_contains($lower, $sans)) {
+                $fallback = 'sans-serif';
+                break;
+            }
+        }
+        if ($fallback === 'serif') {
+            foreach ($monoFonts as $mono) {
+                if (str_contains($lower, $mono)) {
+                    $fallback = 'monospace';
+                    break;
+                }
+            }
+        }
+
+        return "'{$clean}', {$fallback}";
+    }
+
+    /**
      * Parse word/styles.xml into style map.
      */
-    private function parseStyles(ZipArchive $zip): array
+    private function parseStyles(ZipArchive $zip, array $themeColors = []): array
     {
         $map = [];
         $xml = $zip->getFromName('word/styles.xml');
@@ -392,23 +507,64 @@ class DocxImporter
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('w', self::W_NS);
 
-        foreach ($xpath->query('//w:style[@w:type="paragraph"]') as $style) {
+        // Document defaults (docDefaults)
+        $docDefFont = $xpath->query('//w:docDefaults/w:rPrDefault/w:rPr/w:rFonts/@w:ascii | //w:docDefaults/w:rPrDefault/w:rPr/w:rFonts/@w:hAnsi')->item(0);
+        if ($docDefFont && ! empty($docDefFont->nodeValue)) {
+            $this->defaultFontFamily = self::formatFontFamily($docDefFont->nodeValue);
+        }
+
+        foreach ($xpath->query('//w:style[@w:type="paragraph" or @w:type="character"]') as $style) {
             $styleId = $style->getAttribute('w:styleId');
+            $styleType = $style->getAttribute('w:type');
             $nameNode = $xpath->query('.//w:name/@w:val', $style);
             $name = ($nameNode->length > 0) ? strtolower($nameNode->item(0)->nodeValue) : strtolower($styleId);
 
             $headingLevel = null;
-            if (preg_match('/heading\s*(\d)/i', $name, $m) || preg_match('/judul\s*(\d)/i', $name, $m)) {
-                $headingLevel = (int) $m[1];
-            } elseif ($name === 'title' || $styleId === 'Title' || $name === 'judul') {
-                $headingLevel = 1;
-            } elseif ($name === 'subtitle' || $styleId === 'Subtitle' || $name === 'subjudul') {
-                $headingLevel = 2;
+            if ($styleType === 'paragraph') {
+                if (preg_match('/heading\s*(\d)/i', $name, $m) || preg_match('/judul\s*(\d)/i', $name, $m)) {
+                    $headingLevel = (int) $m[1];
+                } elseif ($name === 'title' || $styleId === 'Title' || $name === 'judul') {
+                    $headingLevel = 1;
+                } elseif ($name === 'subtitle' || $styleId === 'Subtitle' || $name === 'subjudul') {
+                    $headingLevel = 2;
+                }
             }
 
+            // Extract rPr from style
+            $styleFont = null;
+            $fontNode = $xpath->query('./w:rPr/w:rFonts/@w:ascii | ./w:rPr/w:rFonts/@w:hAnsi', $style)->item(0);
+            if ($fontNode) {
+                $styleFont = $fontNode->nodeValue;
+                if ($this->defaultFontFamily === null && ($styleId === 'Normal' || $name === 'normal')) {
+                    $this->defaultFontFamily = self::formatFontFamily($styleFont);
+                }
+            }
+
+            $colorValNode = $xpath->query('./w:rPr/w:color/@w:val', $style)->item(0);
+            $colorThemeNode = $xpath->query('./w:rPr/w:color/@w:themeColor', $style)->item(0);
+            $styleColor = $this->resolveColor($colorValNode?->nodeValue, $colorThemeNode?->nodeValue, $themeColors);
+
+            $styleSize = null;
+            $szNode = $xpath->query('./w:rPr/w:sz/@w:val', $style)->item(0);
+            if ($szNode) {
+                $pt = ((int) $szNode->nodeValue) / 2;
+                if ($pt >= 8 && $pt <= 72) {
+                    $styleSize = "{$pt}pt";
+                }
+            }
+
+            $isBold = $xpath->query('./w:rPr/w:b[not(@w:val="0" or @w:val="false")]', $style)->length > 0;
+            $isItalic = $xpath->query('./w:rPr/w:i[not(@w:val="0" or @w:val="false")]', $style)->length > 0;
+
             $map[$styleId] = [
+                'type' => $styleType,
                 'name' => $name,
                 'heading_level' => $headingLevel,
+                'font_family' => $styleFont,
+                'color' => $styleColor,
+                'font_size' => $styleSize,
+                'is_bold' => $isBold,
+                'is_italic' => $isItalic,
             ];
         }
 
@@ -418,7 +574,7 @@ class DocxImporter
     /**
      * Parse a single paragraph <w:p>.
      */
-    private function parseParagraph(DOMElement $p, DOMXPath $xpath, ZipArchive $zip, array $rels, array $numberingMap, array $stylesMap): array
+    private function parseParagraph(DOMElement $p, DOMXPath $xpath, ZipArchive $zip, array $rels, array $numberingMap, array $stylesMap, array $themeColors = []): array
     {
         $pageBreakBefore = false;
         $pageBreakAfter = false;
@@ -428,6 +584,14 @@ class DocxImporter
         $listType = 'ul'; // 'ul' or 'ol'
         $listLevel = 0;
         $pStyle = '';
+
+        $pDefaults = [
+            'font_family' => null,
+            'color' => null,
+            'font_size' => null,
+            'is_bold' => false,
+            'is_italic' => false,
+        ];
 
         // Check paragraph properties <w:pPr>
         $pPr = $xpath->query('./w:pPr', $p)->item(0);
@@ -442,14 +606,49 @@ class DocxImporter
             if ($styleNode) {
                 $pStyle = $styleNode->nodeValue;
                 $styleMeta = $stylesMap[$pStyle] ?? null;
-                if ($styleMeta && $styleMeta['heading_level'] !== null) {
-                    $headingLevel = $styleMeta['heading_level'];
+                if ($styleMeta) {
+                    if ($styleMeta['heading_level'] !== null) {
+                        $headingLevel = $styleMeta['heading_level'];
+                    }
+                    $pDefaults['font_family'] = $styleMeta['font_family'] ?? null;
+                    $pDefaults['color'] = $styleMeta['color'] ?? null;
+                    $pDefaults['font_size'] = $styleMeta['font_size'] ?? null;
+                    $pDefaults['is_bold'] = $styleMeta['is_bold'] ?? false;
+                    $pDefaults['is_italic'] = $styleMeta['is_italic'] ?? false;
                 } elseif (preg_match('/^heading\s*(\d)/i', $pStyle, $hm) || preg_match('/^judul\s*(\d)/i', $pStyle, $hm)) {
                     $headingLevel = (int) $hm[1];
                 } elseif (stripos($pStyle, 'title') !== false || stripos($pStyle, 'judul') !== false) {
                     $headingLevel = 1;
                 } elseif (stripos($pStyle, 'subtitle') !== false || stripos($pStyle, 'subjudul') !== false) {
                     $headingLevel = 2;
+                }
+            }
+
+            // Direct paragraph rPr overrides
+            $prPr = $xpath->query('./w:rPr', $pPr)->item(0);
+            if ($prPr) {
+                $pFontNode = $xpath->query('./w:rFonts/@w:ascii | ./w:rFonts/@w:hAnsi', $prPr)->item(0);
+                if ($pFontNode) {
+                    $pDefaults['font_family'] = $pFontNode->nodeValue;
+                }
+                $pColorVal = $xpath->query('./w:color/@w:val', $prPr)->item(0);
+                $pColorTheme = $xpath->query('./w:color/@w:themeColor', $prPr)->item(0);
+                $pCol = $this->resolveColor($pColorVal?->nodeValue, $pColorTheme?->nodeValue, $themeColors);
+                if ($pCol !== null) {
+                    $pDefaults['color'] = $pCol;
+                }
+                $pSzNode = $xpath->query('./w:sz/@w:val', $prPr)->item(0);
+                if ($pSzNode) {
+                    $pt = ((int) $pSzNode->nodeValue) / 2;
+                    if ($pt >= 8 && $pt <= 72) {
+                        $pDefaults['font_size'] = "{$pt}pt";
+                    }
+                }
+                if ($xpath->query('./w:b[not(@w:val="0" or @w:val="false")]', $prPr)->length > 0) {
+                    $pDefaults['is_bold'] = true;
+                }
+                if ($xpath->query('./w:i[not(@w:val="0" or @w:val="false")]', $prPr)->length > 0) {
+                    $pDefaults['is_italic'] = true;
                 }
             }
 
@@ -489,7 +688,7 @@ class DocxImporter
             }
 
             if ($child->nodeName === 'w:r') {
-                $runResult = $this->parseRun($child, $xpath, $zip, $rels);
+                $runResult = $this->parseRun($child, $xpath, $zip, $rels, $pDefaults, $stylesMap, $themeColors);
                 if ($runResult['is_page_break']) {
                     $pageBreakAfter = true;
                 }
@@ -502,7 +701,7 @@ class DocxImporter
                 $linkContent = [];
                 foreach ($child->childNodes as $subR) {
                     if ($subR->nodeType === XML_ELEMENT_NODE && $subR->nodeName === 'w:r') {
-                        $subRes = $this->parseRun($subR, $xpath, $zip, $rels);
+                        $subRes = $this->parseRun($subR, $xpath, $zip, $rels, $pDefaults, $stylesMap, $themeColors);
                         if ($subRes['html'] !== '') {
                             $linkContent[] = $subRes['html'];
                         }
@@ -537,6 +736,16 @@ class DocxImporter
         } elseif ($align === 'left') {
             $classes[] = 'text-left';
             $styleAttr[] = 'text-align: left;';
+        }
+
+        // Heading specific font and color preservation
+        if ($headingLevel !== null && $headingLevel >= 1 && $headingLevel <= 6) {
+            if (! empty($pDefaults['color']) && ! in_array(strtolower($pDefaults['color']), ['#000000', '#000', 'black'])) {
+                $styleAttr[] = "color: {$pDefaults['color']};";
+            }
+            if (! empty($pDefaults['font_family'])) {
+                $styleAttr[] = 'font-family: '.self::formatFontFamily($pDefaults['font_family']).';';
+            }
         }
 
         $classStr = ! empty($classes) ? ' class="'.implode(' ', $classes).'"' : '';
@@ -621,55 +830,89 @@ class DocxImporter
     /**
      * Parse a single run <w:r>.
      */
-    private function parseRun(DOMElement $r, DOMXPath $xpath, ZipArchive $zip, array $rels): array
+    private function parseRun(DOMElement $r, DOMXPath $xpath, ZipArchive $zip, array $rels, array $pDefaults = [], array $stylesMap = [], array $themeColors = []): array
     {
         $isPageBreak = false;
         $htmlParts = [];
 
-        // Formatting flags
-        $isBold = false;
-        $isItalic = false;
+        // Formatting flags inherited from paragraph defaults / style
+        $isBold = $pDefaults['is_bold'] ?? false;
+        $isItalic = $pDefaults['is_italic'] ?? false;
         $isUnderline = false;
         $isStrike = false;
         $vertAlign = null; // 'superscript' or 'subscript'
-        $color = null;
+        $color = $pDefaults['color'] ?? null;
         $highlight = null;
-        $fontSize = null;
-        $fontFamily = null;
+        $fontSize = $pDefaults['font_size'] ?? null;
+        $fontFamily = $pDefaults['font_family'] ?? null;
 
         $rPr = $xpath->query('./w:rPr', $r)->item(0);
         if ($rPr) {
+            // Character style override
+            $rStyleNode = $xpath->query('./w:rStyle/@w:val', $rPr)->item(0);
+            if ($rStyleNode && isset($stylesMap[$rStyleNode->nodeValue])) {
+                $cStyle = $stylesMap[$rStyleNode->nodeValue];
+                if (! empty($cStyle['font_family'])) {
+                    $fontFamily = $cStyle['font_family'];
+                }
+                if (! empty($cStyle['color'])) {
+                    $color = $cStyle['color'];
+                }
+                if (! empty($cStyle['font_size'])) {
+                    $fontSize = $cStyle['font_size'];
+                }
+                if (! empty($cStyle['is_bold'])) {
+                    $isBold = true;
+                }
+                if (! empty($cStyle['is_italic'])) {
+                    $isItalic = true;
+                }
+            }
+
             // Bold
             if ($xpath->query('./w:b[not(@w:val="0" or @w:val="false")]', $rPr)->length > 0) {
                 $isBold = true;
+            } elseif ($xpath->query('./w:b[@w:val="0" or @w:val="false"]', $rPr)->length > 0) {
+                $isBold = false;
             }
+
             // Italic
             if ($xpath->query('./w:i[not(@w:val="0" or @w:val="false")]', $rPr)->length > 0) {
                 $isItalic = true;
+            } elseif ($xpath->query('./w:i[@w:val="0" or @w:val="false"]', $rPr)->length > 0) {
+                $isItalic = false;
             }
+
             // Underline (any u tag except none)
             if ($xpath->query('./w:u[not(@w:val="none")]', $rPr)->length > 0) {
                 $isUnderline = true;
             }
+
             // Strike
             if ($xpath->query('./w:strike[not(@w:val="0" or @w:val="false")] | ./w:dstrike', $rPr)->length > 0) {
                 $isStrike = true;
             }
+
             // Vertical align (superscript / subscript)
             $vaNode = $xpath->query('./w:vertAlign/@w:val', $rPr)->item(0);
             if ($vaNode) {
                 $vertAlign = strtolower($vaNode->nodeValue);
             }
+
             // Color
-            $colorNode = $xpath->query('./w:color/@w:val', $rPr)->item(0);
-            if ($colorNode && strtolower($colorNode->nodeValue) !== 'auto') {
-                $color = '#'.ltrim($colorNode->nodeValue, '#');
+            $colorValNode = $xpath->query('./w:color/@w:val', $rPr)->item(0);
+            $colorThemeNode = $xpath->query('./w:color/@w:themeColor', $rPr)->item(0);
+            $runCol = $this->resolveColor($colorValNode?->nodeValue, $colorThemeNode?->nodeValue, $themeColors);
+            if ($runCol !== null) {
+                $color = $runCol;
             }
+
             // Highlight
             $hlNode = $xpath->query('./w:highlight/@w:val', $rPr)->item(0);
             if ($hlNode && strtolower($hlNode->nodeValue) !== 'none') {
                 $highlight = strtolower($hlNode->nodeValue);
             }
+
             // Font size (half-points)
             $szNode = $xpath->query('./w:sz/@w:val', $rPr)->item(0);
             if ($szNode) {
@@ -678,6 +921,7 @@ class DocxImporter
                     $fontSize = "{$pt}pt";
                 }
             }
+
             // Font family
             $fontNode = $xpath->query('./w:rFonts/@w:ascii | ./w:rFonts/@w:hAnsi', $rPr)->item(0);
             if ($fontNode) {
@@ -737,7 +981,8 @@ class DocxImporter
 
         // Wrap with span for color, highlight, font-size, font-family
         $styles = [];
-        if ($color) {
+        // Omit pure black #000000 on standard body runs to prevent patchy mixed shades and dark-mode invisibility
+        if ($color && ! in_array(strtolower($color), ['#000000', '#000', 'black'])) {
             $styles[] = "color: {$color};";
         }
         if ($highlight) {
@@ -747,7 +992,10 @@ class DocxImporter
             $styles[] = "font-size: {$fontSize};";
         }
         if ($fontFamily) {
-            $styles[] = "font-family: '{$fontFamily}', serif;";
+            $fontCss = self::formatFontFamily($fontFamily);
+            if ($fontCss !== '') {
+                $styles[] = "font-family: {$fontCss};";
+            }
         }
 
         if (! empty($styles)) {
@@ -764,7 +1012,7 @@ class DocxImporter
     /**
      * Parse table element <w:tbl>.
      */
-    private function parseTable(DOMElement $tbl, DOMXPath $xpath, ZipArchive $zip, array $rels, array $numberingMap, array $stylesMap): string
+    private function parseTable(DOMElement $tbl, DOMXPath $xpath, ZipArchive $zip, array $rels, array $numberingMap, array $stylesMap, array $themeColors = []): string
     {
         $rows = $xpath->query('./w:tr', $tbl);
         if ($rows->length === 0) {
@@ -832,7 +1080,7 @@ class DocxImporter
                 $cellBlocks = [];
                 $tcParas = $xpath->query('./w:p', $tc);
                 foreach ($tcParas as $tcp) {
-                    $pRes = $this->parseParagraph($tcp, $xpath, $zip, $rels, $numberingMap, $stylesMap);
+                    $pRes = $this->parseParagraph($tcp, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
                     if (! empty($pRes['html'])) {
                         $cellBlocks[] = $pRes['html'];
                     }

@@ -785,3 +785,115 @@ XML;
 
     @unlink($zipPath);
 });
+
+test('black-box: editor view contains expanded font family selector with standard Word fonts', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Verify all standard Word and document fonts exist in dropdown
+    $response->assertSee('value="\'Times New Roman\', serif"', false);
+    $response->assertSee('value="Arial, sans-serif"', false);
+    $response->assertSee('value="Calibri, sans-serif"', false);
+    $response->assertSee('value="Aptos, \'Segoe UI\', sans-serif"', false);
+    $response->assertSee('value="\'Segoe UI\', sans-serif"', false);
+    $response->assertSee('value="Georgia, serif"', false);
+    $response->assertSee('value="Garamond, serif"', false);
+    $response->assertSee('value="Cambria, Georgia, serif"', false);
+    $response->assertSee('value="Verdana, sans-serif"', false);
+    $response->assertSee('value="Tahoma, sans-serif"', false);
+    $response->assertSee('value="\'Courier New\', monospace"', false);
+    $response->assertSee('value="Consolas, \'Courier New\', monospace"', false);
+});
+
+test('black-box: user can upload docx with custom colors and theme colors preserving accurate typography', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_blackbox_font_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $themeXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+    <a:themeElements>
+        <a:clrScheme name="Office">
+            <a:dark1><a:sysClr val="windowText" lastClr="000000"/></a:dark1>
+            <a:light1><a:sysClr val="window" lastClr="FFFFFF"/></a:light1>
+            <a:dark2><a:srgbClr val="1F497D"/></a:dark2>
+            <a:light2><a:srgbClr val="EEECE1"/></a:light2>
+            <a:accent1><a:srgbClr val="2F5496"/></a:accent1>
+        </a:clrScheme>
+    </a:themeElements>
+</a:theme>
+XML;
+    $zip->addFromString('word/theme/theme1.xml', $themeXml);
+
+    $docDefaultsStyles = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:docDefaults>
+        <w:rPrDefault>
+            <w:rPr>
+                <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>
+                <w:sz w:val="24"/>
+            </w:rPr>
+        </w:rPrDefault>
+    </w:docDefaults>
+    <w:style w:type="paragraph" w:styleId="Heading1">
+        <w:name w:val="heading 1"/>
+        <w:rPr>
+            <w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/>
+            <w:color w:val="2F5496" w:themeColor="accent1"/>
+            <w:sz w:val="32"/>
+            <w:b/>
+        </w:rPr>
+    </w:style>
+</w:styles>
+XML;
+    $zip->addFromString('word/styles.xml', $docDefaultsStyles);
+
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p>
+            <w:pPr>
+                <w:pStyle w:val="Heading1"/>
+            </w:pPr>
+            <w:r>
+                <w:t>BAB I PENDAHULUAN</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:rPr>
+                    <w:color w:val="E11D48"/>
+                    <w:rFonts w:ascii="Arial"/>
+                </w:rPr>
+                <w:t>Catatan penting dalam warna rose.</w:t>
+            </w:r>
+        </w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile($zipPath, 'laporan_font.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'default_font_family' => "'Calibri', sans-serif",
+        ]);
+
+    $content = $response->json('content_html');
+    expect($content)->toContain('color: #2F5496;')
+        ->and($content)->toContain('font-family: \'Calibri Light\', sans-serif;')
+        ->and($content)->toContain('color: #E11D48;')
+        ->and($content)->toContain('font-family: \'Arial\', sans-serif;');
+
+    @unlink($zipPath);
+});
