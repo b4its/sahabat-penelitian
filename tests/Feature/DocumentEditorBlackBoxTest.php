@@ -1074,6 +1074,7 @@ test('black-box: editor page provides visual dark and light theme switch control
     $response->assertSee('id="theme-toggle-btn"', false);
     $response->assertSee('role="switch"', false);
     $response->assertSee('id="theme-toggle-knob"', false);
+    $response->assertSee('id="knob-icon"', false);
     $response->assertSee('id="theme-toggle-text"', false);
     $response->assertSee('id="theme-icon-sun"', false);
     $response->assertSee('id="theme-icon-moon"', false);
@@ -1083,11 +1084,10 @@ test('black-box: editor page provides visual dark and light theme switch control
     $response->assertSee('localStorage.getItem(\'velscribe_theme\')', false);
     $response->assertSee('html.theme-transitioning', false);
 
-    // 3. Ribbon View panel controls
-    $response->assertSee('id="btn-ribbon-theme-toggle"', false);
-    $response->assertSee('id="ribbon-theme-icon"', false);
-    $response->assertSee('id="ribbon-theme-label"', false);
-    $response->assertSee('Tema Terang', false);
+    // 3. Ribbon View panel controls (Segmented switch & Sheet toggle)
+    $response->assertSee('id="segment-theme-light"', false);
+    $response->assertSee('id="segment-theme-dark"', false);
+    $response->assertSee('id="segment-theme-system"', false);
     $response->assertSee('id="btn-toggle-dark-sheet"', false);
     $response->assertSee('id="sheet-theme-icon"', false);
     $response->assertSee('id="sheet-theme-label"', false);
@@ -1095,4 +1095,16 @@ test('black-box: editor page provides visual dark and light theme switch control
     // 4. Status bar controls
     $response->assertSee('id="btn-status-theme-toggle"', false);
     $response->assertSee('id="status-theme-icon"', false);
+
+    // 5. Visual Theme Selector Modal (Modal 13)
+    $response->assertSee('id="modal-theme-selector"', false);
+    $response->assertSee('data-theme-card="light"', false);
+    $response->assertSee('data-theme-card="dark"', false);
+    $response->assertSee('data-theme-card="system"', false);
+    $response->assertSee('name="sheet-canvas-theme"', false);
+
+    // 6. Floating quick-toggle widget
+    $response->assertSee('id="floating-theme-widget"', false);
+    $response->assertSee('id="floating-theme-toggle"', false);
+    $response->assertSee('id="floating-theme-icon"', false);
 });

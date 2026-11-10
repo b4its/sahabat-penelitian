@@ -247,10 +247,12 @@ export class UiController {
         const themeToggleBtn = document.getElementById('theme-toggle-btn');
         const ribbonThemeBtn = document.getElementById('btn-ribbon-theme-toggle');
         const statusThemeBtn = document.getElementById('btn-status-theme-toggle');
+        const floatingThemeBtn = document.getElementById('floating-theme-toggle');
         const darkSheetBtn = document.getElementById('btn-toggle-dark-sheet');
+        const themeModal = document.getElementById('modal-theme-selector');
 
         // Initial theme detection:
-        // 1. Check localStorage
+        // 1. Check localStorage ('light' | 'dark' | 'system')
         // 2. Fallback to html.dark presence (from head script) or system preference
         let savedTheme = null;
         try {
@@ -272,6 +274,14 @@ export class UiController {
             });
         }
 
+        // Floating quick-toggle button
+        if (floatingThemeBtn) {
+            floatingThemeBtn.addEventListener('click', () => {
+                const next = this.currentTheme === 'dark' ? 'light' : 'dark';
+                this.applyTheme(next, true);
+            });
+        }
+
         // Ribbon view tab toggle button
         if (ribbonThemeBtn) {
             ribbonThemeBtn.addEventListener('click', () => {
@@ -288,6 +298,45 @@ export class UiController {
             });
         }
 
+        // Ribbon segmented control buttons: data-theme-set="light|dark|system"
+        document.querySelectorAll('.theme-segment-btn[data-theme-set]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTheme = btn.getAttribute('data-theme-set');
+                if (targetTheme) {
+                    this.applyTheme(targetTheme, true);
+                }
+            });
+        });
+
+        // Theme Modal Trigger Buttons: data-action="open-theme-modal"
+        document.querySelectorAll('[data-action="open-theme-modal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (themeModal) {
+                    this.syncThemeModal();
+                    this.openModal(themeModal);
+                }
+            });
+        });
+
+        // Theme Modal Visual Cards: data-theme-card="light|dark|system"
+        document.querySelectorAll('[data-theme-card]').forEach(card => {
+            card.addEventListener('click', () => {
+                const targetTheme = card.getAttribute('data-theme-card');
+                if (targetTheme) {
+                    this.applyTheme(targetTheme, true);
+                    this.syncThemeModal();
+                }
+            });
+        });
+
+        // Theme Modal Sheet Canvas Radios: name="sheet-canvas-theme"
+        document.querySelectorAll('input[name="sheet-canvas-theme"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isDark = e.target.value === 'dark';
+                this.setDarkSheetMode(isDark);
+            });
+        });
+
         // OS system preference listener
         if (window.matchMedia) {
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -295,8 +344,8 @@ export class UiController {
                 try {
                     explicit = localStorage.getItem('velscribe_theme');
                 } catch (err) {}
-                if (!explicit) {
-                    this.applyTheme(e.matches ? 'dark' : 'light', false);
+                if (!explicit || explicit === 'system') {
+                    this.applyTheme('system', false);
                 }
             });
         }
@@ -304,38 +353,93 @@ export class UiController {
         // Dark Sheet Canvas Toggle (Paper Canvas)
         if (darkSheetBtn) {
             darkSheetBtn.addEventListener('click', () => {
-                const sheets = document.querySelectorAll('.document-page-sheet');
-                let isDarkSheet = false;
-                sheets.forEach(sheet => {
-                    isDarkSheet = sheet.classList.toggle('canvas-dark-sheet');
-                });
-                darkSheetBtn.classList.toggle('active-dark', isDarkSheet);
-
-                const icon = document.getElementById('sheet-theme-icon') || darkSheetBtn.querySelector('span:first-child');
-                const label = document.getElementById('sheet-theme-label') || darkSheetBtn.querySelector('span:last-child');
-                if (icon && label && icon !== label) {
-                    icon.textContent = isDarkSheet ? '🌙' : '📄';
-                    label.textContent = isDarkSheet ? 'Lembar Gelap' : 'Lembar Putih';
-                } else if (darkSheetBtn.querySelector('span')) {
-                    darkSheetBtn.querySelector('span').textContent = isDarkSheet ? '🌙 Lembar Gelap' : '📄 Lembar Putih';
-                }
-
-                this.showToast(isDarkSheet ? 'Mode Lembar Gelap aktif.' : 'Mode Lembar Putih (Standar Kertas) aktif.');
+                const isCurrentlyDark = darkSheetBtn.classList.contains('active-dark');
+                this.setDarkSheetMode(!isCurrentlyDark);
             });
         }
     }
 
+    setDarkSheetMode(isDark) {
+        const sheets = document.querySelectorAll('.document-page-sheet');
+        sheets.forEach(sheet => {
+            sheet.classList.toggle('canvas-dark-sheet', isDark);
+        });
+
+        const darkSheetBtn = document.getElementById('btn-toggle-dark-sheet');
+        if (darkSheetBtn) {
+            darkSheetBtn.classList.toggle('active-dark', isDark);
+            const icon = document.getElementById('sheet-theme-icon') || darkSheetBtn.querySelector('span:first-child');
+            const label = document.getElementById('sheet-theme-label') || darkSheetBtn.querySelector('span:last-child');
+            if (icon && label && icon !== label) {
+                icon.textContent = isDark ? '🌙' : '📄';
+                label.textContent = isDark ? 'Lembar Gelap' : 'Lembar Putih';
+            } else if (darkSheetBtn.querySelector('span')) {
+                darkSheetBtn.querySelector('span').textContent = isDark ? '🌙 Lembar Gelap' : '📄 Lembar Putih';
+            }
+        }
+
+        // Update modal radios and cards if open
+        const whiteRadio = document.querySelector('input[name="sheet-canvas-theme"][value="white"]');
+        const darkRadio = document.querySelector('input[name="sheet-canvas-theme"][value="dark"]');
+        if (whiteRadio && darkRadio) {
+            whiteRadio.checked = !isDark;
+            darkRadio.checked = isDark;
+        }
+
+        const whiteCard = document.getElementById('sheet-card-white');
+        const darkCard = document.getElementById('sheet-card-dark');
+        if (whiteCard && darkCard) {
+            whiteCard.classList.toggle('border-indigo-600', !isDark);
+            whiteCard.classList.toggle('bg-indigo-50/20', !isDark);
+            darkCard.classList.toggle('border-indigo-600', isDark);
+            darkCard.classList.toggle('bg-indigo-50/20', isDark);
+        }
+
+        this.showToast(isDark ? 'Mode Lembar Gelap aktif.' : 'Mode Lembar Putih (Standar Kertas) aktif.');
+    }
+
+    syncThemeModal() {
+        const theme = this.currentTheme || 'light';
+        document.querySelectorAll('[data-theme-card]').forEach(card => {
+            const cardTheme = card.getAttribute('data-theme-card');
+            const isActive = cardTheme === theme;
+            card.classList.toggle('active', isActive);
+            card.classList.toggle('border-indigo-600', isActive);
+            card.classList.toggle('dark:border-indigo-500', isActive);
+            const badge = card.querySelector('.theme-check-badge');
+            if (badge) {
+                badge.classList.toggle('hidden', !isActive);
+                badge.classList.toggle('flex', isActive);
+            }
+        });
+
+        const isDarkSheet = document.getElementById('btn-toggle-dark-sheet')?.classList.contains('active-dark') || false;
+        const whiteRadio = document.querySelector('input[name="sheet-canvas-theme"][value="white"]');
+        const darkRadio = document.querySelector('input[name="sheet-canvas-theme"][value="dark"]');
+        if (whiteRadio && darkRadio) {
+            whiteRadio.checked = !isDarkSheet;
+            darkRadio.checked = isDarkSheet;
+        }
+    }
+
     applyTheme(theme, notify = false) {
-        this.currentTheme = theme === 'dark' ? 'dark' : 'light';
-        const isDark = this.currentTheme === 'dark';
+        this.currentTheme = ['light', 'dark', 'system'].includes(theme) ? theme : 'light';
 
         try {
             localStorage.setItem('velscribe_theme', this.currentTheme);
         } catch (e) {}
 
+        // Resolve effective dark/light mode
+        let effectiveDark = false;
+        if (this.currentTheme === 'system') {
+            effectiveDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        } else {
+            effectiveDark = this.currentTheme === 'dark';
+        }
+
         // Add temporary smooth transition class to avoid jarring jumps
         document.documentElement.classList.add('theme-transitioning');
-        if (isDark) {
+        if (effectiveDark) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
@@ -348,18 +452,19 @@ export class UiController {
         // 1. Update Header Theme Toggle Button visuals
         const themeToggleBtn = document.getElementById('theme-toggle-btn');
         const knob = document.getElementById('theme-toggle-knob');
+        const knobIcon = document.getElementById('knob-icon');
         const text = document.getElementById('theme-toggle-text');
         const sun = document.getElementById('theme-icon-sun');
         const moon = document.getElementById('theme-icon-moon');
 
         if (themeToggleBtn) {
-            themeToggleBtn.setAttribute('aria-checked', isDark ? 'true' : 'false');
-            themeToggleBtn.classList.toggle('is-dark', isDark);
-            themeToggleBtn.setAttribute('title', isDark ? 'Tema Gelap aktif (Klik untuk ganti ke Mode Terang)' : 'Tema Terang aktif (Klik untuk ganti ke Mode Gelap)');
+            themeToggleBtn.setAttribute('aria-checked', effectiveDark ? 'true' : 'false');
+            themeToggleBtn.classList.toggle('is-dark', effectiveDark);
+            themeToggleBtn.setAttribute('title', effectiveDark ? 'Tema Gelap aktif (Klik untuk ganti ke Mode Terang)' : 'Tema Terang aktif (Klik untuk ganti ke Mode Gelap)');
         }
 
         if (knob) {
-            if (isDark) {
+            if (effectiveDark) {
                 knob.classList.remove('translate-x-0', 'bg-white', 'border-gray-200');
                 knob.classList.add('translate-x-5', 'bg-indigo-600', 'border-indigo-400');
             } else {
@@ -368,37 +473,50 @@ export class UiController {
             }
         }
 
+        if (knobIcon) {
+            knobIcon.textContent = effectiveDark ? '🌙' : '☀️';
+        }
+
         if (text) {
-            text.textContent = isDark ? 'Mode Gelap' : 'Mode Terang';
+            text.textContent = this.currentTheme === 'system' ? 'Mode Sistem' : (effectiveDark ? 'Mode Gelap' : 'Mode Terang');
         }
 
         if (sun) {
-            sun.classList.toggle('opacity-40', isDark);
-            sun.classList.toggle('opacity-100', !isDark);
+            sun.classList.toggle('opacity-40', effectiveDark);
+            sun.classList.toggle('opacity-100', !effectiveDark);
         }
 
         if (moon) {
-            moon.classList.toggle('opacity-100', isDark);
-            moon.classList.toggle('opacity-40', !isDark);
+            moon.classList.toggle('opacity-100', effectiveDark);
+            moon.classList.toggle('opacity-40', !effectiveDark);
         }
 
-        // 2. Update Ribbon View Tab Switcher visuals
-        const ribbonIcon = document.getElementById('ribbon-theme-icon');
-        const ribbonLabel = document.getElementById('ribbon-theme-label');
-        if (ribbonIcon) ribbonIcon.textContent = isDark ? '🌙' : '☀️';
-        if (ribbonLabel) ribbonLabel.textContent = isDark ? 'Tema Gelap' : 'Tema Terang';
+        // 2. Update Ribbon Segmented Theme Switcher
+        document.querySelectorAll('.theme-segment-btn[data-theme-set]').forEach(btn => {
+            const isMatch = btn.getAttribute('data-theme-set') === this.currentTheme;
+            btn.classList.toggle('active', isMatch);
+        });
 
         // 3. Update Status Bar Switcher visuals
         const statusIcon = document.getElementById('status-theme-icon');
-        if (statusIcon) statusIcon.textContent = isDark ? '🌙' : '☀️';
+        if (statusIcon) statusIcon.textContent = effectiveDark ? '🌙' : '☀️';
 
-        // 4. Dispatch custom event
+        // 4. Update Floating Theme Widget visuals
+        const floatingIcon = document.getElementById('floating-theme-icon');
+        if (floatingIcon) floatingIcon.textContent = effectiveDark ? '🌙' : '☀️';
+
+        // 5. Update Modal cards if modal elements exist
+        this.syncThemeModal();
+
+        // 6. Dispatch custom event
         window.dispatchEvent(new CustomEvent('velscribe:theme-changed', {
-            detail: { theme: this.currentTheme, isDark }
+            detail: { theme: this.currentTheme, effectiveDark, isDark: effectiveDark }
         }));
 
         if (notify) {
-            this.showToast(isDark ? 'Tema Gelap diaktifkan.' : 'Tema Terang diaktifkan.');
+            const msg = this.currentTheme === 'system' ? 'Tema Otomatis (Sistem) diterapkan.' :
+                (effectiveDark ? 'Tema Gelap diaktifkan.' : 'Tema Terang diaktifkan.');
+            this.showToast(msg);
         }
     }
 

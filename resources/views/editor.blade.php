@@ -36,6 +36,31 @@
             transition-delay: 0s !important;
         }
 
+        /* Visual Theme Option Cards in Modal */
+        .theme-option-card.active {
+            border-color: #4f46e5 !important;
+            background-color: rgba(99, 102, 241, 0.08) !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+        }
+
+        .theme-option-card.active .theme-check-badge {
+            display: flex !important;
+        }
+
+        /* Segmented Theme Switcher Active State */
+        .theme-segment-btn.active {
+            background-color: #ffffff;
+            color: #4f46e5 !important;
+            font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .theme-segment-btn.active {
+            background-color: #4f46e5;
+            color: #ffffff !important;
+            box-shadow: 0 1px 4px rgba(79, 70, 229, 0.4);
+        }
+
         /* A4 Page View Simulation (Single & Multi-Page Sheets) */
         #document-page-canvas,
         .document-page-sheet {
@@ -521,28 +546,41 @@
             </button>
 
             <!-- Dark / Light Theme Visual Switcher -->
-            <div class="flex items-center">
+            <div class="flex items-center gap-1">
                 <button
                     id="theme-toggle-btn"
                     type="button"
                     role="switch"
                     aria-checked="false"
-                    class="group relative inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    class="group relative inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     title="Ganti Tema Tampilan (Terang / Gelap)"
                 >
                     <!-- Visual Switch Track -->
-                    <div class="relative w-11 h-6 rounded-full bg-gray-200 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 transition-colors px-1 flex items-center justify-between pointer-events-none">
+                    <div class="relative w-12 h-6 rounded-full bg-amber-100 dark:bg-indigo-950/80 border border-amber-300 dark:border-indigo-800/80 transition-colors px-1 flex items-center justify-between pointer-events-none">
                         <!-- Sun Icon (Gold/Amber) -->
                         <span id="theme-icon-sun" class="text-[11px] transition-opacity duration-200 text-amber-500 leading-none">☀️</span>
                         <!-- Moon Icon (Indigo/Blue) -->
                         <span id="theme-icon-moon" class="text-[11px] transition-opacity duration-200 text-indigo-400 opacity-40 leading-none">🌙</span>
-                        <!-- Sliding Knob -->
-                        <span id="theme-toggle-knob" class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transform translate-x-0 transition-transform duration-300 ease-in-out border border-gray-200 dark:border-indigo-400 flex items-center justify-center"></span>
+                        <!-- Sliding Knob with Active State Glow -->
+                        <span id="theme-toggle-knob" class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-md transform translate-x-0 transition-transform duration-300 ease-in-out border border-gray-200 dark:border-indigo-400 flex items-center justify-center">
+                            <span id="knob-icon" class="text-[10px] leading-none select-none">☀️</span>
+                        </span>
                     </div>
                     <!-- Label Text -->
                     <span id="theme-toggle-text" class="text-xs font-semibold text-gray-700 dark:text-gray-200 hidden lg:inline select-none">
                         Mode Terang
                     </span>
+                </button>
+
+                <!-- Quick Theme Customization Modal Trigger -->
+                <button
+                    data-action="open-theme-modal"
+                    class="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                    title="Buka Pengaturan Tema & Visual Tampilan"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4 4 4 0 014-4h4a4 4 0 014 4 4 4 0 01-4 4H7zm0 0v-8m0 0a4 4 0 014-4h4a4 4 0 014 4v8m-4-8a4 4 0 00-4-4H7a4 4 0 00-4 4v4"></path>
+                    </svg>
                 </button>
             </div>
 
@@ -950,14 +988,28 @@
             </div>
 
             <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
-                <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Tema & Kanvas:</span>
-                <button id="btn-ribbon-theme-toggle" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1.5 cursor-pointer border border-gray-200 dark:border-gray-700 transition" title="Ganti Tema Studio (Terang / Gelap)">
-                    <span id="ribbon-theme-icon">☀️</span>
-                    <span id="ribbon-theme-label">Tema Terang</span>
-                </button>
+                <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Tema Studio:</span>
+                <!-- Segmented Theme Switch -->
+                <div class="inline-flex items-center rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 border border-gray-200 dark:border-gray-700">
+                    <button id="segment-theme-light" data-theme-set="light" class="theme-segment-btn px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 cursor-pointer">
+                        <span>☀️</span>
+                        <span>Terang</span>
+                    </button>
+                    <button id="segment-theme-dark" data-theme-set="dark" class="theme-segment-btn px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 cursor-pointer">
+                        <span>🌙</span>
+                        <span>Gelap</span>
+                    </button>
+                    <button id="segment-theme-system" data-theme-set="system" class="theme-segment-btn px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 cursor-pointer">
+                        <span>💻</span>
+                        <span>Sistem</span>
+                    </button>
+                </div>
                 <button id="btn-toggle-dark-sheet" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1.5 cursor-pointer border border-gray-200 dark:border-gray-700 transition" title="Ganti Warna Lembar Kertas (Terang / Gelap)">
                     <span id="sheet-theme-icon">📄</span>
                     <span id="sheet-theme-label">Lembar Putih</span>
+                </button>
+                <button data-action="open-theme-modal" class="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer" title="Buka Pengaturan Tema & Visual Tampilan Lengkap">
+                    <span>🎨</span>
                 </button>
             </div>
 
@@ -1846,8 +1898,138 @@
         </div>
     </div>
 
+    <!-- Modal 13: Pengaturan Tema & Visual Tampilan -->
+    <div id="modal-theme-selector" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden transform transition-all">
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🎨</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Pengaturan Tema & Tampilan Visual</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Pilih skema warna antarmuka editor dan kontras lembar dokumen</p>
+                    </div>
+                </div>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-lg cursor-pointer">&times;</button>
+            </div>
+
+            <div class="p-5 space-y-5 text-xs">
+                <!-- 1. Pilihan Skema Warna Antarmuka (Cards) -->
+                <div>
+                    <label class="block font-bold text-gray-800 dark:text-gray-200 mb-2.5">Skema Warna Editor:</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <!-- Card 1: Terang (Light) -->
+                        <div data-theme-card="light" class="theme-option-card relative cursor-pointer rounded-xl border-2 border-gray-200 dark:border-gray-700 p-3 transition-all flex flex-col items-center text-center gap-2 hover:border-indigo-400">
+                            <!-- Visual Preview Mockup -->
+                            <div class="w-full h-16 rounded-lg bg-gray-100 border border-gray-300 p-1.5 flex flex-col gap-1 overflow-hidden shadow-2xs">
+                                <div class="w-full h-2.5 bg-white rounded flex items-center px-1 border border-gray-200">
+                                    <div class="w-2 h-1 bg-indigo-500 rounded-xs"></div>
+                                </div>
+                                <div class="flex-1 bg-white rounded border border-gray-200 p-1 flex flex-col justify-center items-center">
+                                    <div class="w-3/4 h-1 bg-gray-300 rounded mb-0.5"></div>
+                                    <div class="w-1/2 h-1 bg-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-center gap-1">
+                                    <span>☀️</span> Terang
+                                </span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Mode Siang Bersih</span>
+                            </div>
+                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center">✓</span>
+                        </div>
+
+                        <!-- Card 2: Gelap (Dark Studio) -->
+                        <div data-theme-card="dark" class="theme-option-card relative cursor-pointer rounded-xl border-2 border-gray-200 dark:border-gray-700 p-3 transition-all flex flex-col items-center text-center gap-2 hover:border-indigo-400">
+                            <!-- Visual Preview Mockup -->
+                            <div class="w-full h-16 rounded-lg bg-gray-950 border border-gray-800 p-1.5 flex flex-col gap-1 overflow-hidden shadow-2xs">
+                                <div class="w-full h-2.5 bg-gray-900 rounded flex items-center px-1 border border-gray-800">
+                                    <div class="w-2 h-1 bg-indigo-400 rounded-xs"></div>
+                                </div>
+                                <div class="flex-1 bg-gray-900 rounded border border-gray-800 p-1 flex flex-col justify-center items-center">
+                                    <div class="w-3/4 h-1 bg-gray-700 rounded mb-0.5"></div>
+                                    <div class="w-1/2 h-1 bg-gray-800 rounded"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-center gap-1">
+                                    <span>🌙</span> Gelap
+                                </span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Studio Malam</span>
+                            </div>
+                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center">✓</span>
+                        </div>
+
+                        <!-- Card 3: Otomatis Sistem -->
+                        <div data-theme-card="system" class="theme-option-card relative cursor-pointer rounded-xl border-2 border-gray-200 dark:border-gray-700 p-3 transition-all flex flex-col items-center text-center gap-2 hover:border-indigo-400">
+                            <!-- Visual Preview Mockup (Split) -->
+                            <div class="w-full h-16 rounded-lg border border-gray-300 dark:border-gray-700 p-1 flex gap-1 overflow-hidden shadow-2xs bg-gradient-to-r from-gray-100 to-gray-950">
+                                <div class="w-1/2 h-full bg-white rounded-l p-1 flex flex-col justify-center items-center">
+                                    <span class="text-[10px]">☀️</span>
+                                </div>
+                                <div class="w-1/2 h-full bg-gray-900 rounded-r p-1 flex flex-col justify-center items-center">
+                                    <span class="text-[10px]">🌙</span>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-center gap-1">
+                                    <span>💻</span> Sistem
+                                </span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Ikuti Perangkat</span>
+                            </div>
+                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center">✓</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Pengaturan Lembar Kanvas (Kertas Dokumen) -->
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <label class="block font-bold text-gray-800 dark:text-gray-200 mb-2">Tampilan Lembar Dokumen (Kanvas Kertas):</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label id="sheet-card-white" class="cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 flex items-start gap-2.5 transition-all hover:border-indigo-400">
+                            <input type="radio" name="sheet-canvas-theme" value="white" checked class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+                            <div>
+                                <span class="font-bold text-gray-900 dark:text-white block">📄 Lembar Putih (Standar Cetak)</span>
+                                <span class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block leading-relaxed">
+                                    Format kertas putih asli (WYSIWYG) untuk akurasi cetak skripsi, laporan, dan dokumen resmi.
+                                </span>
+                            </div>
+                        </label>
+                        <label id="sheet-card-dark" class="cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 flex items-start gap-2.5 transition-all hover:border-indigo-400">
+                            <input type="radio" name="sheet-canvas-theme" value="dark" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+                            <div>
+                                <span class="font-bold text-gray-900 dark:text-white block">🕶️ Lembar Gelap (Mode Redup)</span>
+                                <span class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block leading-relaxed">
+                                    Mengubah latar kertas jadi hitam arang untuk kenyamanan mata saat membaca di malam hari.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <span id="theme-status-text" class="text-xs text-gray-500 dark:text-gray-400">Tema tersimpan otomatis</span>
+                <div class="flex items-center gap-2">
+                    <button data-close-modal class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer">
+                        Selesai
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Theme Switcher Widget -->
+    <div id="floating-theme-widget" class="fixed bottom-12 right-6 z-40 no-print flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-gray-900/95 border border-gray-300 dark:border-gray-700 shadow-xl backdrop-blur-md transition-all">
+        <button id="floating-theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-amber-500 dark:text-indigo-400 transition cursor-pointer" title="Beralih Cepat Tema Terang / Gelap">
+            <span id="floating-theme-icon" class="text-base leading-none">☀️</span>
+        </button>
+        <button data-action="open-theme-modal" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1 cursor-pointer" title="Pengaturan Tema & Tampilan Visual">
+            <span>🎨 Tema</span>
+        </button>
+    </div>
+
     <!-- Toast Notifications Container -->
-    <div id="toast-container" class="fixed bottom-12 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-24 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
 </body>
 </html>
