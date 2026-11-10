@@ -827,3 +827,50 @@ test('white-box: adaptDocumentStructure preserves inline heading styles without 
     expect(str_contains($adapted['adapted_html'], '&#039;'))->toBeFalse();
     expect(count($adapted['headings']))->toBe(1);
 });
+
+test('white-box: isNearWhiteColor accurately identifies near-white colors and avoids suppressing legitimate colors', function () {
+    expect(DocxImporter::isNearWhiteColor('#ffffff'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#fff'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('white'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#f8f9fa'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#f3f4f6'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#fafafa'))->toBeTrue()
+        ->and(DocxImporter::isNearWhiteColor('#111827'))->toBeFalse()
+        ->and(DocxImporter::isNearWhiteColor('#000000'))->toBeFalse()
+        ->and(DocxImporter::isNearWhiteColor('#2F5496'))->toBeFalse()
+        ->and(DocxImporter::isNearWhiteColor('#C00000'))->toBeFalse()
+        ->and(DocxImporter::isNearWhiteColor(null))->toBeFalse();
+});
+
+test('white-box: adaptDocumentStructure guarantees high contrast text and excludes inverted dark-mode classes on white sheets', function () {
+    $inputHtml = <<<'HTML'
+        <p>SKRIPSI 236661027 ALVIN GRAND PUTRA</p>
+        <p>SKRIPSI</p>
+        <p>IMPLEMENTASI SISTEM KENDALI KUALITAS AIR PADA PROTOTIPE PENGOLAHAN LIMBAH TEKSTIL</p>
+        <p>Oleh :</p>
+        <p>ALVIN GRAND PUTRA</p>
+        <p>236661027</p>
+        <p>PROGRAM STUDI TEKNOLOGI REKAYASA KOMPUTER</p>
+        <p>JURUSAN TEKNOLOGI INFORMASI</p>
+        <p>POLITEKNIK NEGERI SAMARINDA</p>
+        <p>2026</p>
+        <p>BAB I PENDAHULUAN</p>
+        <p>1.1 Latar Belakang</p>
+        <p>1.1.1 Identifikasi Masalah</p>
+        <p>Sistem ini dirancang untuk mendeteksi kualitas air secara real-time.</p>
+        <p>Daftar Isi .......... 14</p>
+HTML;
+
+    $adapted = $this->service->adaptDocumentStructure($inputHtml, 'skripsi_alvin.docx');
+
+    expect($adapted['adapted_html'])->not->toContain('dark:text-gray-100')
+        ->and($adapted['adapted_html'])->not->toContain('dark:text-gray-200')
+        ->and($adapted['adapted_html'])->not->toContain('dark:text-gray-300')
+        ->and($adapted['adapted_html'])->toContain('cover-title')
+        ->and($adapted['adapted_html'])->toContain('cover-author-label')
+        ->and($adapted['adapted_html'])->toContain('cover-author-nim')
+        ->and($adapted['adapted_html'])->toContain('cover-institution')
+        ->and($adapted['adapted_html'])->toContain('heading-chapter text-center font-bold text-xl my-6 text-gray-900 uppercase')
+        ->and($adapted['adapted_html'])->toContain('heading-section font-bold text-lg my-4 text-gray-900')
+        ->and($adapted['adapted_html'])->toContain('heading-subsection font-semibold text-base my-3 text-gray-800');
+});

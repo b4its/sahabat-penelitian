@@ -34,21 +34,75 @@
             min-height: 210mm !important;
         }
 
-        /* Dark Sheet Mode */
+        /* Dark Sheet Mode (When explicitly toggled by user) */
         #document-page-canvas.canvas-dark-sheet,
         .document-page-sheet.canvas-dark-sheet {
             background: #18181b !important;
             box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6) !important;
         }
 
-        #document-page-canvas.canvas-dark-sheet #document-editor,
         .document-page-sheet.canvas-dark-sheet .page-sheet-body {
-            color: #f3f4f6;
+            color: #f3f4f6 !important;
         }
 
-        #document-page-canvas.canvas-dark-sheet #document-editor *:not([style*="color"]),
-        .document-page-sheet.canvas-dark-sheet .page-sheet-body *:not([style*="color"]) {
-            color: #f3f4f6;
+        .document-page-sheet.canvas-dark-sheet .page-sheet-body *:not([style*="color:"]) {
+            color: #f3f4f6 !important;
+        }
+
+        /* High-contrast Print Paper Typography on Standard White Document Sheets */
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body {
+            color: #111827 !important;
+        }
+
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body *:not([style*="color:"]) {
+            color: inherit !important;
+        }
+
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body p,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body h1,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body h2,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body h3,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body h4,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body h5,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body h6,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body div:not([style*="color:"]),
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body span:not([style*="color:"]),
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body td,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body th,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body li,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body strong,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body b,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body u,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body s {
+            color: #111827 !important;
+        }
+
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .text-gray-700,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .text-gray-600,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .cover-author-label,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .cover-subtitle {
+            color: #374151 !important;
+        }
+
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .cover-title,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .cover-badge,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .cover-author-nim,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .cover-institution,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .heading-chapter,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .heading-section,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .heading-subsection,
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body .heading-preliminary {
+            color: #111827 !important;
+        }
+
+        /* Prevent washed out / invisible white text on white paper sheets */
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body [style*="color: #ffffff"],
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body [style*="color: #fff"],
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body [style*="color: white"],
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body [style*="color: rgb(255, 255, 255)"],
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body [style*="color:#ffffff"],
+        .document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body [style*="color:#fff"] {
+            color: #111827 !important;
         }
 
         /* Page Sheet Gap / Margin */
@@ -114,10 +168,25 @@
         .page-sheet-body {
             outline: none;
             min-height: 200mm;
-            font-family: 'Times New Roman', 'Instrument Sans', serif;
+            font-family: 'Times New Roman', 'Liberation Serif', 'Nimbus Roman', 'DejaVu Serif', serif;
             font-size: 12pt;
             line-height: 1.5;
             color: #111827;
+        }
+
+        .document-page-sheet .page-sheet-body[style*="Times New Roman"],
+        .document-page-sheet .page-sheet-body [style*="Times New Roman"] {
+            font-family: 'Times New Roman', 'Liberation Serif', 'Nimbus Roman', 'DejaVu Serif', serif !important;
+        }
+
+        .document-page-sheet .page-sheet-body[style*="Calibri"],
+        .document-page-sheet .page-sheet-body [style*="Calibri"] {
+            font-family: 'Calibri', 'Liberation Sans', 'DejaVu Sans', sans-serif !important;
+        }
+
+        .document-page-sheet .page-sheet-body[style*="Arial"],
+        .document-page-sheet .page-sheet-body [style*="Arial"] {
+            font-family: 'Arial', 'Liberation Sans', 'DejaVu Sans', sans-serif !important;
         }
 
         #document-editor h1.heading-chapter,

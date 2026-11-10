@@ -897,3 +897,83 @@ XML;
 
     @unlink($zipPath);
 });
+
+test('black-box: editor view enforces high contrast typography and Linux serif fallbacks on simulated paper sheets', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Verify paper sheet high contrast rules exist
+    $response->assertSee('.document-page-sheet:not(.canvas-dark-sheet) .page-sheet-body', false);
+    $response->assertSee('color: #111827 !important;', false);
+
+    // Verify Linux metric-compatible serif font stack
+    $response->assertSee("'Liberation Serif'", false);
+    $response->assertSee("'Nimbus Roman'", false);
+    $response->assertSee("'DejaVu Serif'", false);
+
+    // Verify unshaded white text inversion/suppression on white sheets
+    $response->assertSee('[style*="color: #ffffff"]', false);
+});
+
+test('black-box: docx import suppresses unshaded near-white text and preserves high contrast on cover and body', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_white_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:rPr>
+                    <w:color w:val="FFFFFF"/>
+                </w:rPr>
+                <w:t>Teks tidak boleh jadi putih di atas kertas putih.</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:t>SKRIPSI 236661027 ALVIN GRAND PUTRA</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:t>Oleh :</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:t>NIM 236661027</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:t>POLITEKNIK NEGERI SAMARINDA</w:t>
+            </w:r>
+        </w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile($zipPath, 'skripsi_test.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $html = $response->json('content_html');
+
+    // Unshaded white text must not have inline style="color: #ffffff;"
+    expect($html)->not->toContain('color: #ffffff;')
+        ->and($html)->not->toContain('color: #fff;')
+        // Cover items must not contain inverted dark classes
+        ->and($html)->not->toContain('dark:text-gray-100')
+        ->and($html)->not->toContain('dark:text-gray-200')
+        ->and($html)->not->toContain('dark:text-gray-300');
+
+    @unlink($zipPath);
+});

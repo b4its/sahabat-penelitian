@@ -49,6 +49,9 @@ export class DocumentEngine {
         this.showPageNumber = true;
         this.startPageNumber = 1;
         this.copiedFormat = null;
+        this.currentFontFamily = "'Times New Roman', serif";
+        this.currentFontSize = '12pt';
+        this.currentLineSpacing = '1.5';
 
         window.documentEngine = this;
         this.init();
@@ -56,6 +59,19 @@ export class DocumentEngine {
 
     init() {
         if (!this.pagesWrapper && !this.editorEl) return;
+
+        const activeFontSelect = document.getElementById('font-family-select');
+        if (activeFontSelect && activeFontSelect.value) {
+            this.currentFontFamily = activeFontSelect.value;
+        }
+        const activeSizeSelect = document.getElementById('font-size-select');
+        if (activeSizeSelect && activeSizeSelect.value) {
+            this.currentFontSize = activeSizeSelect.value;
+        }
+        const activeLineSelect = document.getElementById('line-spacing-select');
+        if (activeLineSelect && activeLineSelect.value) {
+            this.currentLineSpacing = activeLineSelect.value;
+        }
 
         // Check if initial content should be paginated into multiple sheets
         const initialHtml = this.getContent();
@@ -561,6 +577,15 @@ export class DocumentEngine {
             // Body
             const body = document.createElement('div');
             body.className = 'page-sheet-body flex-1 outline-none';
+            if (this.currentFontFamily) {
+                body.style.fontFamily = this.currentFontFamily;
+            }
+            if (this.currentFontSize) {
+                body.style.fontSize = this.currentFontSize;
+            }
+            if (this.currentLineSpacing) {
+                body.style.lineHeight = this.currentLineSpacing;
+            }
             body.setAttribute('contenteditable', 'true');
             body.setAttribute('spellcheck', 'true');
             body.setAttribute('role', 'textbox');
@@ -1012,9 +1037,10 @@ export class DocumentEngine {
                 this.setFontFamily(academicFont);
                 this.setFontSize('12pt');
                 this.setLineSpacing('1.5');
+                const cleanDisplayFont = (importedFont || 'Times New Roman').replace(/['"]/g, '').split(',')[0].trim();
                 this.onAdaptationNotice({
                     type: 'academic',
-                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font ${importedFont || 'Times New Roman'} 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.${hfDetail}`,
+                    message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font ${cleanDisplayFont} 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.${hfDetail}`,
                 });
             } else {
                 this.setMarginPreset('normal');
@@ -1170,17 +1196,17 @@ export class DocumentEngine {
                     el.className = 'text-center my-4';
                 } else if (cleanText) {
                     if (/^(OLEH|DISUSUN\s+OLEH|BY)\s*:/i.test(cleanText)) {
-                        el.className = 'cover-author-label text-center text-sm font-medium text-gray-700 dark:text-gray-300 my-2 leading-relaxed';
-                    } else if (/^NIM\b/i.test(cleanText)) {
-                        el.className = 'cover-author-nim text-center font-bold text-base text-gray-900 dark:text-gray-100 my-1 leading-relaxed';
+                        el.className = 'cover-author-label text-center text-sm font-medium text-gray-700 my-2 leading-relaxed';
+                    } else if (/^(?:NIM\b|\d{7,12}$)/i.test(cleanText)) {
+                        el.className = 'cover-author-nim text-center font-bold text-base text-gray-900 my-1 leading-relaxed';
                     } else if (/^(PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM)/i.test(cleanText)) {
-                        el.className = 'cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-relaxed';
+                        el.className = 'cover-institution text-center font-bold text-sm uppercase text-gray-900 my-1 leading-relaxed';
                     } else if (/^(Sebagai salah satu syarat|Submitted as a partial)/i.test(cleanText)) {
-                        el.className = 'cover-subtitle text-center text-sm italic text-gray-700 dark:text-gray-300 my-3 max-w-xl mx-auto leading-relaxed';
+                        el.className = 'cover-subtitle text-center text-sm italic text-gray-700 my-3 max-w-xl mx-auto leading-relaxed';
                     } else if (/^(SKRIPSI|THESIS|TESIS|DISERTASI|PROPOSAL|LAPORAN|TUGAS\s+AKHIR)$/i.test(cleanText)) {
-                        el.className = 'cover-badge text-center font-bold text-xl uppercase tracking-widest text-gray-900 dark:text-gray-100 my-2';
+                        el.className = 'cover-badge text-center font-bold text-xl uppercase tracking-widest text-gray-900 my-2';
                     } else {
-                        el.className = 'cover-title text-center font-bold text-gray-900 dark:text-gray-100 my-2 leading-snug';
+                        el.className = 'cover-title text-center font-bold text-gray-900 my-2 leading-snug';
                     }
                 }
                 continue;
@@ -1192,8 +1218,8 @@ export class DocumentEngine {
                 const lvl = parseInt(el.tagName.replace(/h/i, ''), 10);
                 if (!el.className) {
                     el.className = lvl === 1
-                        ? 'heading-chapter font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase'
-                        : (lvl === 2 ? 'heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100' : 'heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200');
+                        ? 'heading-chapter font-bold text-xl my-6 text-gray-900 uppercase'
+                        : (lvl === 2 ? 'heading-section font-bold text-lg my-4 text-gray-900' : 'heading-subsection font-semibold text-base my-3 text-gray-800');
                 }
                 continue;
             }
@@ -1205,14 +1231,14 @@ export class DocumentEngine {
                     const itemTitle = match[1].trim();
                     const itemPage = match[2].trim();
                     const tocDiv = doc.createElement('div');
-                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200';
-                    tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(itemTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span><span class="toc-page font-mono text-xs text-gray-600 dark:text-gray-400">${this.escapeHtml(itemPage)}</span>`;
+                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800';
+                    tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(itemTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span><span class="toc-page font-mono text-xs text-gray-600">${this.escapeHtml(itemPage)}</span>`;
                     el.replaceWith(tocDiv);
                     continue;
                 } else {
                     const cleanTitle = cleanText.replace(/[\s.·…]+$/, '').trim();
                     const tocDiv = doc.createElement('div');
-                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200';
+                    tocDiv.className = 'toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800';
                     tocDiv.innerHTML = `<span class="toc-title truncate max-w-[80%]">${this.escapeHtml(cleanTitle)}</span><span class="flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600"></span>`;
                     el.replaceWith(tocDiv);
                     continue;
@@ -1236,7 +1262,7 @@ export class DocumentEngine {
                 }
 
                 const h1 = doc.createElement('h1');
-                h1.className = 'heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
+                h1.className = 'heading-chapter text-center font-bold text-xl my-6 text-gray-900 uppercase';
                 h1.textContent = titleText;
                 const elStyle = el.getAttribute('style');
                 if (elStyle) {
@@ -1266,7 +1292,7 @@ export class DocumentEngine {
             ) {
                 headingCount++;
                 const h1 = doc.createElement('h1');
-                h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase';
+                h1.className = 'heading-preliminary text-center font-bold text-xl my-6 text-gray-900 uppercase';
                 h1.textContent = cleanText.toUpperCase();
                 const elStyle = el.getAttribute('style');
                 if (elStyle) {
@@ -1291,7 +1317,7 @@ export class DocumentEngine {
             if (!isTableOfContentsLine(cleanText) && /^(\d+\.\d+)\s+(.+)$/.test(cleanText)) {
                 headingCount++;
                 const h2 = doc.createElement('h2');
-                h2.className = 'heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100';
+                h2.className = 'heading-section font-bold text-lg my-4 text-gray-900';
                 h2.innerHTML = el.innerHTML;
                 const elStyle = el.getAttribute('style');
                 if (elStyle) {
@@ -1305,7 +1331,7 @@ export class DocumentEngine {
             if (!isTableOfContentsLine(cleanText) && /^(\d+\.\d+\.\d+)\s+(.+)$/.test(cleanText)) {
                 headingCount++;
                 const h3 = doc.createElement('h3');
-                h3.className = 'heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200';
+                h3.className = 'heading-subsection font-semibold text-base my-3 text-gray-800';
                 h3.innerHTML = el.innerHTML;
                 const elStyle = el.getAttribute('style');
                 if (elStyle) {
@@ -1330,7 +1356,7 @@ export class DocumentEngine {
             ) {
                 headingCount++;
                 const h2 = doc.createElement('h2');
-                h2.className = 'heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase';
+                h2.className = 'heading-section font-bold text-lg my-4 text-center text-gray-900 uppercase';
                 h2.innerHTML = cleanText;
                 const elStyle = el.getAttribute('style');
                 if (elStyle) {
@@ -1360,19 +1386,19 @@ export class DocumentEngine {
                 const hasLeft = el.classList.contains('text-left') || el.style.textAlign === 'left';
 
                 if (hasCenter) {
-                    el.className = 'text-center my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                    el.className = 'text-center my-2 leading-relaxed text-gray-800';
                 } else if (hasRight) {
-                    el.className = 'text-right my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                    el.className = 'text-right my-2 leading-relaxed text-gray-800';
                 } else if (hasJustify) {
                     const indent = (isAcademic && cleanText.length > 100) ? ' indent-8' : '';
-                    el.className = `text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200${indent}`;
+                    el.className = `text-justify my-3 leading-relaxed text-gray-800${indent}`;
                 } else if (hasLeft) {
-                    el.className = 'text-left my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                    el.className = 'text-left my-2 leading-relaxed text-gray-800';
                 } else {
                     if (isAcademic && cleanText.length > 100) {
-                        el.className = 'text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200 indent-8';
+                        el.className = 'text-justify my-3 leading-relaxed text-gray-800 indent-8';
                     } else {
-                        el.className = 'my-2 leading-relaxed text-gray-800 dark:text-gray-200';
+                        el.className = 'my-2 leading-relaxed text-gray-800';
                     }
                 }
             }
@@ -1448,6 +1474,7 @@ export class DocumentEngine {
     }
 
     setFontFamily(fontName) {
+        this.currentFontFamily = fontName;
         const active = this.getActiveEditor();
         if (active) active.focus();
 
@@ -1480,6 +1507,7 @@ export class DocumentEngine {
     }
 
     setFontSize(ptSize) {
+        this.currentFontSize = ptSize;
         const active = this.getActiveEditor();
         if (active) active.focus();
         const sel = window.getSelection();
@@ -1502,6 +1530,7 @@ export class DocumentEngine {
     }
 
     setLineSpacing(val) {
+        this.currentLineSpacing = val;
         this.getAllEditorBodies().forEach(b => {
             b.style.lineHeight = val;
             b.querySelectorAll('p').forEach(p => {

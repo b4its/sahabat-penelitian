@@ -184,7 +184,7 @@ class DocumentService
                     $inList = false;
                 }
                 $quoteText = $this->formatInlineMarkdown(htmlspecialchars(trim(substr($trimmed, 1)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
-                $html[] = "<blockquote class=\"border-l-4 border-indigo-500 pl-4 py-1 italic my-3 text-gray-700 dark:text-gray-300\">{$quoteText}</blockquote>";
+                $html[] = "<blockquote class=\"border-l-4 border-indigo-500 pl-4 py-1 italic my-3 text-gray-700\">{$quoteText}</blockquote>";
 
                 continue;
             }
@@ -534,17 +534,17 @@ class DocumentService
                     $innerHtml = $im[1] ?? $cleanText;
 
                     if (preg_match('/^(OLEH|DISUSUN\s+OLEH|BY)\s*:/i', $cleanText)) {
-                        $adaptedBlocks[] = "<p class=\"cover-author-label text-center text-sm font-medium text-gray-700 dark:text-gray-300 my-2 leading-relaxed\">{$innerHtml}</p>";
-                    } elseif (preg_match('/^NIM\b/i', $cleanText)) {
-                        $adaptedBlocks[] = "<p class=\"cover-author-nim text-center font-bold text-base text-gray-900 dark:text-gray-100 my-1 leading-relaxed\">{$innerHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"cover-author-label text-center text-sm font-medium text-gray-700 my-2 leading-relaxed\">{$innerHtml}</p>";
+                    } elseif (preg_match('/^(?:NIM\b|\d{7,12}$)/i', $cleanText)) {
+                        $adaptedBlocks[] = "<p class=\"cover-author-nim text-center font-bold text-base text-gray-900 my-1 leading-relaxed\">{$innerHtml}</p>";
                     } elseif (preg_match('/^(PROGRAM\s+STUDI|JURUSAN|FAKULTAS|POLITEKNIK|UNIVERSITAS|DEPARTMENT|STUDY\s+PROGRAM)/i', $cleanText)) {
-                        $adaptedBlocks[] = "<p class=\"cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-relaxed\">{$innerHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"cover-institution text-center font-bold text-sm uppercase text-gray-900 my-1 leading-relaxed\">{$innerHtml}</p>";
                     } elseif (preg_match('/^(Sebagai salah satu syarat|Submitted as a partial)/i', $cleanText)) {
-                        $adaptedBlocks[] = "<p class=\"cover-subtitle text-center text-sm italic text-gray-700 dark:text-gray-300 my-3 max-w-xl mx-auto leading-relaxed\">{$innerHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"cover-subtitle text-center text-sm italic text-gray-700 my-3 max-w-xl mx-auto leading-relaxed\">{$innerHtml}</p>";
                     } elseif (preg_match('/^(SKRIPSI|THESIS|TESIS|DISERTASI|PROPOSAL|LAPORAN|TUGAS\s+AKHIR)$/i', $cleanText)) {
-                        $adaptedBlocks[] = "<p class=\"cover-badge text-center font-bold text-xl uppercase tracking-widest text-gray-900 dark:text-gray-100 my-2\">{$innerHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"cover-badge text-center font-bold text-xl uppercase tracking-widest text-gray-900 my-2\">{$innerHtml}</p>";
                     } else {
-                        $adaptedBlocks[] = "<p class=\"cover-title text-center font-bold text-gray-900 dark:text-gray-100 leading-snug my-2\">{$innerHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"cover-title text-center font-bold text-gray-900 leading-snug my-2\">{$innerHtml}</p>";
                     }
                 } elseif (str_contains($fullTag, '<img')) {
                     $adaptedBlocks[] = preg_replace('/<img\b([^>]*)>/i', '<figure class="my-6 text-center"><img $1 class="cover-logo mx-auto max-h-40 object-contain" /></figure>', $fullTag);
@@ -558,10 +558,10 @@ class DocumentService
                 if (preg_match('/^(.*?)(?:[\s.·…]{2,})([ivxlcdm\d]+)$/i', $cleanText, $tm)) {
                     $itemTitle = trim($tm[1]);
                     $itemPage = trim($tm[2]);
-                    $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200\"><span class=\"toc-title truncate max-w-[80%]\">{$itemTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600\"></span><span class=\"toc-page font-mono text-xs text-gray-600 dark:text-gray-400\">{$itemPage}</span></div>";
+                    $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800\"><span class=\"toc-title truncate max-w-[80%]\">{$itemTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400\"></span><span class=\"toc-page font-mono text-xs text-gray-600\">{$itemPage}</span></div>";
                 } else {
                     $cleanTitle = trim(preg_replace('/[\s.·…]+$/', '', $cleanText));
-                    $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800 dark:text-gray-200\"><span class=\"toc-title truncate max-w-[80%]\">{$cleanTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400 dark:border-gray-600\"></span></div>";
+                    $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800\"><span class=\"toc-title truncate max-w-[80%]\">{$cleanTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400\"></span></div>";
                 }
 
                 continue;
@@ -570,7 +570,7 @@ class DocumentService
             // If it's already an H1, H2, H3, H4, H5, H6 tag, PRESERVE IT and record heading!
             if (preg_match('/^<h([1-6])\b([^>]*)>(.*?)<\/h\1>$/is', $fullTag, $m)) {
                 if ($this->isCoverMetadataLine($cleanText)) {
-                    $adaptedBlocks[] = "<p class=\"cover-institution text-center font-bold text-sm uppercase text-gray-900 dark:text-gray-100 my-1 leading-relaxed\">{$cleanText}</p>";
+                    $adaptedBlocks[] = "<p class=\"cover-institution text-center font-bold text-sm uppercase text-gray-900 my-1 leading-relaxed\">{$cleanText}</p>";
 
                     continue;
                 }
@@ -583,7 +583,7 @@ class DocumentService
                 if (preg_match('/style=(["\'])(.*?)\1/is', $hAttrs, $sm)) {
                     $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
-                $adaptedBlocks[] = "<h{$lvl} id=\"{$hId}\" class=\"{$hClass} text-gray-900 dark:text-gray-100\"{$hStyle}>{$m[3]}</h{$lvl}>";
+                $adaptedBlocks[] = "<h{$lvl} id=\"{$hId}\" class=\"{$hClass} text-gray-900\"{$hStyle}>{$m[3]}</h{$lvl}>";
 
                 continue;
             }
@@ -641,7 +641,7 @@ class DocumentService
                 if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
                     $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
-                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-chapter text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\"{$hStyle}>{$titleText}</h1>";
+                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-chapter text-center font-bold text-xl my-6 text-gray-900 uppercase\"{$hStyle}>{$titleText}</h1>";
 
                 continue;
             }
@@ -665,7 +665,7 @@ class DocumentService
                 if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
                     $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
-                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-preliminary text-center font-bold text-xl my-6 text-gray-900 dark:text-gray-100 uppercase\"{$hStyle}>{$titleText}</h1>";
+                $adaptedBlocks[] = "<h1 id=\"{$hId}\" class=\"heading-preliminary text-center font-bold text-xl my-6 text-gray-900 uppercase\"{$hStyle}>{$titleText}</h1>";
 
                 continue;
             }
@@ -680,7 +680,7 @@ class DocumentService
                     $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
 
-                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-gray-900 dark:text-gray-100\"{$hStyle}>{$titleText}</h2>";
+                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-gray-900\"{$hStyle}>{$titleText}</h2>";
 
                 continue;
             }
@@ -695,7 +695,7 @@ class DocumentService
                     $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
 
-                $adaptedBlocks[] = "<h3 id=\"{$hId}\" class=\"heading-subsection font-semibold text-base my-3 text-gray-800 dark:text-gray-200\"{$hStyle}>{$titleText}</h3>";
+                $adaptedBlocks[] = "<h3 id=\"{$hId}\" class=\"heading-subsection font-semibold text-base my-3 text-gray-800\"{$hStyle}>{$titleText}</h3>";
 
                 continue;
             }
@@ -719,7 +719,7 @@ class DocumentService
                 if (preg_match('/style=(["\'])(.*?)\1/is', $fullTag, $sm)) {
                     $hStyle = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
-                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-center text-gray-900 dark:text-gray-100 uppercase\"{$hStyle}>{$cleanText}</h2>";
+                $adaptedBlocks[] = "<h2 id=\"{$hId}\" class=\"heading-section font-bold text-lg my-4 text-center text-gray-900 uppercase\"{$hStyle}>{$cleanText}</h2>";
 
                 continue;
             }
@@ -743,19 +743,19 @@ class DocumentService
                 }
 
                 if ($hasCenter) {
-                    $adaptedBlocks[] = "<p class=\"text-center my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
+                    $adaptedBlocks[] = "<p class=\"text-center my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasRight) {
-                    $adaptedBlocks[] = "<p class=\"text-right my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
+                    $adaptedBlocks[] = "<p class=\"text-right my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasJustify) {
                     $indentClass = ($isAcademic && strlen($cleanText) > 100) ? ' indent-8' : '';
-                    $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200{$indentClass}\"{$styleMatch}>{$bodyHtml}</p>";
+                    $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800{$indentClass}\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasLeft) {
-                    $adaptedBlocks[] = "<p class=\"text-left my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
+                    $adaptedBlocks[] = "<p class=\"text-left my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
                 } else {
                     if ($isAcademic && strlen($cleanText) > 100) {
-                        $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 dark:text-gray-200 indent-8\"{$styleMatch}>{$bodyHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 indent-8\"{$styleMatch}>{$bodyHtml}</p>";
                     } else {
-                        $adaptedBlocks[] = "<p class=\"my-2 leading-relaxed text-gray-800 dark:text-gray-200\"{$styleMatch}>{$bodyHtml}</p>";
+                        $adaptedBlocks[] = "<p class=\"my-2 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
                     }
                 }
             }

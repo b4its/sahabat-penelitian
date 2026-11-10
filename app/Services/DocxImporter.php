@@ -492,6 +492,29 @@ class DocxImporter
     }
 
     /**
+     * Check if a color is pure or near-white.
+     */
+    public static function isNearWhiteColor(?string $color): bool
+    {
+        if (empty($color)) {
+            return false;
+        }
+        $lower = strtolower(trim($color));
+        if (in_array($lower, ['#ffffff', '#fff', 'white', '#f8f9fa', '#f3f4f6', '#f1f5f9', '#f9fafb'])) {
+            return true;
+        }
+        if (preg_match('/^#([0-9a-f]{6})$/i', $lower, $m)) {
+            $r = hexdec(substr($m[1], 0, 2));
+            $g = hexdec(substr($m[1], 2, 2));
+            $b = hexdec(substr($m[1], 4, 2));
+
+            return $r > 240 && $g > 240 && $b > 240;
+        }
+
+        return false;
+    }
+
+    /**
      * Parse word/styles.xml into style map.
      */
     private function parseStyles(ZipArchive $zip, array $themeColors = []): array
@@ -740,8 +763,10 @@ class DocxImporter
 
         // Heading specific font and color preservation
         if ($headingLevel !== null && $headingLevel >= 1 && $headingLevel <= 6) {
-            if (! empty($pDefaults['color']) && ! in_array(strtolower($pDefaults['color']), ['#000000', '#000', 'black'])) {
-                $styleAttr[] = "color: {$pDefaults['color']};";
+            if (! empty($pDefaults['color']) && ! in_array(strtolower($pDefaults['color']), ['#000000', '#000', '#111827', 'black'])) {
+                if (! self::isNearWhiteColor($pDefaults['color'])) {
+                    $styleAttr[] = "color: {$pDefaults['color']};";
+                }
             }
             if (! empty($pDefaults['font_family'])) {
                 $styleAttr[] = 'font-family: '.self::formatFontFamily($pDefaults['font_family']).';';
@@ -981,9 +1006,11 @@ class DocxImporter
 
         // Wrap with span for color, highlight, font-size, font-family
         $styles = [];
-        // Omit pure black #000000 on standard body runs to prevent patchy mixed shades and dark-mode invisibility
-        if ($color && ! in_array(strtolower($color), ['#000000', '#000', 'black'])) {
-            $styles[] = "color: {$color};";
+        // Omit pure black and unshaded near-white on standard runs to prevent contrast loss on white paper
+        if ($color && ! in_array(strtolower($color), ['#000000', '#000', '#111827', 'black'])) {
+            if (! self::isNearWhiteColor($color) || ! empty($highlight)) {
+                $styles[] = "color: {$color};";
+            }
         }
         if ($highlight) {
             $styles[] = "background-color: {$highlight};";

@@ -344,6 +344,19 @@ export class DocxImporter {
         return map;
     }
 
+    static isNearWhiteColor(color) {
+        if (!color) return false;
+        const cl = color.toLowerCase().trim();
+        if (['#ffffff', '#fff', 'white', '#f8f9fa', '#f3f4f6', '#f1f5f9', '#f9fafb'].includes(cl)) return true;
+        if (/^#([0-9a-f]{6})$/i.test(cl)) {
+            const r = parseInt(cl.slice(1, 3), 16);
+            const g = parseInt(cl.slice(3, 5), 16);
+            const b = parseInt(cl.slice(5, 7), 16);
+            return r > 240 && g > 240 && b > 240;
+        }
+        return false;
+    }
+
     static formatFontFamily(fontName) {
         if (!fontName) return '';
         const clean = fontName.replace(/['"]/g, '').trim();
@@ -366,7 +379,7 @@ export class DocxImporter {
                 break;
             }
         }
-        if (fallback === 'serif') {
+        if ($fallback === 'serif') {
             for (const mono of monoFonts) {
                 if (lower.includes(mono)) {
                     fallback = 'monospace';
@@ -694,7 +707,7 @@ export class DocxImporter {
                 : ((headingLevel === 2) ? 'heading-section font-bold text-lg my-4' : 'heading-subsection font-semibold text-base my-3');
 
             const hStyles = [...styles];
-            if (pDefaults.color && pDefaults.color !== '#000000' && pDefaults.color !== '#111827') {
+            if (pDefaults.color && pDefaults.color !== '#000000' && pDefaults.color !== '#111827' && !DocxImporter.isNearWhiteColor(pDefaults.color)) {
                 hStyles.push(`color: ${pDefaults.color};`);
             }
             if (pDefaults.fontFamily) {
@@ -855,7 +868,9 @@ export class DocxImporter {
 
         const styles = [];
         if (color && color !== '#000000' && color !== '#111827') {
-            styles.push(`color: ${color};`);
+            if (!DocxImporter.isNearWhiteColor(color) || highlight) {
+                styles.push(`color: ${color};`);
+            }
         }
         if (highlight) styles.push(`background-color: ${highlight};`);
         if (fontSize) styles.push(`font-size: ${fontSize};`);
