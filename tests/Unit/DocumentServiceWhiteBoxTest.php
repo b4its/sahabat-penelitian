@@ -920,3 +920,9 @@ test('white-box: convertToMarkdown and convertToPlainText preserve latex-equatio
     $plainText = $this->service->convertToPlainText($html);
     expect($plainText)->toContain('$$'.$formula.'$$');
 });
+
+test('white-box: app css stylesheet defines custom-variant for class-based dark mode', function () {
+    $cssPath = dirname(__DIR__, 2).'/resources/css/app.css';
+    $css = file_get_contents($cssPath);
+    expect($css)->toContain('@custom-variant dark (&:where(.dark, .dark *));');
+});

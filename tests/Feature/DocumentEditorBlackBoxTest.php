@@ -1065,3 +1065,34 @@ test('black-box: editor page provides latex equation modal and insert button in 
     $response->assertSee('btn-delete-equation', false);
     $response->assertSee('btn-save-equation', false);
 });
+
+test('black-box: editor page provides visual dark and light theme switch controls across navigation, ribbon, and status bar', function () {
+    $response = $this->get(route('editor.index'));
+    $response->assertStatus(200);
+
+    // 1. Top navigation visual switcher
+    $response->assertSee('id="theme-toggle-btn"', false);
+    $response->assertSee('role="switch"', false);
+    $response->assertSee('id="theme-toggle-knob"', false);
+    $response->assertSee('id="theme-toggle-text"', false);
+    $response->assertSee('id="theme-icon-sun"', false);
+    $response->assertSee('id="theme-icon-moon"', false);
+    $response->assertSee('Mode Terang', false);
+
+    // 2. Early no-flicker initialization script in head
+    $response->assertSee('localStorage.getItem(\'velscribe_theme\')', false);
+    $response->assertSee('html.theme-transitioning', false);
+
+    // 3. Ribbon View panel controls
+    $response->assertSee('id="btn-ribbon-theme-toggle"', false);
+    $response->assertSee('id="ribbon-theme-icon"', false);
+    $response->assertSee('id="ribbon-theme-label"', false);
+    $response->assertSee('Tema Terang', false);
+    $response->assertSee('id="btn-toggle-dark-sheet"', false);
+    $response->assertSee('id="sheet-theme-icon"', false);
+    $response->assertSee('id="sheet-theme-label"', false);
+
+    // 4. Status bar controls
+    $response->assertSee('id="btn-status-theme-toggle"', false);
+    $response->assertSee('id="status-theme-icon"', false);
+});

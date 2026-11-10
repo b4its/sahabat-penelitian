@@ -7,12 +7,35 @@
 
     <title>VelScribe Wordcraft Studio — Word & Document Editor Cerdas</title>
 
+    <script>
+        (function() {
+            try {
+                var stored = localStorage.getItem('velscribe_theme');
+                var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (stored === 'dark' || (!stored && systemDark)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     @fonts
 
     <!-- Vite Assets -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
+        /* Smooth Theme Transition Class */
+        html.theme-transitioning,
+        html.theme-transitioning *,
+        html.theme-transitioning *:before,
+        html.theme-transitioning *:after {
+            transition: background-color 0.25s ease-out, border-color 0.25s ease-out, color 0.15s ease-out !important;
+            transition-delay: 0s !important;
+        }
+
         /* A4 Page View Simulation (Single & Multi-Page Sheets) */
         #document-page-canvas,
         .document-page-sheet {
@@ -497,6 +520,32 @@
                 <span class="hidden sm:inline">Unduh / Ekspor</span>
             </button>
 
+            <!-- Dark / Light Theme Visual Switcher -->
+            <div class="flex items-center">
+                <button
+                    id="theme-toggle-btn"
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    class="group relative inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    title="Ganti Tema Tampilan (Terang / Gelap)"
+                >
+                    <!-- Visual Switch Track -->
+                    <div class="relative w-11 h-6 rounded-full bg-gray-200 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 transition-colors px-1 flex items-center justify-between pointer-events-none">
+                        <!-- Sun Icon (Gold/Amber) -->
+                        <span id="theme-icon-sun" class="text-[11px] transition-opacity duration-200 text-amber-500 leading-none">☀️</span>
+                        <!-- Moon Icon (Indigo/Blue) -->
+                        <span id="theme-icon-moon" class="text-[11px] transition-opacity duration-200 text-indigo-400 opacity-40 leading-none">🌙</span>
+                        <!-- Sliding Knob -->
+                        <span id="theme-toggle-knob" class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transform translate-x-0 transition-transform duration-300 ease-in-out border border-gray-200 dark:border-indigo-400 flex items-center justify-center"></span>
+                    </div>
+                    <!-- Label Text -->
+                    <span id="theme-toggle-text" class="text-xs font-semibold text-gray-700 dark:text-gray-200 hidden lg:inline select-none">
+                        Mode Terang
+                    </span>
+                </button>
+            </div>
+
             <!-- Print Shortcut -->
             <button
                 onclick="window.print()"
@@ -898,8 +947,17 @@
                     <input type="checkbox" checked class="pointer-events-none" />
                     <span>Struktur Dokumen (Outline)</span>
                 </button>
-                <button id="btn-toggle-dark-sheet" class="px-2 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1 cursor-pointer" title="Ganti Lembar Terang/Gelap">
-                    <span>🌙 Lembar Gelap</span>
+            </div>
+
+            <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Tema & Kanvas:</span>
+                <button id="btn-ribbon-theme-toggle" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1.5 cursor-pointer border border-gray-200 dark:border-gray-700 transition" title="Ganti Tema Studio (Terang / Gelap)">
+                    <span id="ribbon-theme-icon">☀️</span>
+                    <span id="ribbon-theme-label">Tema Terang</span>
+                </button>
+                <button id="btn-toggle-dark-sheet" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1.5 cursor-pointer border border-gray-200 dark:border-gray-700 transition" title="Ganti Warna Lembar Kertas (Terang / Gelap)">
+                    <span id="sheet-theme-icon">📄</span>
+                    <span id="sheet-theme-label">Lembar Putih</span>
                 </button>
             </div>
 
@@ -1212,6 +1270,9 @@
                 <button data-layout-mode="print" class="p-1 hover:text-indigo-600" title="Tata Letak Halaman">📄</button>
                 <button data-layout-mode="web" class="p-1 hover:text-indigo-600" title="Tampilan Aliran Web">🌐</button>
                 <button data-layout-mode="zen" class="p-1 hover:text-indigo-600" title="Mode Fokus (Zen)">🧘</button>
+                <button id="btn-status-theme-toggle" class="p-1 hover:text-indigo-600 ml-1 border-l border-gray-200 dark:border-gray-800 pl-2 cursor-pointer" title="Ganti Tema (Terang / Gelap)">
+                    <span id="status-theme-icon">☀️</span>
+                </button>
             </div>
 
             <div class="flex items-center gap-1.5">
