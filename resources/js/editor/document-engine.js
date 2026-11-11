@@ -2112,6 +2112,38 @@ export class DocumentEngine {
                     activeSheet.style.setProperty('width', `${Math.min(w, h)}mm`, 'important');
                     activeSheet.style.setProperty('min-height', `${Math.max(w, h)}mm`, 'important');
                 }
+                if (options.margins) {
+                    this.applyMarginsToSheet(activeSheet, options.margins);
+                } else if (options.marginPreset) {
+                    this.applyMarginsToSheet(activeSheet, options.marginPreset);
+                }
+            }
+        } else if (options.scope === 'forward') {
+            const sheets = this.getAllPageSheets();
+            const activeSheet = this.getActiveEditor()?.closest('.document-page-sheet') || this.canvasEl;
+            const activeIdx = sheets.indexOf(activeSheet);
+            const startIdx = activeIdx >= 0 ? activeIdx : 0;
+            for (let i = startIdx; i < sheets.length; i++) {
+                const sheet = sheets[i];
+                if (options.orientation === 'landscape') {
+                    sheet.setAttribute('data-orientation', 'landscape');
+                    const w = this.getDocumentHeightMm();
+                    const h = this.getDocumentWidthMm();
+                    sheet.style.setProperty('width', `${Math.max(w, h)}mm`, 'important');
+                    sheet.style.setProperty('min-height', `${Math.min(w, h)}mm`, 'important');
+                } else if (options.orientation === 'portrait') {
+                    sheet.setAttribute('data-orientation', 'portrait');
+                    const w = this.getDocumentWidthMm();
+                    const h = this.getDocumentHeightMm();
+                    sheet.style.setProperty('width', `${Math.min(w, h)}mm`, 'important');
+                    sheet.style.setProperty('min-height', `${Math.max(w, h)}mm`, 'important');
+                }
+                if (options.margins) {
+                    this.applyMarginsToSheet(sheet, options.margins, i + 1);
+                } else if (options.marginPreset) {
+                    this.applyMarginsToSheet(sheet, options.marginPreset, i + 1);
+                }
+                this.applyPageSetupToSheet(sheet, i + 1);
             }
         }
 

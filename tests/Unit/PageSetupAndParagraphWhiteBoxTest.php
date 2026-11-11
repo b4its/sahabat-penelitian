@@ -468,4 +468,41 @@ HTML;
         $this->assertIsArray($jsonData);
         $this->assertStringContainsString('dir="rtl"', $jsonData['content']);
     }
+
+    public function test_multiple_pages_mirror_margins_and_vertical_alignment_export_fidelity(): void
+    {
+        $content = '<p>Dokumen dengan margin cermin buku dan perataan vertikal tengah (cover page / lembar pengesahan).</p>';
+
+        $layoutOptions = [
+            'paper_size' => 'a4',
+            'orientation' => 'portrait',
+            'multiple_pages' => 'mirror',
+            'vertical_align' => 'center',
+            'margins' => [
+                'top' => 30,
+                'bottom' => 30,
+                'left' => 35,
+                'right' => 25,
+            ],
+        ];
+
+        // 1. DOCX Export
+        $docxResult = $this->docService->exportDocument('Uji Mirror Margins DOCX', $content, 'docx', null, null, $layoutOptions);
+        $this->assertStringContainsString('mso-mirror-margins: yes;', $docxResult['content']);
+        $this->assertStringContainsString('justify-content: center;', $docxResult['content']);
+
+        // 2. HTML Export
+        $htmlResult = $this->docService->exportDocument('Uji Mirror Margins HTML', $content, 'html', null, null, $layoutOptions);
+        $this->assertStringContainsString('justify-content: center;', $htmlResult['content']);
+
+        // 3. Two pages per sheet mode
+        $twoPagesLayout = [
+            'paper_size' => 'a4',
+            'orientation' => 'landscape',
+            'multiple_pages' => '2pages',
+        ];
+        $twoPagesDocx = $this->docService->exportDocument('Uji 2 Pages DOCX', $content, 'docx', null, null, $twoPagesLayout);
+        $this->assertStringContainsString('column-count: 2;', $twoPagesDocx['content']);
+        $this->assertStringContainsString('mso-column-count: 2;', $twoPagesDocx['content']);
+    }
 }

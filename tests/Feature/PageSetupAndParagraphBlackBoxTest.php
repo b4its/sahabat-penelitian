@@ -668,3 +668,54 @@ test('black-box: editor view renders Microsoft Word Formatting Marks, Text Direc
     $response->assertSee('value="current"', false);
     $response->assertSee('Halaman aktif saat ini', false);
 });
+
+test('black-box: editor view renders Microsoft Word multiple pages modes, vertical page alignment, and quick ribbon steppers', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Multiple pages dropdown in Page Setup
+    $response->assertSee('id="ps-multiple-pages"', false);
+    $response->assertSee('value="normal"', false);
+    $response->assertSee('value="mirror"', false);
+    $response->assertSee('value="2pages"', false);
+    $response->assertSee('value="bookfold"', false);
+
+    // Vertical alignment dropdown in Page Setup Layout tab
+    $response->assertSee('id="ps-vert-align"', false);
+    $response->assertSee('value="top"', false);
+    $response->assertSee('value="center"', false);
+    $response->assertSee('value="justify"', false);
+    $response->assertSee('value="bottom"', false);
+
+    // Forward scope in Page Setup
+    $response->assertSee('value="forward"', false);
+    $response->assertSee('Mulai titik ini ke depan', false);
+
+    // Quick Indent & Spacing steppers on Layout ribbon
+    $response->assertSee('id="layout-indent-left"', false);
+    $response->assertSee('id="layout-indent-right"', false);
+    $response->assertSee('id="layout-spacing-before"', false);
+    $response->assertSee('id="layout-spacing-after"', false);
+
+    // Dialog launcher buttons
+    $response->assertSee('id="btn-open-page-setup-modal"', false);
+    $response->assertSee('id="btn-layout-open-paragraph-modal"', false);
+    $response->assertSee('id="btn-open-paragraph-modal"', false);
+});
+
+test('black-box: user can export document with multiple pages mirror mode and vertical alignment via api', function () {
+    $payload = [
+        'title' => 'Dokumen Sampul Tengah',
+        'content' => '<p>Lembar persetujuan ujian skripsi dengan perataan tengah dan mirror margins.</p>',
+        'format' => 'docx',
+        'multiple_pages' => 'mirror',
+        'vertical_align' => 'center',
+    ];
+
+    $response = $this->postJson('/api/documents/export', $payload);
+
+    $response->assertStatus(200);
+    $content = $response->getContent();
+    expect($content)->toContain('mso-mirror-margins: yes;')
+        ->toContain('justify-content: center;');
+});

@@ -564,6 +564,11 @@
             display: none !important;
         }
 
+        /* Microsoft Word Paragraph Spacing: Don't add space between paragraphs of the same style */
+        .document-page-sheet .page-sheet-body > [data-dont-add-space-same="true"] + [data-dont-add-space-same="true"] {
+            margin-top: 0 !important;
+        }
+
         /* Watermark & Page Border Helpers */
         .page-sheet-watermark {
             pointer-events: none;

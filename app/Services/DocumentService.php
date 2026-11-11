@@ -1091,6 +1091,22 @@ class DocumentService
             $lineNumbersCss = "body, div.Section1 { counter-reset: line-counter; }\np:not(.suppress-line-numbers)::before { counter-increment: line-counter; content: counter(line-counter); display: inline-block; width: 2.5em; margin-left: -3em; color: #9ca3af; font-size: 9pt; text-align: right; user-select: none; padding-right: 0.5em; }";
         }
 
+        $multiplePages = strtolower($layoutOptions['multiple_pages'] ?? 'normal');
+        $mirrorMarginsCss = ($multiplePages === 'mirror' || $multiplePages === 'bookfold' || $marginPreset === 'mirrored') ? 'mso-mirror-margins: yes;' : '';
+        if ($multiplePages === '2pages' && empty($columnCountCss)) {
+            $columnCountCss = 'column-count: 2; column-gap: 1.25cm; mso-column-count: 2;';
+        }
+
+        $vertAlign = strtolower($layoutOptions['vertical_align'] ?? 'top');
+        $vertAlignCss = '';
+        if ($vertAlign === 'center') {
+            $vertAlignCss = 'min-height: 70vh; display: flex; flex-direction: column; justify-content: center;';
+        } elseif ($vertAlign === 'bottom') {
+            $vertAlignCss = 'min-height: 70vh; display: flex; flex-direction: column; justify-content: flex-end;';
+        } elseif ($vertAlign === 'justify') {
+            $vertAlignCss = 'min-height: 70vh; display: flex; flex-direction: column; justify-content: space-between;';
+        }
+
         switch (strtolower($format)) {
             case 'markdown':
             case 'md':
@@ -1167,6 +1183,7 @@ class DocumentService
     size: {$pageSizeStr};
     margin: {$marginStr};
     mso-page-orientation: {$msoOrientation};
+    {$mirrorMarginsCss}
     mso-header-margin: 20mm;
     mso-footer-margin: 20mm;
     mso-header: h1;
@@ -1177,6 +1194,7 @@ div.Section1 {
     {$columnCountCss}
     {$hyphensCss}
     {$borderCss}
+    {$vertAlignCss}
 }
 {$lineNumbersCss}
 table.MsoHeaderTable, table.MsoFooterTable {
@@ -1293,7 +1311,7 @@ XML;
     <title>{$title}</title>
     <style>
         @page { size: {$pageSizeStr}; margin: {$marginStr}; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: {$lineSpacing}; max-width: {$w}; margin: 40px auto; padding: {$marginStr}; color: #111827; {$pageBgCss} {$borderCss} {$columnCountCss} {$hyphensCss} }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: {$lineSpacing}; max-width: {$w}; margin: 40px auto; padding: {$marginStr}; color: #111827; {$pageBgCss} {$borderCss} {$columnCountCss} {$hyphensCss} {$vertAlignCss} }
         {$lineNumbersCss}
         h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-top: 24px; margin-bottom: 16px; text-transform: uppercase; }
         h2 { font-size: 13pt; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
