@@ -752,9 +752,12 @@ export class DocxImporter {
         if (pPr) {
             pSpacing = pPr.getElementsByTagName('w:spacing')[0] || null;
             pInd = pPr.getElementsByTagName('w:ind')[0] || null;
-            // Check pageBreakBefore
+            // Check pageBreakBefore and section breaks
             if (pPr.getElementsByTagName('w:pageBreakBefore').length > 0) {
                 pageBreakBefore = true;
+            }
+            if (pPr.getElementsByTagName('w:sectPr').length > 0) {
+                pageBreakAfter = true;
             }
 
             // Check style
@@ -862,6 +865,9 @@ export class DocxImporter {
                     latex = latex.replace(/(?<!\\)%/g, '\\%');
                     inlines.push(` $$${latex}$$ `);
                 }
+            } else if (childName === 'w:drawing' || childName === 'w:pict' || childName === 'mc:alternatecontent') {
+                const imgHtml = await this.parseImage(child, zip, rels);
+                if (imgHtml) inlines.push(imgHtml);
             }
         }
 
@@ -1106,7 +1112,7 @@ export class DocxImporter {
                 }
             } else if (childName === 'w:tab') {
                 htmlParts.push('&emsp;');
-            } else if (childName === 'w:drawing' || childName === 'w:pict') {
+            } else if (childName === 'w:drawing' || childName === 'w:pict' || childName === 'mc:alternatecontent') {
                 const imgHtml = await this.parseImage(child, zip, rels);
                 if (imgHtml) htmlParts.push(imgHtml);
             }
@@ -1155,45 +1161,130 @@ export class DocxImporter {
             else if (alignVal === 'right') tblAlign = ' ml-auto';
         }
 
-        // Check if table borders are explicitly none or nil (borderless layout/signature table)
-        let hasTableBorders = true;
-        const tblBorders = tbl.getElementsByTagName('w:tblBorders')[0];
-        if (tblBorders) {
-            const topVal = (tblBorders.getElementsByTagName('w:top')[0]?.getAttribute('w:val') || '').toLowerCase();
-            const bottomVal = (tblBorders.getElementsByTagName('w:bottom')[0]?.getAttribute('w:val') || '').toLowerCase();
-            const insideHVal = (tblBorders.getElementsByTagName('w:insideH')[0]?.getAttribute('w:val') || '').toLowerCase();
-            const insideVVal = (tblBorders.getElementsByTagName('w:insideV')[0]?.getAttribute('w:val') || '').toLowerCase();
-
-            const isNoBorder = (v) => !v || v === 'none' || v === 'nil';
-            if (isNoBorder(topVal) && isNoBorder(bottomVal) && isNoBorder(insideHVal) && isNoBorder(insideVVal)) {
-                hasTableBorders = false;
+        // 1. Column widths from <w:tblGrid>
+        const colWidths = [];
+        const tblGrid = tbl.getElementsByTagName('w:tblGrid')[0];
+        if (tblGrid) {
+            const gridCols = Array.from(tblGrid.getElementsByTagName('w:gridCol'));
+            for (const gc of gridCols) {
+                const w = parseInt(gc.getAttribute('w:w'), 10) || 0;
+                colWidths.push(w);
             }
         }
+        const totalGridWidth = colWidths.reduce((a, b) => a + b, 0);
+        let colgroupHtml = '';
+        if (colWidths.length > 0 && totalGridWidth > 0) {
+            colgroupHtml = '  <colgroup>\n';
+            for (const w of colWidths) {
+                const pct = (Math.round((w / totalGridWidth) * 1000) / 10).toFixed(1);
+                colgroupHtml += `    <col style="width: ${pct}%;">\n`;
+            }
+            colgroupHtml += '  </colgroup>\n';
+        }
+
+        // 2. Borders from <w:tblBorders>
+        const formatBorder = (el, defaultColor = '#1f2937') => {
+            if (!el) return 'none';
+            const v = (el.getAttribute('w:val') || '').toLowerCase();
+            if (!v || v === 'none' || v === 'nil') return 'none';
+            const sz = parseInt(el.getAttribute('w:sz') || '4', 10);
+            const pt = Math.max(0.5, (sz / 8)).toFixed(2);
+            let style = 'solid';
+            if (v.includes('dash')) style = 'dashed';
+            else if (v.includes('dot')) style = 'dotted';
+            else if (v.includes('double')) style = 'double';
+            const color = el.getAttribute('w:color');
+            const hex = (!color || color === 'auto') ? defaultColor : `#${color.replace(/^#/, '')}`;
+            return `${pt}pt ${style} ${hex}`;
+        };
+
+        const tblBorders = tbl.getElementsByTagName('w:tblBorders')[0];
+        let bTop = 'none', bBottom = 'none', bLeft = 'none', bRight = 'none', bInsideH = 'none', bInsideV = 'none';
+        if (tblBorders) {
+            bTop = formatBorder(tblBorders.getElementsByTagName('w:top')[0]);
+            bBottom = formatBorder(tblBorders.getElementsByTagName('w:bottom')[0]);
+            bLeft = formatBorder(tblBorders.getElementsByTagName('w:left')[0]);
+            bRight = formatBorder(tblBorders.getElementsByTagName('w:right')[0]);
+            bInsideH = formatBorder(tblBorders.getElementsByTagName('w:insideH')[0], '#d1d5db');
+            bInsideV = formatBorder(tblBorders.getElementsByTagName('w:insideV')[0], '#d1d5db');
+        }
+
+        const isAcademicTable = (bTop !== 'none' && bBottom !== 'none' && bLeft === 'none' && bRight === 'none');
+        const isStandardGrid = (bTop !== 'none' && bBottom !== 'none' && bLeft !== 'none' && bRight !== 'none');
+        const isBorderless = (bTop === 'none' && bBottom === 'none' && bLeft === 'none' && bRight === 'none' && bInsideH === 'none' && bInsideV === 'none');
 
         const headRows = [];
         const bodyRows = [];
+        const totalRows = trNodes.length;
 
-        for (const tr of trNodes) {
-            const isHeader = tr.getElementsByTagName('w:tblHeader').length > 0;
+        for (let rIdx = 0; rIdx < totalRows; rIdx++) {
+            const tr = trNodes[rIdx];
+            const isHeader = rIdx === 0 || tr.getElementsByTagName('w:tblHeader').length > 0;
+            const isLastRow = (rIdx === totalRows - 1);
             const tcNodes = Array.from(tr.getElementsByTagName('w:tc'));
             const cellsHtml = [];
+            let currentColIdx = 0;
 
             for (const tc of tcNodes) {
                 const cellTag = isHeader ? 'th' : 'td';
                 const attrs = [];
-                const classes = hasTableBorders ? ['border', 'border-gray-300', 'dark:border-gray-700', 'p-2'] : ['p-2'];
+                const classes = ['p-2.5', 'text-sm'];
                 const styles = [];
 
                 if (isHeader) {
-                    classes.push('bg-gray-100', 'dark:bg-gray-800', 'font-semibold', 'text-center');
+                    classes.push('bg-gray-100/80', 'dark:bg-gray-800/80', 'font-semibold');
                 }
 
                 const tcPr = tc.getElementsByTagName('w:tcPr')[0];
+                let colSpan = 1;
                 if (tcPr) {
                     // Colspan
                     const gridSpan = tcPr.getElementsByTagName('w:gridSpan')[0];
                     if (gridSpan) {
-                        attrs.push(`colspan="${parseInt(gridSpan.getAttribute('w:val'), 10)}"`);
+                        colSpan = parseInt(gridSpan.getAttribute('w:val'), 10) || 1;
+                        if (colSpan > 1) attrs.push(`colspan="${colSpan}"`);
+                    }
+
+                    // Cell borders (<w:tcBorders>)
+                    const tcBorders = tcPr.getElementsByTagName('w:tcBorders')[0];
+                    if (tcBorders) {
+                        const cTop = formatBorder(tcBorders.getElementsByTagName('w:top')[0]);
+                        const cBottom = formatBorder(tcBorders.getElementsByTagName('w:bottom')[0]);
+                        const cLeft = formatBorder(tcBorders.getElementsByTagName('w:left')[0]);
+                        const cRight = formatBorder(tcBorders.getElementsByTagName('w:right')[0]);
+                        if (cTop !== 'none') styles.push(`border-top: ${cTop};`);
+                        if (cBottom !== 'none') styles.push(`border-bottom: ${cBottom};`);
+                        if (cLeft !== 'none') styles.push(`border-left: ${cLeft};`);
+                        if (cRight !== 'none') styles.push(`border-right: ${cRight};`);
+                    } else if (isAcademicTable) {
+                        if (rIdx === 0) {
+                            styles.push(`border-top: ${bTop};`);
+                            styles.push('border-bottom: 1pt solid #1f2937;');
+                        } else if (isLastRow) {
+                            styles.push(`border-bottom: ${bBottom};`);
+                        } else if (bInsideH !== 'none') {
+                            styles.push(`border-bottom: ${bInsideH};`);
+                        }
+                        styles.push('border-left: none; border-right: none;');
+                    } else if (isStandardGrid) {
+                        styles.push(`border: ${bTop};`);
+                    } else if (isBorderless) {
+                        styles.push('border: none;');
+                    } else {
+                        if (bInsideH !== 'none') styles.push(`border-bottom: ${bInsideH};`);
+                        if (bInsideV !== 'none' && currentColIdx > 0) styles.push(`border-left: ${bInsideV};`);
+                    }
+
+                    // Proportional column width
+                    if (colWidths.length > 0 && totalGridWidth > 0 && currentColIdx < colWidths.length) {
+                        let spanWidth = 0;
+                        for (let s = 0; s < colSpan && (currentColIdx + s) < colWidths.length; s++) {
+                            spanWidth += colWidths[currentColIdx + s];
+                        }
+                        if (spanWidth > 0) {
+                            const pct = (Math.round((spanWidth / totalGridWidth) * 1000) / 10).toFixed(1);
+                            styles.push(`width: ${pct}%;`);
+                        }
                     }
 
                     // Shading (background color)
@@ -1210,7 +1301,18 @@ export class DocxImporter {
                     if (vAlign) {
                         styles.push(`vertical-align: ${vAlign.getAttribute('w:val').toLowerCase()};`);
                     }
+                } else if (isAcademicTable) {
+                    if (rIdx === 0) {
+                        styles.push(`border-top: ${bTop}; border-bottom: 1pt solid #1f2937;`);
+                    } else if (isLastRow) {
+                        styles.push(`border-bottom: ${bBottom};`);
+                    } else if (bInsideH !== 'none') {
+                        styles.push(`border-bottom: ${bInsideH};`);
+                    }
+                    styles.push('border-left: none; border-right: none;');
                 }
+
+                currentColIdx += colSpan;
 
                 // Parse cell paragraphs
                 const cellBlocks = [];
@@ -1228,7 +1330,7 @@ export class DocxImporter {
                 cellsHtml.push(`<${cellTag}${attrStr}${classStr}${styleStr}>${cellContent}</${cellTag}>`);
             }
 
-            const rowHtml = `<tr>\n${cellsHtml.join('\n')}\n</tr>`;
+            const rowHtml = `    <tr>\n      ${cellsHtml.join('\n      ')}\n    </tr>`;
             if (isHeader) {
                 headRows.push(rowHtml);
             } else {
@@ -1236,13 +1338,25 @@ export class DocxImporter {
             }
         }
 
-        const tableBorderClass = hasTableBorders ? 'border border-gray-300 dark:border-gray-700' : 'border-none';
-        let tableHtml = `<table class="w-full border-collapse my-4 text-sm ${tableBorderClass}${tblAlign}">\n`;
+        const tblStyles = [];
+        if (isAcademicTable) {
+            tblStyles.push(`border-top: ${bTop};`);
+            tblStyles.push(`border-bottom: ${bBottom};`);
+        } else if (isStandardGrid) {
+            tblStyles.push(`border: ${bTop};`);
+        }
+
+        const tableStyleAttr = tblStyles.length > 0 ? ` style="${tblStyles.join(' ')}"` : '';
+        const tableBorderClass = isBorderless ? 'border-none' : (isAcademicTable ? 'border-t-2 border-b-2 border-gray-900 dark:border-gray-100' : 'border border-gray-300 dark:border-gray-700');
+        let tableHtml = `<table class="w-full border-collapse my-4 text-sm ${tableBorderClass}${tblAlign}"${tableStyleAttr}>\n`;
+        if (colgroupHtml) {
+            tableHtml += colgroupHtml;
+        }
         if (headRows.length > 0) {
-            tableHtml += `<thead>\n${headRows.join('\n')}\n</thead>\n`;
+            tableHtml += `  <thead>\n${headRows.join('\n')}\n  </thead>\n`;
         }
         if (bodyRows.length > 0) {
-            tableHtml += `<tbody>\n${bodyRows.join('\n')}\n</tbody>\n`;
+            tableHtml += `  <tbody>\n${bodyRows.join('\n')}\n  </tbody>\n`;
         }
         tableHtml += '</table>';
 
@@ -1250,41 +1364,95 @@ export class DocxImporter {
     }
 
     async parseImage(container, zip, rels) {
-        let rId = null;
+        if (!container) return '';
 
-        // DrawingML
-        const blip = container.getElementsByTagName('a:blip')[0];
-        if (blip) {
-            rId = blip.getAttribute('r:embed') || blip.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'embed');
+        // Search for all embedded image IDs inside container (DrawingML or VML)
+        const blips = Array.from(container.getElementsByTagName('a:blip'));
+        const vmlImgs = Array.from(container.getElementsByTagName('v:imagedata'));
+
+        const rIds = [];
+        for (const blip of blips) {
+            const rId = blip.getAttribute('r:embed') ||
+                        blip.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'embed') ||
+                        blip.getAttribute('r:id');
+            if (rId && !rIds.includes(rId)) rIds.push(rId);
         }
 
-        // VML
-        if (!rId) {
-            const vmlImg = container.getElementsByTagName('v:imagedata')[0];
-            if (vmlImg) {
-                rId = vmlImg.getAttribute('r:id') || vmlImg.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+        for (const vml of vmlImgs) {
+            const rId = vml.getAttribute('r:id') ||
+                        vml.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') ||
+                        vml.getAttribute('r:href');
+            if (rId && !rIds.includes(rId)) rIds.push(rId);
+        }
+
+        if (rIds.length === 0) return '';
+
+        // Determine dimensions if available (wp:extent cx, cy or v:shape style)
+        let styleStr = 'max-width: 100%; height: auto;';
+        const extent = container.getElementsByTagName('wp:extent')[0];
+        if (extent) {
+            const cx = parseInt(extent.getAttribute('cx'), 10) || 0;
+            const cy = parseInt(extent.getAttribute('cy'), 10) || 0;
+            if (cx > 0 && cy > 0) {
+                const widthPx = Math.round((cx / 914400) * 96);
+                const clampedWidth = Math.min(widthPx, 680);
+                styleStr = `max-width: 100%; width: ${clampedWidth}px; height: auto;`;
+            }
+        } else {
+            const shape = container.getElementsByTagName('v:shape')[0];
+            if (shape && shape.getAttribute('style')) {
+                const s = shape.getAttribute('style');
+                const wm = s.match(/width:\s*([\d.]+(?:pt|px|in|cm|mm))/i);
+                if (wm) {
+                    styleStr = `max-width: 100%; width: ${wm[1]}; height: auto;`;
+                }
             }
         }
 
-        if (!rId || !rels[rId]) return '';
+        const imgTags = [];
+        for (const rId of rIds) {
+            const rel = rels[rId];
+            if (!rel || !rel.target) continue;
 
-        const target = rels[rId].target;
-        const zipPath = target.startsWith('word/') ? target : `word/${target.replace(/^\//, '')}`;
-        const imgFile = zip.file(zipPath);
-        if (!imgFile) return '';
+            const target = rel.target;
+            let cleanTarget = target.replace(/\\/g, '/');
+            if (cleanTarget.startsWith('../')) {
+                cleanTarget = cleanTarget.replace(/^\.\.\//, '');
+            } else if (cleanTarget.startsWith('./')) {
+                cleanTarget = cleanTarget.replace(/^\.\//, '');
+            }
+            cleanTarget = cleanTarget.replace(/^\//, '');
 
-        const ext = target.split('.').pop().toLowerCase();
-        const mime = {
-            png: 'image/png',
-            jpg: 'image/jpeg',
-            jpeg: 'image/jpeg',
-            gif: 'image/gif',
-            webp: 'image/webp',
-            svg: 'image/svg+xml',
-        }[ext] || 'image/png';
+            const zipPath = cleanTarget.startsWith('word/') ? cleanTarget : `word/${cleanTarget}`;
+            let imgFile = zip.file(zipPath);
 
-        const base64 = await imgFile.async('base64');
-        return `<img src="data:${mime};base64,${base64}" class="max-w-full h-auto my-2 inline-block rounded shadow-xs" alt="Dokumen Gambar" />`;
+            if (!imgFile) {
+                // Basename fallback match across zip.files
+                const baseName = cleanTarget.split('/').pop();
+                const matchedKey = Object.keys(zip.files).find(k => k.endsWith('/' + baseName) || k === baseName);
+                if (matchedKey) {
+                    imgFile = zip.file(matchedKey);
+                }
+            }
+
+            if (!imgFile) continue;
+
+            const ext = target.split('.').pop().toLowerCase();
+            const mime = {
+                png: 'image/png',
+                jpg: 'image/jpeg',
+                jpeg: 'image/jpeg',
+                gif: 'image/gif',
+                webp: 'image/webp',
+                svg: 'image/svg+xml',
+                bmp: 'image/bmp',
+            }[ext] || 'image/jpeg';
+
+            const base64 = await imgFile.async('base64');
+            imgTags.push(`<img src="data:${mime};base64,${base64}" class="max-w-full h-auto my-3 inline-block rounded shadow-xs" style="${styleStr}" alt="Dokumen Gambar" />`);
+        }
+
+        return imgTags.join(' ');
     }
 
     renderPageBreak() {

@@ -3554,10 +3554,6 @@ export class UiController {
             `;
             ruler.appendChild(cmTick);
         }
-
-        if (this.engine && typeof this.engine.updateRulerForPageSetup === 'function') {
-            this.engine.updateRulerForPageSetup();
-        }
     }
 
     /* -------------------------------------------------------------

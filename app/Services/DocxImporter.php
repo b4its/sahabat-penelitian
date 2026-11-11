@@ -927,9 +927,12 @@ class DocxImporter
         // Check paragraph properties <w:pPr>
         $pPr = $xpath->query('./w:pPr', $p)->item(0);
         if ($pPr) {
-            // Check page break before
+            // Check page break before and section breaks
             if ($xpath->query('./w:pageBreakBefore', $pPr)->length > 0) {
                 $pageBreakBefore = true;
+            }
+            if ($xpath->query('./w:sectPr', $pPr)->length > 0) {
+                $pageBreakAfter = true;
             }
 
             // Check style
@@ -1052,6 +1055,11 @@ class DocxImporter
                 $latex = trim(self::ommlToLatex($child));
                 if ($latex !== '') {
                     $inlines[] = ' $$'.$latex.'$$ ';
+                }
+            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict' || $child->localName === 'AlternateContent') {
+                $imgHtml = $this->parseImage($child, $xpath, $zip, $rels);
+                if ($imgHtml !== '') {
+                    $inlines[] = $imgHtml;
                 }
             }
         }
@@ -1347,7 +1355,7 @@ class DocxImporter
                 }
             } elseif ($child->nodeName === 'w:tab') {
                 $htmlParts[] = '&emsp;';
-            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict') {
+            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict' || $child->localName === 'AlternateContent') {
                 $imgHtml = $this->parseImage($child, $xpath, $zip, $rels);
                 if (! empty($imgHtml)) {
                     $htmlParts[] = $imgHtml;
@@ -1433,48 +1441,157 @@ class DocxImporter
             }
         }
 
-        // Check if table borders are explicitly none or nil (borderless layout/signature table)
-        $hasTableBorders = true;
-        $tblBorders = $xpath->query('./w:tblPr/w:tblBorders', $tbl)->item(0);
-        if ($tblBorders) {
-            $topVal = strtolower((string) $xpath->query('./w:top/@w:val', $tblBorders)->item(0)?->nodeValue);
-            $bottomVal = strtolower((string) $xpath->query('./w:bottom/@w:val', $tblBorders)->item(0)?->nodeValue);
-            $insideHVal = strtolower((string) $xpath->query('./w:insideH/@w:val', $tblBorders)->item(0)?->nodeValue);
-            $insideVVal = strtolower((string) $xpath->query('./w:insideV/@w:val', $tblBorders)->item(0)?->nodeValue);
-
-            $isNoBorder = fn (?string $v) => empty($v) || in_array($v, ['none', 'nil']);
-            if ($isNoBorder($topVal) && $isNoBorder($bottomVal) && $isNoBorder($insideHVal) && $isNoBorder($insideVVal)) {
-                $hasTableBorders = false;
-            }
+        // 1. Column widths from <w:tblGrid>
+        $colWidths = [];
+        $gridCols = $xpath->query('./w:tblGrid/w:gridCol', $tbl);
+        foreach ($gridCols as $gc) {
+            $wVal = $gc->getAttribute('w:w');
+            $colWidths[] = is_numeric($wVal) ? (int) $wVal : 0;
         }
+        $totalGridWidth = array_sum($colWidths);
+        $colgroupHtml = '';
+        if (! empty($colWidths) && $totalGridWidth > 0) {
+            $colgroupHtml = "  <colgroup>\n";
+            foreach ($colWidths as $w) {
+                $pct = number_format(($w / $totalGridWidth) * 100, 1, '.', '');
+                $colgroupHtml .= "    <col style=\"width: {$pct}%;\">\n";
+            }
+            $colgroupHtml .= "  </colgroup>\n";
+        }
+
+        // 2. Borders from <w:tblBorders>
+        $formatBorder = function (?DOMElement $el, string $defaultColor = '#1f2937'): string {
+            if (! $el) {
+                return 'none';
+            }
+            $v = strtolower((string) $el->getAttribute('w:val'));
+            if (empty($v) || in_array($v, ['none', 'nil'])) {
+                return 'none';
+            }
+            $sz = (int) ($el->getAttribute('w:sz') ?: '4');
+            $pt = number_format(max(0.5, $sz / 8), 2, '.', '');
+            $style = 'solid';
+            if (str_contains($v, 'dash')) {
+                $style = 'dashed';
+            } elseif (str_contains($v, 'dot')) {
+                $style = 'dotted';
+            } elseif (str_contains($v, 'double')) {
+                $style = 'double';
+            }
+            $color = $el->getAttribute('w:color');
+            $hex = (empty($color) || $color === 'auto') ? $defaultColor : '#'.ltrim($color, '#');
+
+            return "{$pt}pt {$style} {$hex}";
+        };
+
+        $tblBorders = $xpath->query('./w:tblPr/w:tblBorders', $tbl)->item(0);
+        $bTop = 'none';
+        $bBottom = 'none';
+        $bLeft = 'none';
+        $bRight = 'none';
+        $bInsideH = 'none';
+        $bInsideV = 'none';
+        if ($tblBorders instanceof DOMElement) {
+            $bTop = $formatBorder($xpath->query('./w:top', $tblBorders)->item(0));
+            $bBottom = $formatBorder($xpath->query('./w:bottom', $tblBorders)->item(0));
+            $bLeft = $formatBorder($xpath->query('./w:left', $tblBorders)->item(0));
+            $bRight = $formatBorder($xpath->query('./w:right', $tblBorders)->item(0));
+            $bInsideH = $formatBorder($xpath->query('./w:insideH', $tblBorders)->item(0), '#d1d5db');
+            $bInsideV = $formatBorder($xpath->query('./w:insideV', $tblBorders)->item(0), '#d1d5db');
+        }
+
+        $isAcademicTable = ($bTop !== 'none' && $bBottom !== 'none' && $bLeft === 'none' && $bRight === 'none');
+        $isStandardGrid = ($bTop !== 'none' && $bBottom !== 'none' && $bLeft !== 'none' && $bRight !== 'none');
+        $isBorderless = ($bTop === 'none' && $bBottom === 'none' && $bLeft === 'none' && $bRight === 'none' && $bInsideH === 'none' && $bInsideV === 'none');
 
         $headRows = [];
         $bodyRows = [];
+        $totalRows = $rows->length;
 
-        foreach ($rows as $tr) {
-            $isHeader = $xpath->query('./w:trPr/w:tblHeader', $tr)->length > 0;
+        for ($rIdx = 0; $rIdx < $totalRows; $rIdx++) {
+            $tr = $rows->item($rIdx);
+            $isHeader = ($rIdx === 0 || $xpath->query('./w:trPr/w:tblHeader', $tr)->length > 0);
+            $isLastRow = ($rIdx === $totalRows - 1);
             $cells = $xpath->query('./w:tc', $tr);
             $cellsHtml = [];
+            $currentColIdx = 0;
 
             foreach ($cells as $tc) {
                 $cellTag = $isHeader ? 'th' : 'td';
                 $attrs = [];
-                $classes = $hasTableBorders ? ['border', 'border-gray-300', 'dark:border-gray-700', 'p-2'] : ['p-2'];
+                $classes = ['p-2.5', 'text-sm'];
                 $styles = [];
 
                 if ($isHeader) {
-                    $classes[] = 'bg-gray-100';
-                    $classes[] = 'dark:bg-gray-800';
+                    $classes[] = 'bg-gray-100/80';
+                    $classes[] = 'dark:bg-gray-800/80';
                     $classes[] = 'font-semibold';
-                    $classes[] = 'text-center';
                 }
 
                 $tcPr = $xpath->query('./w:tcPr', $tc)->item(0);
-                if ($tcPr) {
+                $colSpan = 1;
+                if ($tcPr instanceof DOMElement) {
                     // Colspan
                     $gridSpan = $xpath->query('./w:gridSpan/@w:val', $tcPr)->item(0);
                     if ($gridSpan) {
-                        $attrs[] = 'colspan="'.((int) $gridSpan->nodeValue).'"';
+                        $colSpan = (int) $gridSpan->nodeValue;
+                        if ($colSpan > 1) {
+                            $attrs[] = "colspan=\"{$colSpan}\"";
+                        }
+                    }
+
+                    // Cell borders (<w:tcBorders>)
+                    $tcBorders = $xpath->query('./w:tcBorders', $tcPr)->item(0);
+                    if ($tcBorders instanceof DOMElement) {
+                        $cTop = $formatBorder($xpath->query('./w:top', $tcBorders)->item(0));
+                        $cBottom = $formatBorder($xpath->query('./w:bottom', $tcBorders)->item(0));
+                        $cLeft = $formatBorder($xpath->query('./w:left', $tcBorders)->item(0));
+                        $cRight = $formatBorder($xpath->query('./w:right', $tcBorders)->item(0));
+                        if ($cTop !== 'none') {
+                            $styles[] = "border-top: {$cTop};";
+                        }
+                        if ($cBottom !== 'none') {
+                            $styles[] = "border-bottom: {$cBottom};";
+                        }
+                        if ($cLeft !== 'none') {
+                            $styles[] = "border-left: {$cLeft};";
+                        }
+                        if ($cRight !== 'none') {
+                            $styles[] = "border-right: {$cRight};";
+                        }
+                    } elseif ($isAcademicTable) {
+                        if ($rIdx === 0) {
+                            $styles[] = "border-top: {$bTop};";
+                            $styles[] = 'border-bottom: 1pt solid #1f2937;';
+                        } elseif ($isLastRow) {
+                            $styles[] = "border-bottom: {$bBottom};";
+                        } elseif ($bInsideH !== 'none') {
+                            $styles[] = "border-bottom: {$bInsideH};";
+                        }
+                        $styles[] = 'border-left: none; border-right: none;';
+                    } elseif ($isStandardGrid) {
+                        $styles[] = "border: {$bTop};";
+                    } elseif ($isBorderless) {
+                        $styles[] = 'border: none;';
+                    } else {
+                        if ($bInsideH !== 'none') {
+                            $styles[] = "border-bottom: {$bInsideH};";
+                        }
+                        if ($bInsideV !== 'none' && $currentColIdx > 0) {
+                            $styles[] = "border-left: {$bInsideV};";
+                        }
+                    }
+
+                    // Proportional column width
+                    if (! empty($colWidths) && $totalGridWidth > 0 && $currentColIdx < count($colWidths)) {
+                        $spanWidth = 0;
+                        for ($s = 0; $s < $colSpan && ($currentColIdx + $s) < count($colWidths); $s++) {
+                            $spanWidth += $colWidths[$currentColIdx + $s];
+                        }
+                        if ($spanWidth > 0) {
+                            $pct = number_format(($spanWidth / $totalGridWidth) * 100, 1, '.', '');
+                            $styles[] = "width: {$pct}%;";
+                        }
                     }
 
                     // Background color (shd)
@@ -1491,7 +1608,18 @@ class DocxImporter
                     if ($vAlign) {
                         $styles[] = 'vertical-align: '.strtolower($vAlign->nodeValue).';';
                     }
+                } elseif ($isAcademicTable) {
+                    if ($rIdx === 0) {
+                        $styles[] = "border-top: {$bTop}; border-bottom: 1pt solid #1f2937;";
+                    } elseif ($isLastRow) {
+                        $styles[] = "border-bottom: {$bBottom};";
+                    } elseif ($bInsideH !== 'none') {
+                        $styles[] = "border-bottom: {$bInsideH};";
+                    }
+                    $styles[] = 'border-left: none; border-right: none;';
                 }
+
+                $currentColIdx += $colSpan;
 
                 // Parse cell contents (<w:p>)
                 $cellBlocks = [];
@@ -1511,7 +1639,7 @@ class DocxImporter
                 $cellsHtml[] = "<{$cellTag}{$attrStr}{$classStr}{$styleStr}>{$cellContent}</{$cellTag}>";
             }
 
-            $rowHtml = "<tr>\n".implode("\n", $cellsHtml)."\n</tr>";
+            $rowHtml = "    <tr>\n      ".implode("\n      ", $cellsHtml)."\n    </tr>";
             if ($isHeader) {
                 $headRows[] = $rowHtml;
             } else {
@@ -1519,13 +1647,25 @@ class DocxImporter
             }
         }
 
-        $tableBorderClass = $hasTableBorders ? 'border border-gray-300 dark:border-gray-700' : 'border-none';
-        $tableHtml = "<table class=\"w-full border-collapse my-4 text-sm {$tableBorderClass}{$tblAlign}\">\n";
+        $tblStyles = [];
+        if ($isAcademicTable) {
+            $tblStyles[] = "border-top: {$bTop};";
+            $tblStyles[] = "border-bottom: {$bBottom};";
+        } elseif ($isStandardGrid) {
+            $tblStyles[] = "border: {$bTop};";
+        }
+
+        $tableStyleAttr = ! empty($tblStyles) ? ' style="'.implode(' ', $tblStyles).'"' : '';
+        $tableBorderClass = $isBorderless ? 'border-none' : ($isAcademicTable ? 'border-t-2 border-b-2 border-gray-900 dark:border-gray-100' : 'border border-gray-300 dark:border-gray-700');
+        $tableHtml = "<table class=\"w-full border-collapse my-4 text-sm {$tableBorderClass}{$tblAlign}\"{$tableStyleAttr}>\n";
+        if (! empty($colgroupHtml)) {
+            $tableHtml .= $colgroupHtml;
+        }
         if (! empty($headRows)) {
-            $tableHtml .= "<thead>\n".implode("\n", $headRows)."\n</thead>\n";
+            $tableHtml .= "  <thead>\n".implode("\n", $headRows)."\n  </thead>\n";
         }
         if (! empty($bodyRows)) {
-            $tableHtml .= "<tbody>\n".implode("\n", $bodyRows)."\n</tbody>\n";
+            $tableHtml .= "  <tbody>\n".implode("\n", $bodyRows)."\n  </tbody>\n";
         }
         $tableHtml .= '</table>';
 
@@ -1537,47 +1677,98 @@ class DocxImporter
      */
     private function parseImage(DOMElement $container, DOMXPath $xpath, ZipArchive $zip, array $rels): string
     {
-        $rId = null;
+        $rIds = [];
 
-        // OpenXML DrawingML
-        $blip = $xpath->query('.//a:blip/@r:embed', $container)->item(0);
-        if ($blip) {
-            $rId = $blip->nodeValue;
-        }
-
-        // VML fallback
-        if (! $rId) {
-            $vmlImg = $xpath->query('.//v:imagedata/@r:id', $container)->item(0);
-            if ($vmlImg) {
-                $rId = $vmlImg->nodeValue;
+        // Query all blips (DrawingML)
+        $blips = $xpath->query('.//a:blip', $container);
+        foreach ($blips as $b) {
+            if ($b instanceof DOMElement) {
+                $rId = $b->getAttribute('r:embed') ?: ($b->getAttributeNS(self::R_NS, 'embed') ?: $b->getAttribute('r:id'));
+                if ($rId && ! in_array($rId, $rIds, true)) {
+                    $rIds[] = $rId;
+                }
             }
         }
 
-        if (! $rId || ! isset($rels[$rId])) {
+        // Query all imagedata (VML)
+        $vmlImgs = $xpath->query('.//v:imagedata', $container);
+        foreach ($vmlImgs as $v) {
+            if ($v instanceof DOMElement) {
+                $rId = $v->getAttribute('r:id') ?: ($v->getAttributeNS(self::R_NS, 'id') ?: $v->getAttribute('r:href'));
+                if ($rId && ! in_array($rId, $rIds, true)) {
+                    $rIds[] = $rId;
+                }
+            }
+        }
+
+        if (empty($rIds)) {
             return '';
         }
 
-        $target = $rels[$rId]['target'];
-        // Path in zip is usually 'word/' . target unless absolute
-        $zipPath = str_starts_with($target, 'word/') ? $target : 'word/'.ltrim($target, '/');
-        $imgBytes = $zip->getFromName($zipPath);
-        if ($imgBytes === false) {
-            return '';
+        // Determine dimensions if available (wp:extent cx, cy or v:shape style)
+        $styleStr = 'max-width: 100%; height: auto;';
+        $extent = $xpath->query('.//wp:extent', $container)->item(0);
+        if ($extent instanceof DOMElement) {
+            $cx = (int) $extent->getAttribute('cx');
+            $cy = (int) $extent->getAttribute('cy');
+            if ($cx > 0 && $cy > 0) {
+                $widthPx = (int) round(($cx / 914400) * 96);
+                $clampedWidth = min($widthPx, 680);
+                $styleStr = "max-width: 100%; width: {$clampedWidth}px; height: auto;";
+            }
+        } else {
+            $shape = $xpath->query('.//v:shape', $container)->item(0);
+            if ($shape instanceof DOMElement && $shape->hasAttribute('style')) {
+                $s = $shape->getAttribute('style');
+                if (preg_match('/width:\s*([\d.]+(?:pt|px|in|cm|mm))/i', $s, $wm)) {
+                    $styleStr = "max-width: 100%; width: {$wm[1]}; height: auto;";
+                }
+            }
         }
 
-        $ext = strtolower(pathinfo($target, PATHINFO_EXTENSION));
-        $mime = match ($ext) {
-            'png' => 'image/png',
-            'jpg', 'jpeg' => 'image/jpeg',
-            'gif' => 'image/gif',
-            'webp' => 'image/webp',
-            'svg' => 'image/svg+xml',
-            default => 'image/png',
-        };
+        $imgTags = [];
+        foreach ($rIds as $rId) {
+            if (! isset($rels[$rId]['target'])) {
+                continue;
+            }
 
-        $base64 = base64_encode($imgBytes);
+            $target = $rels[$rId]['target'];
+            $clean = ltrim(str_replace(['\\', '../', './'], ['/', '', ''], $target), '/');
+            $zipPath = str_starts_with($clean, 'word/') ? $clean : "word/{$clean}";
+            $imgBytes = $zip->getFromName($zipPath);
 
-        return "<img src=\"data:{$mime};base64,{$base64}\" class=\"max-w-full h-auto my-2 inline-block rounded shadow-xs\" alt=\"Dokumen Gambar\" />";
+            if ($imgBytes === false) {
+                // Try basename fallback across all files in archive
+                $base = basename($clean);
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $entry = $zip->getNameIndex($i);
+                    if ($entry !== false && (str_ends_with($entry, "/{$base}") || $entry === $base)) {
+                        $imgBytes = $zip->getFromIndex($i);
+                        break;
+                    }
+                }
+            }
+
+            if ($imgBytes === false) {
+                continue;
+            }
+
+            $ext = strtolower(pathinfo($target, PATHINFO_EXTENSION));
+            $mime = match ($ext) {
+                'png' => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'svg' => 'image/svg+xml',
+                'bmp' => 'image/bmp',
+                default => 'image/jpeg',
+            };
+
+            $base64 = base64_encode($imgBytes);
+            $imgTags[] = "<img src=\"data:{$mime};base64,{$base64}\" class=\"max-w-full h-auto my-3 inline-block rounded shadow-xs\" style=\"{$styleStr}\" alt=\"Dokumen Gambar\" />";
+        }
+
+        return implode(' ', $imgTags);
     }
 
     /**

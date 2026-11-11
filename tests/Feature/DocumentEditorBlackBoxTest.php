@@ -1588,3 +1588,147 @@ HTML;
         ->and($sourceEngineJs)->toContain('lines.slice(0, halfway).join(\'<br>\')')
         ->and($sourceEngineJs)->toContain('!isMonospace');
 });
+
+test('black-box: uploading docx with images inside mc:AlternateContent extracts image tags and renders cleanly', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'bb_img_test_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    // 1x1 transparent PNG
+    $fakePng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+    $zip->addFromString('word/media/image1.png', $fakePng);
+
+    $relsXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+</Relationships>
+XML;
+    $zip->addFromString('word/_rels/document.xml.rels', $relsXml);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:t>BAB 4 HASIL DAN PEMBAHASAN</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <mc:AlternateContent>
+                    <mc:Choice Requires="wps">
+                        <w:drawing>
+                            <wp:inline>
+                                <wp:extent cx="4572000" cy="3048000"/>
+                                <a:graphic>
+                                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                        <a:blip r:embed="rId1"/>
+                                    </a:graphicData>
+                                </a:graphic>
+                            </wp:inline>
+                        </w:drawing>
+                    </mc:Choice>
+                </mc:AlternateContent>
+            </w:r>
+        </w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => new UploadedFile($zipPath, 'skripsi_image_test.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true),
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('success', true);
+
+    $html = $response->json('content_html');
+    expect($html)->toContain('<img')
+        ->and($html)->toContain('data:image/png;base64,')
+        ->and($html)->toContain('width: 480px;');
+
+    @unlink($zipPath);
+});
+
+test('black-box: uploading docx with table containing tblGrid and academic borders preserves colgroup and border styling', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'bb_tbl_test_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:tbl>
+            <w:tblPr>
+                <w:tblBorders>
+                    <w:top w:val="single" w:sz="8" w:space="0" w:color="000000"/>
+                    <w:bottom w:val="single" w:sz="8" w:space="0" w:color="000000"/>
+                    <w:left w:val="none"/>
+                    <w:right w:val="none"/>
+                    <w:insideH w:val="single" w:sz="4" w:space="0" w:color="D1D5DB"/>
+                    <w:insideV w:val="none"/>
+                </w:tblBorders>
+            </w:tblPr>
+            <w:tblGrid>
+                <w:gridCol w:w="1500"/>
+                <w:gridCol w:w="8500"/>
+            </w:tblGrid>
+            <w:tr>
+                <w:trPr><w:tblHeader/></w:trPr>
+                <w:tc><w:p><w:r><w:t>No</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Nama Variabel</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>1</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Suhu Air</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => new UploadedFile($zipPath, 'skripsi_table_test.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true),
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('success', true);
+
+    $html = $response->json('content_html');
+    expect($html)->toContain('<colgroup>')
+        ->and($html)->toContain('width: 15.0%;')
+        ->and($html)->toContain('width: 85.0%;')
+        ->and($html)->toContain('border-top: 1.00pt solid #000000;')
+        ->and($html)->toContain('border-bottom: 1.00pt solid #000000;');
+
+    @unlink($zipPath);
+});
+
+test('black-box: document engine client source prevents infinite recursion between updateRulerForPageSetup and renderRuler', function () {
+    $engineJs = file_get_contents(resource_path('js/editor/document-engine.js'));
+    $uiControllerJs = file_get_contents(resource_path('js/editor/ui-controller.js'));
+    $importerJs = file_get_contents(resource_path('js/editor/docx-importer.js'));
+
+    // 1. Engine has recursion guard
+    expect($engineJs)->toContain('if (this._isUpdatingRuler) return;')
+        ->and($engineJs)->toContain('this._isUpdatingRuler = true;');
+
+    // 2. UiController renderRuler must not call engine.updateRulerForPageSetup to avoid cycle
+    expect($uiControllerJs)->not->toContain('this.engine.updateRulerForPageSetup()');
+
+    // 3. Importer supports mc:alternatecontent and colgroup
+    expect($importerJs)->toContain('mc:alternatecontent')
+        ->and($importerJs)->toContain('colgroupHtml')
+        ->and($importerJs)->toContain('formatBorder');
+});

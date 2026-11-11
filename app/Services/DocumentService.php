@@ -95,7 +95,7 @@ class DocumentService
 
         // Allow only standard rich text tags and MathML for LaTeX equations
         $allowedTags = '<h1><h2><h3><h4><h5><h6><p><br><hr><b><strong><i><em><u><s><strike><del><sub><sup>'.
-            '<ul><ol><li><blockquote><code><pre><table><thead><tbody><tfoot><tr><th><td>'.
+            '<ul><ol><li><blockquote><code><pre><table><thead><tbody><tfoot><tr><th><td><colgroup><col>'.
             '<a><img><span><div><figure><figcaption><section><header><footer>'.
             '<math><semantics><mrow><mi><mn><mo><mtext><mspace><mfrac><msqrt><mroot><msub><msup><msubsup><munder><mover><munderover><mtable><mtr><mtd><annotation>';
 
@@ -867,10 +867,23 @@ class DocumentService
             }
 
             // Normal paragraphs
-            if (! empty($cleanText)) {
+            if (! empty($cleanText) || str_contains($fullTag, '<img')) {
                 preg_match('/^<p\b([^>]*)>(.*?)<\/p>$/is', $fullTag, $pim);
                 $existingAttrs = $pim[1] ?? '';
-                $bodyHtml = $pim[2] ?? $cleanText;
+                $bodyHtml = $pim[2] ?? ($cleanText ?: $fullTag);
+
+                // Extract style attribute if any
+                $styleMatch = '';
+                if (preg_match('/style=(["\'])(.*?)\1/is', $existingAttrs, $sm)) {
+                    $styleMatch = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
+                }
+
+                // Paragraph with image: center it cleanly and never indent
+                if (str_contains($bodyHtml, '<img')) {
+                    $adaptedBlocks[] = "<p class=\"text-center my-4 leading-relaxed text-gray-800\"{$styleMatch}>{$bodyHtml}</p>";
+
+                    continue;
+                }
 
                 // Detect inline/display LaTeX in paragraphs
                 if (str_contains($bodyHtml, '$$')) {
@@ -944,8 +957,11 @@ class DocumentService
             $placeholder = '<div data-protected-block="'.$blockId.'"></div>';
             $bHtml = $item['html'];
             if ($item['tag'] === 'table') {
+                $hasCustomBorder = preg_match('/style=[^>]*border/i', $bHtml) || str_contains($bHtml, 'border-top') || str_contains($bHtml, 'border-bottom');
                 $isBorderless = str_contains($bHtml, 'border-none') || str_contains($bHtml, 'border="0"');
-                if ($isBorderless) {
+                if ($hasCustomBorder) {
+                    // Already has high-fidelity border classes and styles, preserve intact
+                } elseif ($isBorderless) {
                     $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border-none">', $bHtml);
                 } else {
                     $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">', $bHtml);

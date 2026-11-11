@@ -551,9 +551,23 @@ export class DocumentEngine {
             if (tag === 'H4' || tag === 'H5' || tag === 'H6') return 35;
             if (tag === 'TABLE') {
                 const rowCount = el.querySelectorAll('tr').length || 3;
-                return Math.min(600, rowCount * 36 + 28);
+                return Math.min(650, rowCount * 36 + 28);
             }
-            if (tag === 'FIGURE' || tag === 'IMG' || el.querySelector('img')) return 220;
+            if (tag === 'FIGURE' || tag === 'IMG' || el.querySelector('img')) {
+                const img = el.querySelector('img') || (tag === 'IMG' ? el : null);
+                if (img) {
+                    const style = img.getAttribute('style') || '';
+                    const hMatch = style.match(/height:\s*(\d+)px/i);
+                    const wMatch = style.match(/width:\s*(\d+)px/i);
+                    if (hMatch) {
+                        return Math.min(650, parseInt(hMatch[1], 10) + 24);
+                    }
+                    if (wMatch && parseInt(wMatch[1], 10) >= 500) {
+                        return 420;
+                    }
+                }
+                return 240;
+            }
             if (tag === 'UL' || tag === 'OL') {
                 const liCount = el.querySelectorAll('li').length || 3;
                 return liCount * 28 + 20;
@@ -1636,11 +1650,22 @@ export class DocumentEngine {
                             return root;
                         };
 
-                        const result = await window.mammoth.convertToHtml({
+                        const mammothOptions = {
                             arrayBuffer,
                             styleMap,
                             transformDocument: transformElement,
-                        });
+                        };
+                        if (window.mammoth && window.mammoth.images && typeof window.mammoth.images.imgElement === 'function') {
+                            mammothOptions.convertImage = window.mammoth.images.imgElement((element) => {
+                                return element.read('base64').then((imageBuffer) => {
+                                    return {
+                                        src: `data:${element.contentType};base64,${imageBuffer}`,
+                                    };
+                                });
+                            });
+                        }
+
+                        const result = await window.mammoth.convertToHtml(mammothOptions);
                         contentHtml = result.value
                             .replace(/<p>\s*\[\[WORD_PAGE_BREAK\]\]\s*<\/p>/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>')
                             .replace(/\[\[WORD_PAGE_BREAK\]\]/gi, '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>');
@@ -2219,10 +2244,26 @@ export class DocumentEngine {
                 continue;
             }
 
-            // Table styling
+            // Table styling: preserve authentic borders and column widths from Word
             if (el.tagName === 'TABLE') {
-                const isBorderless = el.classList?.contains('border-none') || el.getAttribute('border') === '0' || (!el.querySelector('td.border, th.border') && el.classList.contains('border-none'));
-                if (isBorderless) {
+                const tableStyle = el.getAttribute('style') || '';
+                const hasCustomBorder = /border/i.test(tableStyle) || Boolean(el.querySelector('[style*="border"]'));
+                const isExplicitBorderless = el.classList?.contains('border-none') || el.getAttribute('border') === '0';
+
+                if (hasCustomBorder) {
+                    // Preserve authentic OpenXML Word borders and padding
+                    el.classList.add('w-full', 'border-collapse', 'my-4', 'text-sm');
+                    el.querySelectorAll('th, td').forEach(cell => {
+                        if (!cell.style.padding && !cell.classList.contains('p-2')) {
+                            cell.classList.add('p-2');
+                        }
+                    });
+                    el.querySelectorAll('th').forEach(th => {
+                        if (!th.style.backgroundColor && !th.classList.contains('bg-gray-100')) {
+                            th.classList.add('bg-gray-100/70', 'dark:bg-gray-800/70', 'font-semibold');
+                        }
+                    });
+                } else if (isExplicitBorderless) {
                     el.className = 'w-full border-collapse my-4 text-sm border-none';
                     el.querySelectorAll('th, td').forEach(cell => {
                         cell.classList.remove('border', 'border-gray-300', 'dark:border-gray-700');
@@ -2242,6 +2283,14 @@ export class DocumentEngine {
 
             // Normal Body Paragraphs
             if (el.tagName === 'P') {
+                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
+                if (img) {
+                    el.classList.remove('text-justify', 'indent-8', 'text-left');
+                    el.classList.add('text-center', 'my-4');
+                    img.classList.add('mx-auto', 'block', 'max-w-full', 'h-auto', 'rounded', 'shadow-xs');
+                    continue;
+                }
+
                 if (el.innerHTML.includes('$$') || el.innerHTML.includes('\\[')) {
                     el.innerHTML = this.formatLatexEquationsInHtml(el.innerHTML);
                 }
@@ -2484,42 +2533,48 @@ export class DocumentEngine {
     }
 
     updateRulerForPageSetup() {
-        const widthMm = this.getDocumentWidthMm();
-        const totalWidthCm = widthMm / 10;
+        if (this._isUpdatingRuler) return;
+        this._isUpdatingRuler = true;
+        try {
+            const widthMm = this.getDocumentWidthMm();
+            const totalWidthCm = widthMm / 10;
 
-        const rulerTicks = document.getElementById('ruler-ticks');
-        if (rulerTicks) {
-            rulerTicks.style.width = `${widthMm}mm`;
-            if (window.uiController && typeof window.uiController.renderRuler === 'function') {
-                window.uiController.renderRuler(totalWidthCm);
+            const rulerTicks = document.getElementById('ruler-ticks');
+            if (rulerTicks) {
+                rulerTicks.style.width = `${widthMm}mm`;
+                if (window.uiController && typeof window.uiController.renderRuler === 'function') {
+                    window.uiController.renderRuler(totalWidthCm);
+                }
             }
-        }
 
-        let leftMarginCm = 2.54;
-        let rightMarginCm = 2.54;
-        if (this.currentMarginPreset === 'skripsi') {
-            leftMarginCm = 4.0;
-            rightMarginCm = 3.0;
-        } else if (this.currentMarginPreset === 'narrow') {
-            leftMarginCm = 1.27;
-            rightMarginCm = 1.27;
-        } else if (this.currentMarginPreset === 'moderate') {
-            leftMarginCm = 1.91;
-            rightMarginCm = 1.91;
-        } else if (this.currentMarginPreset === 'wide') {
-            leftMarginCm = 5.08;
-            rightMarginCm = 5.08;
-        } else if (this.currentMarginPreset === 'mirrored') {
-            leftMarginCm = 3.18;
-            rightMarginCm = 2.54;
-        } else if (this.currentMargins) {
-            const gutter = (this.currentMargins.gutterPos === 'left' ? (this.currentMargins.gutter || 0) : 0);
-            leftMarginCm = (this.currentMargins.left + gutter) / 10;
-            rightMarginCm = (this.currentMargins.right) / 10;
-        }
+            let leftMarginCm = 2.54;
+            let rightMarginCm = 2.54;
+            if (this.currentMarginPreset === 'skripsi') {
+                leftMarginCm = 4.0;
+                rightMarginCm = 3.0;
+            } else if (this.currentMarginPreset === 'narrow') {
+                leftMarginCm = 1.27;
+                rightMarginCm = 1.27;
+            } else if (this.currentMarginPreset === 'moderate') {
+                leftMarginCm = 1.91;
+                rightMarginCm = 1.91;
+            } else if (this.currentMarginPreset === 'wide') {
+                leftMarginCm = 5.08;
+                rightMarginCm = 5.08;
+            } else if (this.currentMarginPreset === 'mirrored') {
+                leftMarginCm = 3.18;
+                rightMarginCm = 2.54;
+            } else if (this.currentMargins) {
+                const gutter = (this.currentMargins.gutterPos === 'left' ? (this.currentMargins.gutter || 0) : 0);
+                leftMarginCm = (this.currentMargins.left + gutter) / 10;
+                rightMarginCm = (this.currentMargins.right) / 10;
+            }
 
-        this.updateRulerMarkers(leftMarginCm, totalWidthCm - rightMarginCm, totalWidthCm);
-        this.updateVerticalRuler();
+            this.updateRulerMarkers(leftMarginCm, totalWidthCm - rightMarginCm, totalWidthCm);
+            this.updateVerticalRuler();
+        } finally {
+            this._isUpdatingRuler = false;
+        }
     }
 
     updateRulerMarkersForPreset(preset) {
@@ -5225,7 +5280,9 @@ ${entriesHtml}    </div>
                 startPageNumber: this.startPageNumber || 1,
                 savedAt: new Date().toISOString(),
             };
-            localStorage.setItem('velscribe_document_state', JSON.stringify(data));
+            if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.setItem === 'function') {
+                localStorage.setItem('velscribe_document_state', JSON.stringify(data));
+            }
         } catch (e) {
             console.warn('LocalStorage save error:', e);
         }
@@ -5233,6 +5290,7 @@ ${entriesHtml}    </div>
 
     loadFromLocalStorage() {
         try {
+            if (typeof localStorage === 'undefined' || !localStorage || typeof localStorage.getItem !== 'function') return false;
             const raw = localStorage.getItem('velscribe_document_state');
             if (!raw) return false;
             const data = JSON.parse(raw);

@@ -1141,3 +1141,147 @@ HTML;
         ->and($title)->not->toBe('PERNYATAAN KEASLIAN SKRIPSI')
         ->and($title)->not->toBe('BAB 1 PENDAHULUAN');
 });
+
+test('white-box: DocxImporter extracts images from mc:AlternateContent, w:drawing, and v:imagedata with normalized zip paths', function () {
+    $zipFile = tempnam(sys_get_temp_dir(), 'docx_img_test_');
+    $zip = new \ZipArchive;
+    $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    // 1x1 transparent PNG
+    $fakePng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+    $zip->addFromString('word/media/figure1.png', $fakePng);
+
+    $relsXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/figure1.png"/>
+</Relationships>
+XML;
+    $zip->addFromString('word/_rels/document.xml.rels', $relsXml);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:t>Gambar 4.1 Arsitektur Sistem</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <mc:AlternateContent>
+                    <mc:Choice Requires="wps">
+                        <w:drawing>
+                            <wp:inline>
+                                <wp:extent cx="3810000" cy="2540000"/>
+                                <a:graphic>
+                                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                        <a:blip r:embed="rId1"/>
+                                    </a:graphicData>
+                                </a:graphic>
+                            </wp:inline>
+                        </w:drawing>
+                    </mc:Choice>
+                </mc:AlternateContent>
+            </w:r>
+        </w:p>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $importer = new DocxImporter;
+    $uploadedFile = new UploadedFile($zipFile, 'test_image.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+    $parsed = $importer->parseWithMetadata($uploadedFile);
+
+    expect($parsed['html'])->toContain('<img')
+        ->and($parsed['html'])->toContain('data:image/png;base64,')
+        ->and($parsed['html'])->toContain('width: 400px;')
+        ->and($parsed['html'])->toContain('Gambar 4.1 Arsitektur Sistem');
+
+    @unlink($zipFile);
+});
+
+test('white-box: DocxImporter extracts w:tblGrid column widths into colgroup and preserves academic 3-line table borders', function () {
+    $zipFile = tempnam(sys_get_temp_dir(), 'docx_tbl_test_');
+    $zip = new \ZipArchive;
+    $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:tbl>
+            <w:tblPr>
+                <w:tblBorders>
+                    <w:top w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+                    <w:bottom w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+                    <w:left w:val="none"/>
+                    <w:right w:val="none"/>
+                    <w:insideH w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+                    <w:insideV w:val="none"/>
+                </w:tblBorders>
+            </w:tblPr>
+            <w:tblGrid>
+                <w:gridCol w:w="2000"/>
+                <w:gridCol w:w="6000"/>
+            </w:tblGrid>
+            <w:tr>
+                <w:trPr><w:tblHeader/></w:trPr>
+                <w:tc>
+                    <w:p><w:r><w:t>No</w:t></w:r></w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p><w:r><w:t>Keterangan</w:t></w:r></w:p>
+                </w:tc>
+            </w:tr>
+            <w:tr>
+                <w:tc>
+                    <w:p><w:r><w:t>1</w:t></w:r></w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p><w:r><w:t>Pengujian Sensor</w:t></w:r></w:p>
+                </w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $importer = new DocxImporter;
+    $uploadedFile = new UploadedFile($zipFile, 'test_table.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+    $parsed = $importer->parseWithMetadata($uploadedFile);
+
+    expect($parsed['html'])->toContain('<colgroup>')
+        ->and($parsed['html'])->toContain('width: 25.0%;')
+        ->and($parsed['html'])->toContain('width: 75.0%;')
+        ->and($parsed['html'])->toContain('border-top: 1.50pt solid #000000;')
+        ->and($parsed['html'])->toContain('border-bottom: 1.50pt solid #000000;')
+        ->and($parsed['html'])->toContain('border-left: none; border-right: none;');
+
+    @unlink($zipFile);
+});
+
+test('white-box: adaptDocumentStructure centers paragraphs containing images and excludes them from indent-8', function () {
+    $html = <<<'HTML'
+        <h1>BAB 4 HASIL DAN PEMBAHASAN</h1>
+        <p>Berikut adalah hasil pengujian akurasi sistem yang disajikan pada gambar di bawah ini.</p>
+        <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Gambar 4.1" /></p>
+        <p>Berdasarkan grafik di atas, akurasi klasifikasi mencapai lebih dari sembilan puluh lima persen secara konsisten dalam seluruh percobaan pengujian.</p>
+HTML;
+
+    $res = $this->service->adaptDocumentStructure($html, 'SKRIPSI_TEST.docx');
+    $adaptedHtml = $res['adapted_html'];
+
+    expect($adaptedHtml)->toContain('class="text-center my-4 leading-relaxed text-gray-800"')
+        ->and($adaptedHtml)->not->toContain('indent-8"><img')
+        ->and($adaptedHtml)->toContain('data:image/png;base64,');
+});
