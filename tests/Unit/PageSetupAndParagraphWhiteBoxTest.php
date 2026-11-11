@@ -393,4 +393,32 @@ XML;
         $this->assertEquals('double', $jsonData['layout_options']['page_border']['style']);
         $this->assertEquals('continuous', $jsonData['layout_options']['line_numbers']);
     }
+
+    public function test_paragraph_shading_borders_and_drop_cap_export_parity(): void
+    {
+        $content = '<p style="background-color: #fef08a; padding: 6px 12px; border-left: 3.5px solid #4f46e5;"><span class="drop-cap" style="float: left; font-size: 3.2em; font-weight: bold; margin-right: 0.2cm;">P</span>aragraf pembuka dengan huruf awal kapital besar (drop cap), warna latar kuning sorotan, dan garis batas kiri gaya Word.</p>';
+
+        $layoutOptions = [
+            'paper_size' => 'a4',
+            'orientation' => 'portrait',
+        ];
+
+        // DOCX Export
+        $docxResult = $this->docService->exportDocument('Uji Paragraf Lengkap DOCX', $content, 'docx', null, null, $layoutOptions);
+        $this->assertStringContainsString('background-color: #fef08a;', $docxResult['content']);
+        $this->assertStringContainsString('border-left: 3.5px solid #4f46e5;', $docxResult['content']);
+        $this->assertStringContainsString('class="drop-cap"', $docxResult['content']);
+
+        // HTML Export
+        $htmlResult = $this->docService->exportDocument('Uji Paragraf Lengkap HTML', $content, 'html', null, null, $layoutOptions);
+        $this->assertStringContainsString('background-color: #fef08a;', $htmlResult['content']);
+        $this->assertStringContainsString('border-left: 3.5px solid #4f46e5;', $htmlResult['content']);
+        $this->assertStringContainsString('class="drop-cap"', $htmlResult['content']);
+
+        // JSON Export
+        $jsonResult = $this->docService->exportDocument('Uji Paragraf Lengkap JSON', $content, 'json', null, null, $layoutOptions);
+        $jsonData = json_decode($jsonResult['content'], true);
+        $this->assertIsArray($jsonData);
+        $this->assertStringContainsString('drop-cap', $jsonData['content']);
+    }
 }

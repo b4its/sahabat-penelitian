@@ -448,6 +448,19 @@
             text-decoration: line-through;
         }
 
+        /* Drop Cap (Huruf Awal Kapital Besar Word) */
+        .drop-cap {
+            float: left;
+            line-height: 0.82;
+            font-weight: 700;
+            padding-top: 3px;
+            padding-right: 6px;
+            padding-bottom: 2px;
+            font-size: 3.2em;
+            color: inherit;
+            user-select: none;
+        }
+
         #document-editor figure,
         .page-sheet-body figure {
             margin: 14pt 0;
@@ -930,6 +943,66 @@
                 <button data-cmd="indent" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Tambah Indentasi Paragraf">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
                 </button>
+
+                <!-- Paragraph Shading (Microsoft Word Paint Bucket) -->
+                <div class="relative inline-block" id="paragraph-shading-wrapper">
+                    <button id="btn-paragraph-shading-dropdown" type="button" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition flex items-center gap-0.5" title="Warna Latar Paragraf (Paragraph Shading)">
+                        <svg class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>
+                        </svg>
+                        <svg class="w-2.5 h-2.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="paragraph-shading-dropdown-menu" class="hidden absolute left-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 p-2 text-xs space-y-2">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase">Warna Latar Paragraf</div>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button type="button" data-para-shading="#fef08a" class="w-full h-6 rounded border border-amber-300 bg-[#fef08a]" title="Kuning Sorotan"></button>
+                            <button type="button" data-para-shading="#fef9c3" class="w-full h-6 rounded border border-amber-200 bg-[#fef9c3]" title="Kuning Muda"></button>
+                            <button type="button" data-para-shading="#e0f2fe" class="w-full h-6 rounded border border-sky-300 bg-[#e0f2fe]" title="Biru Lembut"></button>
+                            <button type="button" data-para-shading="#dcfce7" class="w-full h-6 rounded border border-emerald-300 bg-[#dcfce7]" title="Hijau Muda"></button>
+                            <button type="button" data-para-shading="#f3e8ff" class="w-full h-6 rounded border border-purple-300 bg-[#f3e8ff]" title="Lavender"></button>
+                            <button type="button" data-para-shading="#ffe4e6" class="w-full h-6 rounded border border-rose-300 bg-[#ffe4e6]" title="Merah Muda"></button>
+                            <button type="button" data-para-shading="#f3f4f6" class="w-full h-6 rounded border border-gray-300 bg-[#f3f4f6]" title="Abu-abu Lembut"></button>
+                            <button type="button" data-para-shading="#e5e7eb" class="w-full h-6 rounded border border-gray-400 bg-[#e5e7eb]" title="Abu-abu"></button>
+                        </div>
+                        <div class="border-t border-gray-100 dark:border-gray-800 pt-1 flex items-center justify-between">
+                            <span class="text-[11px] text-gray-500">Kustom:</span>
+                            <input type="color" id="input-custom-para-shading" value="#fef9c3" class="w-6 h-6 p-0 border border-gray-300 dark:border-gray-700 rounded cursor-pointer" />
+                        </div>
+                        <button type="button" data-para-shading="none" class="w-full py-1 text-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                            Tanpa Latar (No Color)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Paragraph Borders (Microsoft Word Paragraph Borders Menu) -->
+                <div class="relative inline-block" id="paragraph-borders-wrapper">
+                    <button id="btn-paragraph-borders-dropdown" type="button" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition flex items-center gap-0.5" title="Batas Garis Paragraf (Paragraph Borders)">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="1" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="1.5" stroke-dasharray="2 2"/><line x1="12" y1="3" x2="12" y2="21" stroke-width="1.5" stroke-dasharray="2 2"/></svg>
+                        <svg class="w-2.5 h-2.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="paragraph-borders-dropdown-menu" class="hidden absolute left-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                        <button type="button" data-para-border="bottom" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>_</span> Batas Bawah (Bottom Border)
+                        </button>
+                        <button type="button" data-para-border="top" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>‾</span> Batas Atas (Top Border)
+                        </button>
+                        <button type="button" data-para-border="left" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 font-medium text-indigo-600">
+                            <span>|</span> Batas Kiri (Left / Quote Bar)
+                        </button>
+                        <button type="button" data-para-border="right" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>|</span> Batas Kanan (Right Border)
+                        </button>
+                        <button type="button" data-para-border="box" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>□</span> Kotak Paragraf (Outside Borders)
+                        </button>
+                        <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+                        <button type="button" data-para-border="none" class="w-full px-3 py-1.5 text-left hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 flex items-center gap-2">
+                            <span>✕</span> Tanpa Batas (No Border)
+                        </button>
+                    </div>
+                </div>
+
                 <button id="btn-open-paragraph-modal" data-action="open-paragraph-modal" class="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition ml-0.5" title="Kotak Dialog Format Paragraf (Microsoft Word Paragraph Options)">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </button>
@@ -1025,6 +1098,30 @@
             <button onclick="window.documentEngine.insertHorizontalRule()" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
                 <span>— Garis Pemisah</span>
             </button>
+
+            <!-- Drop Cap (Microsoft Word Drop Cap Suite) -->
+            <div class="relative inline-block" id="drop-cap-dropdown-wrapper">
+                <button id="btn-drop-cap-dropdown" type="button" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Huruf Awal Kapital Besar (Drop Cap)">
+                    <span class="font-serif font-black text-sm text-indigo-600">A</span>
+                    <span>Drop Cap</span>
+                    <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="drop-cap-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                    <button type="button" data-drop-cap-preset="none" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                        <span>❌</span> Tidak Ada (None)
+                    </button>
+                    <button type="button" data-drop-cap-preset="dropped" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                        <span class="font-serif font-black text-indigo-600">A</span> Turun di Naskah (Dropped)
+                    </button>
+                    <button type="button" data-drop-cap-preset="margin" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                        <span class="font-serif font-black text-indigo-600">|A</span> Di Margin (In Margin)
+                    </button>
+                    <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+                    <button type="button" data-action="open-drop-cap-modal" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium">
+                        Opsi Drop Cap...
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Ribbon Panel 3: TATA LETAK (LAYOUT) -->
@@ -1526,13 +1623,36 @@
     <!-- ========================================================================= -->
     <!-- 3. METRIC HORIZONTAL RULER BAR                                            -->
     <!-- ========================================================================= -->
-    <div id="ruler-bar" class="h-5 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0 no-print overflow-hidden relative">
-        <div class="w-[210mm] max-w-full h-full flex relative px-6" id="ruler-ticks">
-            <!-- Rendered dynamically by UiController -->
+    <div id="ruler-bar" class="h-6 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0 no-print overflow-hidden relative select-none">
+        <div class="h-full flex relative px-0" id="ruler-container" style="width: 210mm; max-width: 100%;">
+            <!-- Left Margin Shaded Area -->
+            <div id="ruler-left-shade" class="absolute top-0 bottom-0 left-0 bg-gray-200/70 dark:bg-gray-800/80 pointer-events-none" style="width: 40mm;"></div>
+            <!-- Right Margin Shaded Area -->
+            <div id="ruler-right-shade" class="absolute top-0 bottom-0 right-0 bg-gray-200/70 dark:bg-gray-800/80 pointer-events-none" style="width: 30mm;"></div>
+
+            <!-- Ticks Container -->
+            <div class="w-full h-full flex relative" id="ruler-ticks">
+                <!-- Rendered dynamically by UiController -->
+            </div>
+
+            <!-- Margin indicators on ruler -->
+            <div id="ruler-left-margin" class="absolute top-0 bottom-0 w-0.5 bg-indigo-500 opacity-90 cursor-ew-resize z-20" style="left: 40mm;" title="Margin Kiri (Klik ganda untuk Penyetelan Halaman)"></div>
+            <div id="ruler-right-margin" class="absolute top-0 bottom-0 w-0.5 bg-indigo-500 opacity-90 cursor-ew-resize z-20" style="left: calc(100% - 30mm);" title="Margin Kanan (Klik ganda untuk Penyetelan Halaman)"></div>
+
+            <!-- First Line Indent Marker (Top Triangle ▽) -->
+            <div id="ruler-marker-first-line" class="absolute top-0 w-3 h-2.5 flex items-center justify-center -translate-x-1/2 cursor-pointer z-30 opacity-85 hover:opacity-100 transition-opacity" style="left: 52.5mm;" title="Indentasi Baris Pertama (1.25 cm)">
+                <svg class="w-2.5 h-2 text-indigo-700 dark:text-indigo-400 fill-current" viewBox="0 0 10 8"><polygon points="0,0 10,0 5,8"/></svg>
+            </div>
+            <!-- Hanging & Left Indent Marker (Bottom Triangle △ & Rectangle ▭) -->
+            <div id="ruler-marker-left-indent" class="absolute bottom-0 w-3 h-3 flex flex-col items-center justify-end -translate-x-1/2 cursor-pointer z-30 opacity-85 hover:opacity-100 transition-opacity" style="left: 40mm;" title="Indentasi Kiri Paragraf">
+                <svg class="w-2.5 h-1.5 text-indigo-700 dark:text-indigo-400 fill-current" viewBox="0 0 10 6"><polygon points="5,0 10,6 0,6"/></svg>
+                <div class="w-2 h-1 bg-indigo-700 dark:bg-indigo-400"></div>
+            </div>
+            <!-- Right Indent Marker (Bottom Triangle △ on Right) -->
+            <div id="ruler-marker-right-indent" class="absolute bottom-0 w-3 h-2.5 flex items-center justify-center -translate-x-1/2 cursor-pointer z-30 opacity-85 hover:opacity-100 transition-opacity" style="left: calc(100% - 30mm);" title="Indentasi Kanan Paragraf">
+                <svg class="w-2.5 h-2 text-indigo-700 dark:text-indigo-400 fill-current" viewBox="0 0 10 8"><polygon points="5,0 10,8 0,8"/></svg>
+            </div>
         </div>
-        <!-- Margin indicators on ruler -->
-        <div id="ruler-left-margin" class="absolute top-0 bottom-0 w-1 bg-indigo-500 pointer-events-none opacity-80" style="left: 19%;" title="Margin Kiri (4 cm)"></div>
-        <div id="ruler-right-margin" class="absolute top-0 bottom-0 w-1 bg-indigo-500 pointer-events-none opacity-80" style="left: 85.7%;" title="Margin Kanan (3 cm)"></div>
     </div>
 
     <!-- ========================================================================= -->
@@ -3755,6 +3875,82 @@
             <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2 shrink-0">
                 <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
                 <button type="button" id="btn-confirm-line-numbers" class="px-3.5 py-1 text-xs font-bold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 22: DROP CAP (MICROSOFT WORD HURUF AWAL KAPITAL BESAR)               -->
+    <!-- ========================================================================= -->
+    <div id="modal-drop-cap" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-sm w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-serif font-black">A</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Huruf Awal Kapital (Drop Cap)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Buat huruf kapital besar di awal paragraf naskah</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3.5 text-xs">
+                <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-2.5">
+                    <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Posisi (Position)</legend>
+                    <div class="grid grid-cols-3 gap-2 mt-1">
+                        <label class="flex flex-col items-center gap-1 p-2 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="dc-position-radio" value="none" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span class="text-[11px] font-medium">Tidak Ada</span>
+                        </label>
+                        <label class="flex flex-col items-center gap-1 p-2 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="dc-position-radio" value="dropped" checked class="text-indigo-600 focus:ring-indigo-500" />
+                            <span class="text-[11px] font-medium">Turun</span>
+                        </label>
+                        <label class="flex flex-col items-center gap-1 p-2 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="dc-position-radio" value="margin" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span class="text-[11px] font-medium">Di Margin</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Font Drop Cap:</label>
+                    <select id="dc-font-select" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+                        <option value="inherit" selected>(Sama dengan teks naskah)</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="Garamond, serif">Garamond</option>
+                        <option value="Arial, sans-serif">Arial</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Jumlah Baris Turun:</label>
+                        <input type="number" id="dc-lines-to-drop" value="3" min="2" max="10" step="1" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-right font-mono" />
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Jarak dari Teks:</label>
+                        <div class="flex items-center">
+                            <input type="number" id="dc-distance-text" value="0.2" min="0" max="2" step="0.1" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 text-right font-mono" />
+                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                <button type="button" id="btn-remove-drop-cap" class="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition">
+                    Hapus
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
+                    <button type="button" id="btn-confirm-drop-cap" class="px-3.5 py-1 text-xs font-bold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">Terapkan</button>
+                </div>
             </div>
         </div>
     </div>

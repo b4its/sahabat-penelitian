@@ -2956,6 +2956,142 @@ export class UiController {
                 });
             }
         }
+
+        // 7. Paragraph Shading Dropdown (Microsoft Word Paint Bucket)
+        const btnParaShadingDropdown = document.getElementById('btn-paragraph-shading-dropdown');
+        const paraShadingMenu = document.getElementById('paragraph-shading-dropdown-menu');
+        const customParaShadingInput = document.getElementById('input-custom-para-shading');
+
+        if (btnParaShadingDropdown && paraShadingMenu) {
+            btnParaShadingDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                paraShadingMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                if (!paraShadingMenu.contains(e.target) && !btnParaShadingDropdown.contains(e.target)) {
+                    paraShadingMenu.classList.add('hidden');
+                }
+            });
+            paraShadingMenu.querySelectorAll('[data-para-shading]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const color = btn.getAttribute('data-para-shading');
+                    this.engine.setParagraphShading(color);
+                    paraShadingMenu.classList.add('hidden');
+                    this.showToast(color === 'none' ? 'Menghapus warna latar paragraf' : 'Warna latar paragraf diterapkan');
+                });
+            });
+            if (customParaShadingInput) {
+                customParaShadingInput.addEventListener('input', (e) => {
+                    this.engine.setParagraphShading(e.target.value);
+                });
+            }
+        }
+
+        // 8. Paragraph Borders Dropdown (Microsoft Word Paragraph Borders)
+        const btnParaBordersDropdown = document.getElementById('btn-paragraph-borders-dropdown');
+        const paraBordersMenu = document.getElementById('paragraph-borders-dropdown-menu');
+
+        if (btnParaBordersDropdown && paraBordersMenu) {
+            btnParaBordersDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                paraBordersMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                if (!paraBordersMenu.contains(e.target) && !btnParaBordersDropdown.contains(e.target)) {
+                    paraBordersMenu.classList.add('hidden');
+                }
+            });
+            paraBordersMenu.querySelectorAll('[data-para-border]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const borderType = btn.getAttribute('data-para-border');
+                    this.engine.setParagraphBorder(borderType);
+                    paraBordersMenu.classList.add('hidden');
+                    this.showToast(`Batas garis paragraf: ${borderType}`);
+                });
+            });
+        }
+
+        // 9. Drop Cap Dropdown & Modal (Microsoft Word Drop Cap Suite)
+        const btnDropCapDropdown = document.getElementById('btn-drop-cap-dropdown');
+        const dropCapMenu = document.getElementById('drop-cap-dropdown-menu');
+        const modalDropCap = document.getElementById('modal-drop-cap');
+
+        if (btnDropCapDropdown && dropCapMenu) {
+            btnDropCapDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropCapMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                if (!dropCapMenu.contains(e.target) && !btnDropCapDropdown.contains(e.target)) {
+                    dropCapMenu.classList.add('hidden');
+                }
+            });
+            dropCapMenu.querySelectorAll('[data-drop-cap-preset]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const preset = btn.getAttribute('data-drop-cap-preset');
+                    if (preset === 'none') {
+                        this.engine.removeDropCap();
+                        this.showToast('Menghapus Drop Cap');
+                    } else {
+                        this.engine.applyDropCap({ position: preset, lines: 3 });
+                        this.showToast(`Drop Cap (${preset === 'dropped' ? 'Turun' : 'Margin'}) diterapkan`);
+                    }
+                    dropCapMenu.classList.add('hidden');
+                });
+            });
+            const openDropCapBtn = dropCapMenu.querySelector('[data-action="open-drop-cap-modal"]');
+            if (openDropCapBtn) {
+                openDropCapBtn.addEventListener('click', () => {
+                    dropCapMenu.classList.add('hidden');
+                    this.openModal(modalDropCap);
+                });
+            }
+        }
+
+        if (modalDropCap) {
+            const btnConfirmDropCap = document.getElementById('btn-confirm-drop-cap');
+            const btnRemoveDropCap = document.getElementById('btn-remove-drop-cap');
+
+            if (btnConfirmDropCap) {
+                btnConfirmDropCap.addEventListener('click', () => {
+                    const posRadio = modalDropCap.querySelector('input[name="dc-position-radio"]:checked');
+                    const position = posRadio ? posRadio.value : 'dropped';
+                    const font = document.getElementById('dc-font-select')?.value || 'inherit';
+                    const lines = parseInt(document.getElementById('dc-lines-to-drop')?.value) || 3;
+                    const distance = parseFloat(document.getElementById('dc-distance-text')?.value) || 0.2;
+
+                    this.engine.applyDropCap({ position, font, lines, distance });
+                    this.closeModal(modalDropCap);
+                    this.showToast('Pengaturan Drop Cap berhasil diterapkan');
+                });
+            }
+
+            if (btnRemoveDropCap) {
+                btnRemoveDropCap.addEventListener('click', () => {
+                    this.engine.removeDropCap();
+                    this.closeModal(modalDropCap);
+                    this.showToast('Drop Cap dihapus');
+                });
+            }
+        }
+
+        // 10. Interactive Word Ruler Double-Clicks
+        const rulerBar = document.getElementById('ruler-bar');
+        const rulerLeftMargin = document.getElementById('ruler-left-margin');
+        const rulerRightMargin = document.getElementById('ruler-right-margin');
+        const rulerFirstLine = document.getElementById('ruler-marker-first-line');
+        const rulerLeftIndent = document.getElementById('ruler-marker-left-indent');
+        const rulerRightIndent = document.getElementById('ruler-marker-right-indent');
+
+        if (rulerBar) {
+            rulerBar.addEventListener('dblclick', (e) => {
+                if (e.target === rulerFirstLine || e.target === rulerLeftIndent || e.target === rulerRightIndent) {
+                    this.openParagraphModal('indents-spacing');
+                } else {
+                    this.openPageSetupModal('margins');
+                }
+            });
+        }
     }
 
     openLineNumbersModal() {
@@ -3320,6 +3456,7 @@ export class UiController {
 
     renderRuler(widthCm = null) {
         const ruler = document.getElementById('ruler-ticks');
+        const rulerContainer = document.getElementById('ruler-container');
         if (!ruler) return;
 
         if (!widthCm && this.engine && typeof this.engine.getDocumentWidthMm === 'function') {
@@ -3327,7 +3464,10 @@ export class UiController {
         }
         if (!widthCm) widthCm = 21;
 
-        ruler.style.width = `${widthCm * 10}mm`;
+        if (rulerContainer) {
+            rulerContainer.style.width = `${widthCm * 10}mm`;
+        }
+        ruler.style.width = '100%';
         ruler.innerHTML = '';
         const totalCm = Math.max(1, Math.round(widthCm));
         for (let cm = 0; cm <= totalCm; cm++) {
@@ -3338,6 +3478,10 @@ export class UiController {
                 <div class="absolute right-1/2 bottom-0 w-px h-1.5 bg-gray-200 dark:bg-gray-800"></div>
             `;
             ruler.appendChild(cmTick);
+        }
+
+        if (this.engine && typeof this.engine.updateRulerForPageSetup === 'function') {
+            this.engine.updateRulerForPageSetup();
         }
     }
 

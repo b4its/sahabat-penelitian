@@ -2148,17 +2148,70 @@ export class DocumentEngine {
     }
 
     updateRulerMarkers(leftCm, rightCm, totalCm = null) {
+        const rulerContainer = document.getElementById('ruler-container');
+        const leftShade = document.getElementById('ruler-left-shade');
+        const rightShade = document.getElementById('ruler-right-shade');
         const leftMarker = document.getElementById('ruler-left-margin');
         const rightMarker = document.getElementById('ruler-right-margin');
+        const firstLineMarker = document.getElementById('ruler-marker-first-line');
+        const leftIndentMarker = document.getElementById('ruler-marker-left-indent');
+        const rightIndentMarker = document.getElementById('ruler-marker-right-indent');
 
         const total = totalCm || (this.getDocumentWidthMm() / 10) || 21;
+        const totalMm = total * 10;
+
+        if (rulerContainer) {
+            rulerContainer.style.width = `${totalMm}mm`;
+        }
+
+        const leftPct = (leftCm / total) * 100;
+        const rightPct = (rightCm / total) * 100;
+        const rightMarginWidthPct = ((total - rightCm) / total) * 100;
+
+        if (leftShade) {
+            leftShade.style.width = `${leftPct}%`;
+        }
+        if (rightShade) {
+            rightShade.style.width = `${rightMarginWidthPct}%`;
+        }
+
         if (leftMarker) {
-            leftMarker.style.left = `${(leftCm / total) * 100}%`;
+            leftMarker.style.left = `${leftPct}%`;
             leftMarker.title = `Margin Kiri (${leftCm.toFixed(1)} cm)`;
         }
         if (rightMarker) {
-            rightMarker.style.left = `${(rightCm / total) * 100}%`;
+            rightMarker.style.left = `${rightPct}%`;
             rightMarker.title = `Margin Kanan (${(total - rightCm).toFixed(1)} cm)`;
+        }
+
+        // Indent markers:
+        const leftIndentCm = (this.paragraphIndent && this.paragraphIndent.left) ? parseFloat(this.paragraphIndent.left) : 0;
+        const rightIndentCm = (this.paragraphIndent && this.paragraphIndent.right) ? parseFloat(this.paragraphIndent.right) : 0;
+
+        let firstLineOffsetCm = 0;
+        const activeFormat = typeof this.getActiveParagraphFormat === 'function' ? this.getActiveParagraphFormat() : null;
+        if (activeFormat && activeFormat.specialIndent === 'first-line') {
+            firstLineOffsetCm = parseFloat(activeFormat.specialIndentVal || 1.25);
+        } else if (activeFormat && activeFormat.specialIndent === 'hanging') {
+            firstLineOffsetCm = -parseFloat(activeFormat.specialIndentVal || 1.25);
+        }
+
+        if (firstLineMarker) {
+            const posCm = Math.max(0, leftCm + leftIndentCm + firstLineOffsetCm);
+            firstLineMarker.style.left = `${(posCm / total) * 100}%`;
+            firstLineMarker.title = `Indentasi Baris Pertama (${posCm.toFixed(2)} cm)`;
+        }
+
+        if (leftIndentMarker) {
+            const posCm = Math.max(0, leftCm + leftIndentCm);
+            leftIndentMarker.style.left = `${(posCm / total) * 100}%`;
+            leftIndentMarker.title = `Indentasi Kiri (${posCm.toFixed(2)} cm)`;
+        }
+
+        if (rightIndentMarker) {
+            const posCm = Math.max(0, rightCm - rightIndentCm);
+            rightIndentMarker.style.left = `${(posCm / total) * 100}%`;
+            rightIndentMarker.title = `Indentasi Kanan (${posCm.toFixed(2)} cm)`;
         }
     }
 
@@ -2333,6 +2386,138 @@ export class DocumentEngine {
 
     setSpecialIndent(type, cmVal = 1.25, scope = 'selection') {
         this.setParagraphFormatting({ specialIndent: type, specialIndentVal: cmVal }, scope);
+    }
+
+    setParagraphShading(color, scope = 'selection') {
+        const targets = scope === 'all'
+            ? this.getAllEditorBodies().flatMap(b => Array.from(b.querySelectorAll('p, blockquote, h1, h2, h3, h4, h5, h6, li')))
+            : this.getSelectedParagraphElements();
+
+        if (targets.length === 0) {
+            const active = this.getActiveEditor();
+            if (active) {
+                const firstP = active.querySelector('p');
+                if (firstP) targets.push(firstP);
+            }
+        }
+
+        targets.forEach(el => {
+            if (!color || color === 'none') {
+                el.style.backgroundColor = '';
+                el.style.padding = '';
+                el.style.borderRadius = '';
+            } else {
+                el.style.backgroundColor = color;
+                if (!el.style.padding) el.style.padding = '6px 12px';
+                el.style.borderRadius = '4px';
+            }
+        });
+        this.handleInput();
+    }
+
+    setParagraphBorder(borderType, color = '#374151', scope = 'selection') {
+        const targets = scope === 'all'
+            ? this.getAllEditorBodies().flatMap(b => Array.from(b.querySelectorAll('p, blockquote, h1, h2, h3, h4, h5, h6, li')))
+            : this.getSelectedParagraphElements();
+
+        if (targets.length === 0) {
+            const active = this.getActiveEditor();
+            if (active) {
+                const firstP = active.querySelector('p');
+                if (firstP) targets.push(firstP);
+            }
+        }
+
+        targets.forEach(el => {
+            el.style.borderTop = '';
+            el.style.borderBottom = '';
+            el.style.borderLeft = '';
+            el.style.borderRight = '';
+            el.style.border = '';
+
+            if (borderType === 'bottom') {
+                el.style.borderBottom = `1.5px solid ${color}`;
+                el.style.paddingBottom = '4px';
+            } else if (borderType === 'top') {
+                el.style.borderTop = `1.5px solid ${color}`;
+                el.style.paddingTop = '4px';
+            } else if (borderType === 'left') {
+                el.style.borderLeft = `3.5px solid ${color}`;
+                el.style.paddingLeft = '10px';
+            } else if (borderType === 'right') {
+                el.style.borderRight = `3.5px solid ${color}`;
+                el.style.paddingRight = '10px';
+            } else if (borderType === 'box') {
+                el.style.border = `1px solid ${color}`;
+                el.style.padding = '8px 12px';
+                el.style.borderRadius = '4px';
+            } else if (borderType === 'horizontal') {
+                el.style.borderBottom = `1px dashed ${color}`;
+                el.style.paddingBottom = '8px';
+                el.style.marginBottom = '12px';
+            }
+        });
+        this.handleInput();
+    }
+
+    applyDropCap(options = {}) {
+        const position = options.position || 'dropped';
+        if (position === 'none') {
+            this.removeDropCap();
+            return;
+        }
+
+        const lines = options.lines || 3;
+        const font = options.font || 'inherit';
+        const distance = options.distance || 0.2;
+
+        const targets = this.getSelectedParagraphElements();
+        const p = targets[0] || (this.getActiveEditor() ? this.getActiveEditor().querySelector('p') : null);
+        if (!p) return;
+
+        const existing = p.querySelector('.drop-cap');
+        if (existing) {
+            const originalChar = existing.textContent;
+            existing.replaceWith(originalChar);
+        }
+
+        const rawText = p.innerHTML.trim();
+        if (!rawText) return;
+
+        const match = rawText.match(/^([A-Za-z0-9\u00C0-\u024F\u1E00-\u1EFF])/);
+        if (!match) return;
+
+        const firstChar = match[1];
+        const rest = rawText.substring(firstChar.length);
+
+        const dropCapSpan = document.createElement('span');
+        dropCapSpan.className = 'drop-cap';
+        dropCapSpan.textContent = firstChar;
+        dropCapSpan.style.float = 'left';
+        dropCapSpan.style.lineHeight = '0.82';
+        dropCapSpan.style.fontWeight = 'bold';
+        dropCapSpan.style.marginRight = `${distance}cm`;
+        dropCapSpan.style.fontSize = `${lines * 1.05}em`;
+        if (font && font !== 'inherit') dropCapSpan.style.fontFamily = font;
+        if (position === 'margin') {
+            dropCapSpan.style.marginLeft = `-${distance * 2}cm`;
+        }
+
+        p.innerHTML = rest;
+        p.prepend(dropCapSpan);
+        this.handleInput();
+    }
+
+    removeDropCap() {
+        const targets = this.getSelectedParagraphElements();
+        const p = targets[0] || (this.getActiveEditor() ? this.getActiveEditor().querySelector('p') : null);
+        if (!p) return;
+        const existing = p.querySelector('.drop-cap');
+        if (existing) {
+            const char = existing.textContent;
+            existing.replaceWith(char);
+            this.handleInput();
+        }
     }
 
     setColumns(columnVal = 1, scope = 'document') {

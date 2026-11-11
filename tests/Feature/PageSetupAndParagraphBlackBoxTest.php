@@ -567,3 +567,64 @@ test('black-box: user can export document with watermark, page color, border, an
         ->toContain('border: 2pt solid #1e3a8a;')
         ->toContain('counter-reset: line-counter;');
 });
+
+test('black-box: editor view renders Microsoft Word Paragraph Shading, Paragraph Borders, and Drop Cap suites', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Paragraph Shading
+    $response->assertSee('id="btn-paragraph-shading-dropdown"', false);
+    $response->assertSee('id="paragraph-shading-dropdown-menu"', false);
+    $response->assertSee('data-para-shading="#fef08a"', false);
+    $response->assertSee('data-para-shading="#e0f2fe"', false);
+    $response->assertSee('data-para-shading="#dcfce7"', false);
+    $response->assertSee('data-para-shading="none"', false);
+    $response->assertSee('id="input-custom-para-shading"', false);
+
+    // Paragraph Borders
+    $response->assertSee('id="btn-paragraph-borders-dropdown"', false);
+    $response->assertSee('id="paragraph-borders-dropdown-menu"', false);
+    $response->assertSee('data-para-border="bottom"', false);
+    $response->assertSee('data-para-border="top"', false);
+    $response->assertSee('data-para-border="left"', false);
+    $response->assertSee('data-para-border="right"', false);
+    $response->assertSee('data-para-border="box"', false);
+    $response->assertSee('data-para-border="none"', false);
+
+    // Drop Cap Dropdown
+    $response->assertSee('id="btn-drop-cap-dropdown"', false);
+    $response->assertSee('id="drop-cap-dropdown-menu"', false);
+    $response->assertSee('data-drop-cap-preset="none"', false);
+    $response->assertSee('data-drop-cap-preset="dropped"', false);
+    $response->assertSee('data-drop-cap-preset="margin"', false);
+    $response->assertSee('data-action="open-drop-cap-modal"', false);
+
+    // Drop Cap Modal (Modal 22)
+    $response->assertSee('id="modal-drop-cap"', false);
+    $response->assertSee('Huruf Awal Kapital (Drop Cap)', false);
+    $response->assertSee('name="dc-position-radio"', false);
+    $response->assertSee('id="dc-font-select"', false);
+    $response->assertSee('id="dc-lines-to-drop"', false);
+    $response->assertSee('id="dc-distance-text"', false);
+    $response->assertSee('id="btn-confirm-drop-cap"', false);
+    $response->assertSee('id="btn-remove-drop-cap"', false);
+});
+
+test('black-box: editor view renders Microsoft Word Metric Horizontal Ruler with shaded margins and indent markers', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Ruler container and components
+    $response->assertSee('id="ruler-bar"', false);
+    $response->assertSee('id="ruler-container"', false);
+    $response->assertSee('id="ruler-left-shade"', false);
+    $response->assertSee('id="ruler-right-shade"', false);
+    $response->assertSee('id="ruler-ticks"', false);
+    $response->assertSee('id="ruler-left-margin"', false);
+    $response->assertSee('id="ruler-right-margin"', false);
+
+    // Word paragraph indent markers on ruler
+    $response->assertSee('id="ruler-marker-first-line"', false);
+    $response->assertSee('id="ruler-marker-left-indent"', false);
+    $response->assertSee('id="ruler-marker-right-indent"', false);
+});
