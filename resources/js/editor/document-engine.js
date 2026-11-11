@@ -27,6 +27,7 @@ export const PAPER_DIMENSIONS = {
     a5: { name: 'A5', width: 148, height: 210 },
     b5: { name: 'B5', width: 182, height: 257 },
     statement: { name: 'Statement', width: 139.7, height: 215.9 },
+    tabloid: { name: 'Tabloid / Ledger', width: 279.4, height: 431.8 },
     custom: { name: 'Custom', width: 210, height: 297 },
 };
 
@@ -37,6 +38,7 @@ export const MARGIN_PRESETS = {
     moderate: { top: 25.4, bottom: 25.4, left: 19.1, right: 19.1, gutter: 0, gutterPos: 'left' },
     wide: { top: 25.4, bottom: 25.4, left: 50.8, right: 50.8, gutter: 0, gutterPos: 'left' },
     mirrored: { top: 25.4, bottom: 25.4, inside: 31.8, outside: 25.4, gutter: 0, gutterPos: 'left' },
+    office2003: { top: 25.4, bottom: 25.4, left: 31.8, right: 31.8, gutter: 0, gutterPos: 'left' },
 };
 
 export class DocumentEngine {
@@ -1029,7 +1031,7 @@ export class DocumentEngine {
     applyPageSetupToSheet(sheet, pageIndex = null) {
         if (!sheet) return;
 
-        sheet.classList.remove('page-a4', 'page-letter', 'page-legal', 'page-folio', 'page-executive', 'page-a3', 'page-a5', 'page-b5', 'page-statement');
+        sheet.classList.remove('page-a4', 'page-letter', 'page-legal', 'page-folio', 'page-executive', 'page-a3', 'page-a5', 'page-b5', 'page-statement', 'page-tabloid');
         sheet.classList.add(`page-${this.currentPaperSize || 'a4'}`);
 
         if (this.currentOrientation === 'landscape') {
@@ -1040,8 +1042,30 @@ export class DocumentEngine {
 
         const widthMm = this.getDocumentWidthMm();
         const heightMm = this.getDocumentHeightMm();
-        sheet.style.width = `${widthMm}mm`;
-        sheet.style.minHeight = `${heightMm}mm`;
+        sheet.style.setProperty('width', `${widthMm}mm`, 'important');
+        sheet.style.setProperty('min-height', `${heightMm}mm`, 'important');
+
+        // Apply Vertical Page Alignment to page sheet body
+        const sheetBody = sheet.querySelector('.page-sheet-body');
+        if (sheetBody) {
+            if (this.verticalAlign === 'center') {
+                sheetBody.style.display = 'flex';
+                sheetBody.style.flexDirection = 'column';
+                sheetBody.style.justifyContent = 'center';
+            } else if (this.verticalAlign === 'bottom') {
+                sheetBody.style.display = 'flex';
+                sheetBody.style.flexDirection = 'column';
+                sheetBody.style.justifyContent = 'flex-end';
+            } else if (this.verticalAlign === 'justify') {
+                sheetBody.style.display = 'flex';
+                sheetBody.style.flexDirection = 'column';
+                sheetBody.style.justifyContent = 'space-between';
+            } else {
+                sheetBody.style.display = '';
+                sheetBody.style.flexDirection = '';
+                sheetBody.style.justifyContent = '';
+            }
+        }
 
         this.applyMarginsToSheet(sheet, this.currentMarginPreset, pageIndex);
     }
@@ -1101,6 +1125,11 @@ export class DocumentEngine {
             sheet.style.paddingBottom = '25.4mm';
             sheet.style.paddingLeft = '50.8mm';
             sheet.style.paddingRight = '50.8mm';
+        } else if (targetPreset === 'office2003') {
+            sheet.style.paddingTop = '25.4mm';
+            sheet.style.paddingBottom = '25.4mm';
+            sheet.style.paddingLeft = '31.8mm';
+            sheet.style.paddingRight = '31.8mm';
         } else if (targetPreset === 'mirrored') {
             sheet.style.paddingTop = '25.4mm';
             sheet.style.paddingBottom = '25.4mm';
@@ -1139,6 +1168,16 @@ export class DocumentEngine {
                         this.differentFirstPage = Boolean(parsed.differentFirstPage);
                         if (parsed.defaultFontFamily) {
                             importedFont = parsed.defaultFontFamily;
+                        }
+                        if (parsed.pageSetup) {
+                            this.setPageSetup({
+                                paperSize: parsed.pageSetup.paperSize,
+                                customWidth: parsed.pageSetup.widthMm,
+                                customHeight: parsed.pageSetup.heightMm,
+                                orientation: parsed.pageSetup.orientation,
+                                margins: parsed.pageSetup.margins,
+                                marginPreset: parsed.pageSetup.marginPreset,
+                            });
                         }
                     } else {
                         contentHtml = String(parsed);
@@ -1196,6 +1235,16 @@ export class DocumentEngine {
                         if (backendResult.default_font_family) {
                             importedFont = backendResult.default_font_family;
                         }
+                        if (backendResult.page_setup) {
+                            this.setPageSetup({
+                                paperSize: backendResult.page_setup.paper_size,
+                                customWidth: backendResult.page_setup.width_mm,
+                                customHeight: backendResult.page_setup.height_mm,
+                                orientation: backendResult.page_setup.orientation,
+                                margins: backendResult.page_setup.margins,
+                                marginPreset: backendResult.page_setup.margin_preset,
+                            });
+                        }
                     }
                 }
             } else if (['md', 'markdown'].includes(extension)) {
@@ -1216,6 +1265,28 @@ export class DocumentEngine {
                 contentHtml = data.content || data.html || text;
                 if (data.title) {
                     this.setTitle(data.title);
+                }
+                if (data.header_text) this.customHeaderText = data.header_text;
+                if (data.footer_text) this.customFooterText = data.footer_text;
+                const layout = data.layout || data.layout_options;
+                if (layout) {
+                    this.setPageSetup({
+                        paperSize: layout.paper_size,
+                        customWidth: layout.width_mm,
+                        customHeight: layout.height_mm,
+                        orientation: layout.orientation,
+                        margins: layout.margins,
+                        marginPreset: layout.margin_preset,
+                    });
+                    if (layout.line_spacing) {
+                        this.setLineSpacing(layout.line_spacing);
+                    }
+                    if (layout.paragraph_spacing) {
+                        this.setParagraphSpacing(layout.paragraph_spacing.before, layout.paragraph_spacing.after);
+                    }
+                    if (layout.paragraph_indent) {
+                        this.setParagraphIndent(layout.paragraph_indent.left, layout.paragraph_indent.right);
+                    }
                 }
             } else {
                 detectedFormat = 'txt';
@@ -2009,19 +2080,29 @@ export class DocumentEngine {
         }
 
         targets.forEach(el => {
-            if (options.alignment) {
-                el.style.textAlign = options.alignment;
+            const align = options.alignment || options.textAlign;
+            if (align) {
+                el.style.textAlign = align;
+                el.classList.remove('text-left', 'text-center', 'text-right', 'text-justify');
+                if (align === 'justify') el.classList.add('text-justify');
+                else if (align === 'center') el.classList.add('text-center');
+                else if (align === 'right') el.classList.add('text-right');
+                else el.classList.add('text-left');
             }
-            if (options.leftIndent !== undefined && options.leftIndent !== null && options.leftIndent !== '') {
-                const l = parseFloat(options.leftIndent);
+            const lIndent = options.leftIndent ?? options.indentLeft;
+            if (lIndent !== undefined && lIndent !== null && lIndent !== '') {
+                const l = parseFloat(lIndent);
                 el.style.marginLeft = l > 0 ? `${l}cm` : '';
             }
-            if (options.rightIndent !== undefined && options.rightIndent !== null && options.rightIndent !== '') {
-                const r = parseFloat(options.rightIndent);
+            const rIndent = options.rightIndent ?? options.indentRight;
+            if (rIndent !== undefined && rIndent !== null && rIndent !== '') {
+                const r = parseFloat(rIndent);
                 el.style.marginRight = r > 0 ? `${r}cm` : '';
             }
             if (options.specialIndent) {
-                const val = options.specialIndentVal !== undefined && options.specialIndentVal !== '' ? parseFloat(options.specialIndentVal) : 1.25;
+                const val = (options.specialIndentVal !== undefined && options.specialIndentVal !== '')
+                    ? parseFloat(options.specialIndentVal)
+                    : ((options.specialVal !== undefined && options.specialVal !== '') ? parseFloat(options.specialVal) : 1.25);
                 if (options.specialIndent === 'first-line') {
                     el.style.textIndent = `${val}cm`;
                     el.style.paddingLeft = '';
@@ -2038,14 +2119,32 @@ export class DocumentEngine {
                     el.classList.remove('indent-first-line', 'indent-hanging');
                 }
             }
-            if (options.spaceBefore !== undefined && options.spaceBefore !== null && options.spaceBefore !== '') {
-                el.style.marginTop = `${parseFloat(options.spaceBefore)}pt`;
+            const spBefore = options.spaceBefore ?? options.spacingBefore;
+            if (spBefore !== undefined && spBefore !== null && spBefore !== '') {
+                el.style.marginTop = `${parseFloat(spBefore)}pt`;
             }
-            if (options.spaceAfter !== undefined && options.spaceAfter !== null && options.spaceAfter !== '') {
-                el.style.marginBottom = `${parseFloat(options.spaceAfter)}pt`;
+            const spAfter = options.spaceAfter ?? options.spacingAfter;
+            if (spAfter !== undefined && spAfter !== null && spAfter !== '') {
+                el.style.marginBottom = `${parseFloat(spAfter)}pt`;
             }
             if (options.lineSpacing) {
                 el.style.lineHeight = String(options.lineSpacing);
+            }
+            if (options.keepWithNext !== undefined) {
+                el.style.pageBreakAfter = options.keepWithNext ? 'avoid' : '';
+                el.style.breakAfter = options.keepWithNext ? 'avoid' : '';
+            }
+            if (options.keepLinesTogether !== undefined) {
+                el.style.pageBreakInside = options.keepLinesTogether ? 'avoid' : '';
+                el.style.breakInside = options.keepLinesTogether ? 'avoid' : '';
+            }
+            if (options.pageBreakBefore !== undefined) {
+                el.style.pageBreakBefore = options.pageBreakBefore ? 'always' : '';
+                el.style.breakBefore = options.pageBreakBefore ? 'page' : '';
+            }
+            if (options.widowOrphan !== undefined) {
+                el.style.orphans = options.widowOrphan ? '2' : '';
+                el.style.widows = options.widowOrphan ? '2' : '';
             }
         });
 
@@ -2141,13 +2240,23 @@ export class DocumentEngine {
         if (!p) {
             return {
                 alignment: 'justify',
+                textAlign: 'justify',
                 leftIndent: this.paragraphIndent.left || 0,
+                indentLeft: this.paragraphIndent.left || 0,
                 rightIndent: this.paragraphIndent.right || 0,
+                indentRight: this.paragraphIndent.right || 0,
                 specialIndent: this.paragraphIndent.special || 'first-line',
                 specialIndentVal: this.paragraphIndent.specialVal || 1.25,
+                specialVal: this.paragraphIndent.specialVal || 1.25,
                 spaceBefore: this.paragraphSpacing.before || 0,
+                spacingBefore: this.paragraphSpacing.before || 0,
                 spaceAfter: this.paragraphSpacing.after || 6,
+                spacingAfter: this.paragraphSpacing.after || 6,
                 lineSpacing: this.currentLineSpacing || '1.5',
+                keepWithNext: false,
+                keepLinesTogether: false,
+                pageBreakBefore: false,
+                widowOrphan: true,
             };
         }
 
@@ -2190,15 +2299,30 @@ export class DocumentEngine {
 
         let lineSpacing = p.style.lineHeight || this.currentLineSpacing || '1.5';
 
+        const keepWithNext = p.style.pageBreakAfter === 'avoid' || p.style.breakAfter === 'avoid';
+        const keepLinesTogether = p.style.pageBreakInside === 'avoid' || p.style.breakInside === 'avoid';
+        const pageBreakBefore = p.style.pageBreakBefore === 'always' || p.style.breakBefore === 'page';
+        const widowOrphan = p.style.orphans !== '';
+
         return {
             alignment: align,
+            textAlign: align,
             leftIndent,
+            indentLeft,
             rightIndent,
+            indentRight,
             specialIndent,
             specialIndentVal: specialVal,
+            specialVal,
             spaceBefore,
+            spacingBefore: spaceBefore,
             spaceAfter,
+            spacingAfter: spaceAfter,
             lineSpacing,
+            keepWithNext,
+            keepLinesTogether,
+            pageBreakBefore,
+            widowOrphan,
         };
     }
 

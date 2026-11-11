@@ -612,6 +612,7 @@ class DocumentService
                     $itemTitle = trim($tm[1]);
                     $itemPage = trim($tm[2]);
                     $adaptedBlocks[] = "<div class=\"toc-entry flex items-baseline justify-between py-0.5 text-sm leading-snug font-serif text-gray-800\"><span class=\"toc-title truncate max-w-[80%]\">{$itemTitle}</span><span class=\"flex-1 mx-2 border-b border-dotted border-gray-400\"></span><span class=\"toc-page font-mono text-xs text-gray-600\">{$itemPage}</span></div>";
+
                     continue;
                 }
             }
@@ -1005,6 +1006,7 @@ class DocumentService
             'a5' => ['w' => '148mm', 'h' => '210mm'],
             'b5' => ['w' => '182mm', 'h' => '257mm'],
             'statement' => ['w' => '139.7mm', 'h' => '215.9mm'],
+            'tabloid' => ['w' => '279.4mm', 'h' => '431.8mm'],
         ];
 
         $w = $dimensions[$paperSize]['w'] ?? (! empty($layoutOptions['width_mm']) ? "{$layoutOptions['width_mm']}mm" : '210mm');
@@ -1034,6 +1036,8 @@ class DocumentService
             $marginStr = '25.4mm 19.1mm 25.4mm 19.1mm';
         } elseif ($marginPreset === 'wide') {
             $marginStr = '25.4mm 50.8mm 25.4mm 50.8mm';
+        } elseif ($marginPreset === 'office2003') {
+            $marginStr = '25.4mm 31.8mm 25.4mm 31.8mm';
         } else {
             $marginStr = '40mm 30mm 30mm 40mm';
         }
@@ -1041,6 +1045,8 @@ class DocumentService
         $lineSpacing = $layoutOptions['line_spacing'] ?? '1.5';
         $spaceBefore = isset($layoutOptions['paragraph_spacing']['before']) ? (is_numeric($layoutOptions['paragraph_spacing']['before']) ? "{$layoutOptions['paragraph_spacing']['before']}pt" : $layoutOptions['paragraph_spacing']['before']) : '0pt';
         $spaceAfter = isset($layoutOptions['paragraph_spacing']['after']) ? (is_numeric($layoutOptions['paragraph_spacing']['after']) ? "{$layoutOptions['paragraph_spacing']['after']}pt" : $layoutOptions['paragraph_spacing']['after']) : '6pt';
+        $indentLeft = isset($layoutOptions['paragraph_indent']['left']) ? (is_numeric($layoutOptions['paragraph_indent']['left']) ? "{$layoutOptions['paragraph_indent']['left']}cm" : $layoutOptions['paragraph_indent']['left']) : '0cm';
+        $indentRight = isset($layoutOptions['paragraph_indent']['right']) ? (is_numeric($layoutOptions['paragraph_indent']['right']) ? "{$layoutOptions['paragraph_indent']['right']}cm" : $layoutOptions['paragraph_indent']['right']) : '0cm';
 
         switch (strtolower($format)) {
             case 'markdown':

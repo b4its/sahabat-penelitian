@@ -2246,6 +2246,24 @@ export class UiController {
                 if (layoutSpacingAfter && document.activeElement !== layoutSpacingAfter) {
                     layoutSpacingAfter.value = Math.round(format.spacingAfter || 6);
                 }
+
+                // Synchronize Home ribbon alignment buttons
+                document.querySelectorAll('[data-align]').forEach(btn => {
+                    const a = btn.getAttribute('data-align');
+                    if (a === format.alignment) {
+                        btn.classList.add('bg-indigo-100', 'text-indigo-700', 'dark:bg-indigo-900/60', 'dark:text-indigo-300', 'font-bold');
+                        btn.classList.remove('text-gray-700', 'dark:text-gray-300');
+                    } else {
+                        btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'dark:bg-indigo-900/60', 'dark:text-indigo-300', 'font-bold');
+                        btn.classList.add('text-gray-700', 'dark:text-gray-300');
+                    }
+                });
+
+                // Synchronize line spacing select
+                const lsSelect = document.getElementById('line-spacing-select');
+                if (lsSelect && document.activeElement !== lsSelect && format.lineSpacing) {
+                    lsSelect.value = String(format.lineSpacing);
+                }
             }, 150);
         };
 
@@ -2582,10 +2600,34 @@ export class UiController {
         if (sizeSelect) {
             sizeSelect.value = this.engine.currentPaperSize || 'a4';
         }
+        const currentSize = this.engine.currentPaperSize || 'a4';
+        const defaultDim = PAPER_DIMENSIONS[currentSize] || { width: 210, height: 297 };
         const customW = document.getElementById('ps-custom-width');
         const customH = document.getElementById('ps-custom-height');
-        if (customW) customW.value = ((this.engine.customWidthMm || this.engine.getDocumentWidthMm()) / 10).toFixed(1);
-        if (customH) customH.value = ((this.engine.customHeightMm || this.engine.getDocumentHeightMm()) / 10).toFixed(1);
+        if (customW) customW.value = ((this.engine.customWidthMm || defaultDim.width) / 10).toFixed(1);
+        if (customH) customH.value = ((this.engine.customHeightMm || defaultDim.height) / 10).toFixed(1);
+
+        // Multiple Pages, Section & Layout tab settings
+        const multPages = document.getElementById('ps-multiple-pages');
+        if (multPages && this.engine.multiplePagesMode) multPages.value = this.engine.multiplePagesMode;
+
+        const secStart = document.getElementById('ps-section-start');
+        if (secStart && this.engine.sectionStart) secStart.value = this.engine.sectionStart;
+
+        const diffOdd = document.getElementById('ps-diff-odd-even');
+        if (diffOdd) diffOdd.checked = Boolean(this.engine.differentOddEven);
+
+        const diffFirst = document.getElementById('ps-diff-first-page');
+        if (diffFirst) diffFirst.checked = Boolean(this.engine.differentFirstPage);
+
+        const edgeH = document.getElementById('ps-edge-header');
+        if (edgeH && this.engine.edgeHeader !== undefined) edgeH.value = (this.engine.edgeHeader / 10).toFixed(1);
+
+        const edgeF = document.getElementById('ps-edge-footer');
+        if (edgeF && this.engine.edgeFooter !== undefined) edgeF.value = (this.engine.edgeFooter / 10).toFixed(1);
+
+        const vAlign = document.getElementById('ps-vert-align');
+        if (vAlign && this.engine.verticalAlign) vAlign.value = this.engine.verticalAlign;
 
         this.updatePageSetupPreview();
         this.openModal(modal);

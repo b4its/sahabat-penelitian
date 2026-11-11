@@ -161,6 +161,8 @@ HTML;
             'margins' => $request->input('margins'),
             'line_spacing' => $request->input('line_spacing'),
             'paragraph_spacing' => $request->input('paragraph_spacing'),
+            'paragraph_indent' => $request->input('paragraph_indent'),
+            'vertical_align' => $request->input('vertical_align'),
         ];
 
         $exported = $this->documentService->exportDocument($title, $content, $format, $headerText, $footerText, $layoutOptions);

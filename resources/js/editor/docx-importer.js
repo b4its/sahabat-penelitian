@@ -195,6 +195,8 @@ export class DocxImporter {
                 else if (Math.abs(minDim - 148.0) <= 3 && Math.abs(maxDim - 210.0) <= 3) setup.paperSize = 'a5';
                 else if (Math.abs(minDim - 182.0) <= 3 && Math.abs(maxDim - 257.0) <= 3) setup.paperSize = 'b5';
                 else if (Math.abs(minDim - 184.1) <= 3 && Math.abs(maxDim - 266.7) <= 3) setup.paperSize = 'executive';
+                else if (Math.abs(minDim - 139.7) <= 3 && Math.abs(maxDim - 215.9) <= 3) setup.paperSize = 'statement';
+                else if (Math.abs(minDim - 279.4) <= 4 && Math.abs(maxDim - 431.8) <= 4) setup.paperSize = 'tabloid';
                 else setup.paperSize = 'custom';
             }
         }
@@ -224,6 +226,8 @@ export class DocxImporter {
                 setup.marginPreset = 'moderate';
             } else if (Math.abs(top - 25.4) <= 2 && Math.abs(bottom - 25.4) <= 2 && Math.abs(left - 50.8) <= 2 && Math.abs(right - 50.8) <= 2) {
                 setup.marginPreset = 'wide';
+            } else if (Math.abs(top - 25.4) <= 2 && Math.abs(bottom - 25.4) <= 2 && Math.abs(left - 31.8) <= 2 && Math.abs(right - 31.8) <= 2) {
+                setup.marginPreset = 'office2003';
             } else if (Math.abs(top - 25.4) <= 2 && Math.abs(bottom - 25.4) <= 2 && Math.abs(left - 25.4) <= 2 && Math.abs(right - 25.4) <= 2) {
                 setup.marginPreset = 'normal';
             } else {

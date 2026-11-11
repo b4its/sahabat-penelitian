@@ -228,7 +228,7 @@ test('black-box: user can export document as JSON and preserve layout options', 
 
 test('black-box: user can upload DOCX file and receive parsed page setup and paragraph metadata', function () {
     $zipPath = tempnam(sys_get_temp_dir(), 'docx_page_setup_').'.docx';
-    $zip = new ZipArchive();
+    $zip = new ZipArchive;
     $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
     // Minimal DOCX with sectPr A4 skripsi margins & paragraph spacing/indents
@@ -290,6 +290,90 @@ XML;
         ->and($html)->toContain('line-height: 1.5')
         ->and($html)->toContain('indent-first-line')
         ->and($html)->toContain('text-indent: 1.27cm');
+
+    @unlink($zipPath);
+});
+
+test('black-box: editor view renders all Microsoft Word margin presets including office2003 and tabloid paper size', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Layout ribbon selects
+    $response->assertSee('value="office2003"', false);
+    $response->assertSee('value="tabloid"', false);
+
+    // Page setup modal preset buttons and select options
+    $response->assertSee('data-ps-preset="office2003"', false);
+    $response->assertSee('value="bookfold"', false);
+    $response->assertSee('value="level9"', false);
+});
+
+test('black-box: user can export document with tabloid paper size and office2003 margins via API', function () {
+    $payload = [
+        'title' => 'Proposal Tabloid Format',
+        'content' => '<h1>TABLOID DOKUMEN</h1><p>Naskah dalam ukuran tabloid dan margin Office 2003.</p>',
+        'format' => 'html',
+        'paper_size' => 'tabloid',
+        'orientation' => 'landscape',
+        'margin_preset' => 'office2003',
+        'line_spacing' => '1.15',
+        'paragraph_spacing' => [
+            'before' => 3,
+            'after' => 8,
+        ],
+        'paragraph_indent' => [
+            'left' => 1.25,
+            'right' => 0.5,
+        ],
+    ];
+
+    $response = $this->post('/api/documents/export', $payload);
+
+    $response->assertStatus(200);
+    $content = $response->getContent();
+
+    expect($content)->toContain('size: 431.8mm 279.4mm;')
+        ->and($content)->toContain('margin: 25.4mm 31.8mm 25.4mm 31.8mm;')
+        ->and($content)->toContain('line-height: 1.15;');
+});
+
+test('black-box: user can upload DOCX with tabloid size and office2003 margins and receive parsed page setup', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_tabloid_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    // Tabloid size: 15840 x 24480 twips, Office 2003 margins: 1440 x 1800 twips
+    $docXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p>
+            <w:r><w:t>DOKUMEN FORMAT TABLOID OFFICE 2003</w:t></w:r>
+        </w:p>
+        <w:sectPr>
+            <w:pgSz w:w="15840" w:h="24480" w:orient="portrait"/>
+            <w:pgMar w:top="1440" w:right="1800" w:bottom="1440" w:left="1800"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+
+    $zip->addFromString('word/document.xml', $docXml);
+    $zip->close();
+
+    $file = new UploadedFile($zipPath, 'test_tabloid.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+
+    $response = $this->post('/api/documents/import', [
+        'file' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $setup = $response->json('page_setup');
+
+    expect($setup)->toBeArray()
+        ->and($setup['paper_size'])->toBe('tabloid')
+        ->and($setup['orientation'])->toBe('portrait')
+        ->and($setup['margin_preset'])->toBe('office2003');
 
     @unlink($zipPath);
 });

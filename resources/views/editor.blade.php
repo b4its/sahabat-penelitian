@@ -86,6 +86,7 @@
         .document-page-sheet.page-a5 { width: 148mm; min-height: 210mm; }
         .document-page-sheet.page-b5 { width: 182mm; min-height: 257mm; }
         .document-page-sheet.page-statement { width: 139.7mm; min-height: 215.9mm; }
+        .document-page-sheet.page-tabloid { width: 279.4mm; min-height: 431.8mm; }
 
         /* Document Orientation: Landscape (Dynamic for all paper sizes) */
         #document-page-canvas.page-landscape,
@@ -102,6 +103,7 @@
         .document-page-sheet.page-a5.page-landscape { width: 210mm !important; min-height: 148mm !important; }
         .document-page-sheet.page-b5.page-landscape { width: 257mm !important; min-height: 182mm !important; }
         .document-page-sheet.page-statement.page-landscape { width: 215.9mm !important; min-height: 139.7mm !important; }
+        .document-page-sheet.page-tabloid.page-landscape { width: 431.8mm !important; min-height: 279.4mm !important; }
 
         /* Paragraph Indentation and Typography Helpers */
         .page-sheet-body p.indent-first-line { text-indent: 1.25cm; }
@@ -999,8 +1001,9 @@
                         <option value="normal">Normal (2.54 cm / 1 inch)</option>
                         <option value="narrow">Sempit (1.27 cm)</option>
                         <option value="moderate">Sedang (2.54 x 1.91 cm)</option>
-                        <option value="wide">Lebar (3.81 cm)</option>
+                        <option value="wide">Lebar (2.54 x 5.08 cm / 2 in)</option>
                         <option value="mirrored">Margin Cermin (Mirrored)</option>
+                        <option value="office2003">Office 2003 Standar (2.54 x 3.18 cm)</option>
                         <option value="custom">Margin Kustom...</option>
                     </select>
                 </div>
@@ -1018,6 +1021,7 @@
                         <option value="a5">A5 (148 x 210 mm)</option>
                         <option value="b5">B5 (182 x 257 mm)</option>
                         <option value="statement">Statement (139.7 x 215.9 mm)</option>
+                        <option value="tabloid">Tabloid (11 x 17 in / 279.4 x 431.8 mm)</option>
                         <option value="custom">Ukuran Kustom...</option>
                     </select>
                 </div>
@@ -2732,6 +2736,7 @@
                                     <option value="normal" selected>Normal</option>
                                     <option value="mirror">Margin Cermin (Mirror Margins)</option>
                                     <option value="2pages">2 Halaman per Lembar (2 Pages per Sheet)</option>
+                                    <option value="bookfold">Lipatan Buku (Book Fold)</option>
                                 </select>
                             </div>
                         </div>
@@ -2759,6 +2764,9 @@
                                 </button>
                                 <button type="button" data-ps-preset="mirrored" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
                                     📖 Cermin (3.18 / 2.54)
+                                </button>
+                                <button type="button" data-ps-preset="office2003" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
+                                    🏛️ Office 2003 (2.54 x 3.18)
                                 </button>
                             </div>
 
@@ -2796,6 +2804,7 @@
                                     <option value="a5">A5 (148 × 210 mm / 14.8 × 21 cm)</option>
                                     <option value="b5">B5 JIS (18.2 × 25.7 cm)</option>
                                     <option value="statement">Statement / Half Letter (13.97 × 21.59 cm)</option>
+                                    <option value="tabloid">Tabloid / Ledger (11 × 17 in / 27.94 × 43.18 cm)</option>
                                     <option value="custom">Ukuran Kustom (Custom Dimensions)...</option>
                                 </select>
                             </div>
@@ -2996,6 +3005,12 @@
                                     <option value="level1">Tingkat 1 (Level 1)</option>
                                     <option value="level2">Tingkat 2 (Level 2)</option>
                                     <option value="level3">Tingkat 3 (Level 3)</option>
+                                    <option value="level4">Tingkat 4 (Level 4)</option>
+                                    <option value="level5">Tingkat 5 (Level 5)</option>
+                                    <option value="level6">Tingkat 6 (Level 6)</option>
+                                    <option value="level7">Tingkat 7 (Level 7)</option>
+                                    <option value="level8">Tingkat 8 (Level 8)</option>
+                                    <option value="level9">Tingkat 9 (Level 9)</option>
                                 </select>
                             </div>
                         </div>

@@ -407,6 +407,10 @@ class DocxImporter
                     $setup['paper_size'] = 'b5';
                 } elseif (abs($minDim - 184.1) <= 3 && abs($maxDim - 266.7) <= 3) {
                     $setup['paper_size'] = 'executive';
+                } elseif (abs($minDim - 139.7) <= 3 && abs($maxDim - 215.9) <= 3) {
+                    $setup['paper_size'] = 'statement';
+                } elseif (abs($minDim - 279.4) <= 4 && abs($maxDim - 431.8) <= 4) {
+                    $setup['paper_size'] = 'tabloid';
                 } else {
                     $setup['paper_size'] = 'custom';
                 }
@@ -444,11 +448,19 @@ class DocxImporter
                 $setup['margin_preset'] = 'moderate';
             } elseif (abs($top - 25.4) <= 2 && abs($bottom - 25.4) <= 2 && abs($left - 50.8) <= 2 && abs($right - 50.8) <= 2) {
                 $setup['margin_preset'] = 'wide';
+            } elseif (abs($top - 25.4) <= 2 && abs($bottom - 25.4) <= 2 && abs($left - 31.8) <= 2 && abs($right - 31.8) <= 2) {
+                $setup['margin_preset'] = 'office2003';
             } elseif (abs($top - 25.4) <= 2 && abs($bottom - 25.4) <= 2 && abs($left - 25.4) <= 2 && abs($right - 25.4) <= 2) {
                 $setup['margin_preset'] = 'normal';
             } else {
                 $setup['margin_preset'] = 'custom';
             }
+        }
+
+        // Search <w:vAlign> for vertical alignment
+        if (preg_match('/<w:vAlign\b[^>]*w:val=["\'](top|center|bottom|both)["\']/i', $docXml, $vm)) {
+            $val = strtolower($vm[1]);
+            $setup['vertical_align'] = $val === 'both' ? 'justify' : $val;
         }
 
         return $setup;

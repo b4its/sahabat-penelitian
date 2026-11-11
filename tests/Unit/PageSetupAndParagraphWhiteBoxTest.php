@@ -12,13 +12,14 @@ use ZipArchive;
 class PageSetupAndParagraphWhiteBoxTest extends TestCase
 {
     protected DocxImporter $importer;
+
     protected DocumentService $docService;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importer = new DocxImporter();
-        $this->docService = new DocumentService();
+        $this->importer = new DocxImporter;
+        $this->docService = new DocumentService;
     }
 
     public function test_parse_page_setup_detects_a4_portrait_skripsi_margins(): void
@@ -121,12 +122,12 @@ XML;
 </w:p>
 XML;
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($xml);
         $pNode = $dom->documentElement;
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         $reflection = new \ReflectionClass(DocxImporter::class);
         $method = $reflection->getMethod('parseParagraph');
@@ -156,12 +157,12 @@ XML;
 </w:p>
 XML;
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($xml);
         $pNode = $dom->documentElement;
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         $reflection = new \ReflectionClass(DocxImporter::class);
         $method = $reflection->getMethod('parseParagraph');
@@ -239,5 +240,54 @@ XML;
         $this->assertEquals('folio', $data['layout_options']['paper_size']);
         $this->assertEquals('portrait', $data['layout_options']['orientation']);
         $this->assertEquals(30, $data['layout_options']['margins']['top']);
+    }
+
+    public function test_parse_page_setup_detects_tabloid_paper_size_and_office2003_margins(): void
+    {
+        // Tabloid: 15840 x 24480 twips (279.4 x 431.8 mm)
+        // Office 2003 margins: top/bottom 25.4mm (1440 twips), left/right 31.8mm (1800 twips)
+        $docXml = <<<'XML'
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:sectPr>
+            <w:pgSz w:w="15840" w:h="24480" w:orient="portrait"/>
+            <w:pgMar w:top="1440" w:right="1800" w:bottom="1440" w:left="1800"/>
+            <w:vAlign w:val="center"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+XML;
+
+        $setup = $this->importer->parsePageSetup($docXml);
+
+        $this->assertEquals('tabloid', $setup['paper_size']);
+        $this->assertEquals('portrait', $setup['orientation']);
+        $this->assertEquals('office2003', $setup['margin_preset']);
+        $this->assertEquals(25.4, $setup['margins']['top']);
+        $this->assertEquals(31.8, $setup['margins']['left']);
+        $this->assertEquals('center', $setup['vertical_align']);
+    }
+
+    public function test_document_service_export_embeds_tabloid_and_office2003(): void
+    {
+        $content = '<p>Dokumen berukuran Tabloid dengan format margin Office 2003.</p>';
+        $layoutOptions = [
+            'paper_size' => 'tabloid',
+            'orientation' => 'landscape',
+            'margin_preset' => 'office2003',
+            'line_spacing' => '1.15',
+            'paragraph_spacing' => ['before' => 3, 'after' => 8],
+            'paragraph_indent' => ['left' => 1.0, 'right' => 0.5],
+        ];
+
+        $htmlResult = $this->docService->exportDocument('Tabloid Uji', $content, 'html', null, null, $layoutOptions);
+        $this->assertStringContainsString('size: 431.8mm 279.4mm;', $htmlResult['content']);
+        $this->assertStringContainsString('margin: 25.4mm 31.8mm 25.4mm 31.8mm;', $htmlResult['content']);
+        $this->assertStringContainsString('line-height: 1.15;', $htmlResult['content']);
+
+        $docxResult = $this->docService->exportDocument('Tabloid Docx', $content, 'docx', null, null, $layoutOptions);
+        $this->assertStringContainsString('size: 431.8mm 279.4mm;', $docxResult['content']);
+        $this->assertStringContainsString('margin: 25.4mm 31.8mm 25.4mm 31.8mm;', $docxResult['content']);
+        $this->assertStringContainsString('line-height: 1.15;', $docxResult['content']);
     }
 }
