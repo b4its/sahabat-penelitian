@@ -390,15 +390,36 @@ class DocumentService
      */
     public function extractTitle(string $filename, string $html): string
     {
-        // Try to get from first H1 tag in content
-        if (preg_match('/<h1[^>]*>(.*?)<\/h1>/is', $html, $matches)) {
-            $heading = trim(strip_tags($matches[1]));
-            if (! empty($heading)) {
+        // 1. First priority: Check for explicit .cover-title or .doc-title in content
+        if (preg_match('/<(?:p|h1|h2|div)\b[^>]*class=["\'][^"\']*\b(?:cover-title|doc-title)\b[^"\']*["\'][^>]*>(.*?)<\/(?:p|h1|h2|div)>/is', $html, $matches)) {
+            $coverTitle = trim(strip_tags($matches[1]));
+            if (! empty($coverTitle) && strlen($coverTitle) >= 3 && ! $this->isCoverMetadataLine($coverTitle)) {
+                return $coverTitle;
+            }
+        }
+
+        // 2. Second priority: Look for a genuine H1 tag that is not a preliminary section or chapter
+        if (preg_match_all('/<h1[^>]*>(.*?)<\/h1>/is', $html, $allH1s)) {
+            foreach ($allH1s[1] as $rawH1) {
+                $heading = trim(strip_tags($rawH1));
+                if (empty($heading)) {
+                    continue;
+                }
+                if ($this->isTableOfContentsLine($heading) || $this->isCoverMetadataLine($heading)) {
+                    continue;
+                }
+                if (preg_match('/^(ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|PRAKATA|LEMBAR\s+PENGESAHAN|HALAMAN\s+PENGESAHAN|LEMBAR\s+PERSETUJUAN|HALAMAN\s+PERSETUJUAN|PERNYATAAN\s+KEASLIAN|PERNYATAAN\s+ORISINALITAS|DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|DAFTAR\s+LAMPIRAN|DAFTAR\s+PUSTAKA|RIWAYAT\s+HIDUP|BIODATA\s+PENULIS|LAMPIRAN)\b/i', $heading)) {
+                    continue;
+                }
+                if (preg_match('/^(BAB\s*(?:\d+|[IVXLCDM]+))\b/i', $heading)) {
+                    continue;
+                }
+
                 return $heading;
             }
         }
 
-        // Try to get from filename without extension
+        // 3. Try to get from filename without extension
         $basename = pathinfo($filename, PATHINFO_FILENAME);
         if (! empty($basename)) {
             $readable = preg_replace('/[-_]+/', ' ', $basename);
@@ -518,8 +539,35 @@ class DocumentService
             $isAcademic = true;
         }
 
+        // Protect compound elements (table, ul, ol, pre, blockquote, and existing special divs like page-break and latex-equation)
+        // so that preg_split does not break their inner paragraphs, rows, or closing tags.
+        $protectedBlocks = [];
+        $counter = 0;
+        $protectRegex = '/<(table|ul|ol|pre|blockquote)\b[^>]*>.*?<\/\1>/is';
+        $protectedHtml = preg_replace_callback($protectRegex, function ($m) use (&$protectedBlocks, &$counter) {
+            $key = '<div data-protected-block="'.$counter.'"></div>';
+            $protectedBlocks[$counter] = [
+                'tag' => strtolower($m[1]),
+                'html' => $m[0],
+            ];
+            $counter++;
+
+            return $key;
+        }, $sanitized);
+
+        $protectedHtml = preg_replace_callback('/<div\b[^>]*\b(?:page-break|latex-equation|table-of-contents)\b[^>]*>.*?<\/div>/is', function ($m) use (&$protectedBlocks, &$counter) {
+            $key = '<div data-protected-block="'.$counter.'"></div>';
+            $protectedBlocks[$counter] = [
+                'tag' => 'div',
+                'html' => $m[0],
+            ];
+            $counter++;
+
+            return $key;
+        }, $protectedHtml);
+
         // Split HTML by major block closing tags
-        $tokens = preg_split('/(<\/(?:h[1-6]|p|div|blockquote|table|ul|ol|pre)>)/i', $sanitized, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $tokens = preg_split('/(<\/(?:h[1-6]|p|div|blockquote|table|ul|ol|pre)>)/i', $protectedHtml, -1, PREG_SPLIT_DELIM_CAPTURE);
         $adaptedBlocks = [];
         $headings = [];
 
@@ -549,6 +597,29 @@ class DocumentService
             }
 
             $fullTag = $block.$closer;
+
+            // Check for protected compound block placeholder (table, ul, ol, pre, blockquote, page-break, etc.)
+            if (preg_match('/<div\b[^>]*data-protected-block="(\d+)"[^>]*><\/div>/i', $fullTag, $pm)) {
+                $blockId = (int) $pm[1];
+                if (isset($protectedBlocks[$blockId])) {
+                    $item = $protectedBlocks[$blockId];
+                    $bHtml = $item['html'];
+                    if ($item['tag'] === 'table') {
+                        $isBorderless = str_contains($bHtml, 'border-none') || str_contains($bHtml, 'border="0"');
+                        if ($isBorderless) {
+                            $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border-none">', $bHtml);
+                        } else {
+                            $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">', $bHtml);
+                        }
+                    } elseif ($item['tag'] === 'div' && str_contains($bHtml, 'page-break')) {
+                        $bHtml = '<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>';
+                    }
+                    $adaptedBlocks[] = $bHtml;
+                    unset($protectedBlocks[$blockId]);
+
+                    continue;
+                }
+            }
 
             // 1. Explicit Page Break: Preserve it immediately and continue
             if (str_contains($fullTag, 'page-break') || str_contains($fullTag, 'data-page-break') || trim(strip_tags($fullTag)) === 'Pemisah Halaman' || trim(strip_tags($fullTag)) === 'Pemisah Halaman (Akhir Sampul)') {
@@ -841,17 +912,23 @@ class DocumentService
                     $styleMatch = ' style="'.htmlspecialchars($sm[2], ENT_COMPAT, 'UTF-8').'"';
                 }
 
+                $isMonospace = str_contains($existingAttrs, 'font-mono') ||
+                               str_contains($bodyHtml, 'Courier') ||
+                               str_contains($bodyHtml, 'monospace') ||
+                               str_contains($bodyHtml, 'Consolas') ||
+                               str_contains($bodyHtml, '<code');
+
                 if ($hasCenter) {
                     $adaptedBlocks[] = "<p class=\"text-center my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasRight) {
                     $adaptedBlocks[] = "<p class=\"text-right my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasJustify) {
-                    $indentClass = ($isAcademic && strlen($cleanText) > 100 && empty($extraClasses)) ? ' indent-8' : '';
+                    $indentClass = ($isAcademic && strlen($cleanText) > 100 && empty($extraClasses) && ! $isMonospace) ? ' indent-8' : '';
                     $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800{$indentClass}{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } elseif ($hasLeft) {
                     $adaptedBlocks[] = "<p class=\"text-left my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                 } else {
-                    if ($isAcademic && strlen($cleanText) > 100 && empty($extraClasses)) {
+                    if ($isAcademic && strlen($cleanText) > 100 && empty($extraClasses) && ! $isMonospace) {
                         $adaptedBlocks[] = "<p class=\"text-justify my-3 leading-relaxed text-gray-800 indent-8{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
                     } else {
                         $adaptedBlocks[] = "<p class=\"my-2 leading-relaxed text-gray-800{$extraClassStr}\"{$styleMatch}>{$bodyHtml}</p>";
@@ -861,6 +938,21 @@ class DocumentService
         }
 
         $adaptedHtml = implode("\n", $adaptedBlocks);
+
+        // Restore any remaining protected blocks
+        foreach ($protectedBlocks as $blockId => $item) {
+            $placeholder = '<div data-protected-block="'.$blockId.'"></div>';
+            $bHtml = $item['html'];
+            if ($item['tag'] === 'table') {
+                $isBorderless = str_contains($bHtml, 'border-none') || str_contains($bHtml, 'border="0"');
+                if ($isBorderless) {
+                    $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border-none">', $bHtml);
+                } else {
+                    $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">', $bHtml);
+                }
+            }
+            $adaptedHtml = str_replace($placeholder, $bHtml, $adaptedHtml);
+        }
 
         $presets = [
             'is_academic' => $isAcademic,

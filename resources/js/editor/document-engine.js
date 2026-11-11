@@ -639,25 +639,45 @@ export class DocumentEngine {
 
             // Check if adding this element overflows the page budget
             if (currentWeight + weight > MAX_PAGE_WEIGHT && currentBlocks.length > 0) {
-                // If element is a massive paragraph (>700 chars), split gracefully at sentence boundary
+                // If element is a massive paragraph (>700 chars), split gracefully at line / sentence boundary
                 if (el.tagName === 'P' && el.textContent.length > 700) {
-                    const text = el.textContent;
-                    const sentences = text.match(/[^.!?]+[.!?]+(\s+|$)/g) || [text];
-                    if (sentences.length >= 2) {
-                        let halfway = Math.floor(sentences.length / 2);
-                        const part1 = sentences.slice(0, halfway).join('').trim();
-                        const part2 = sentences.slice(halfway).join('').trim();
+                    if (el.querySelector('br') || el.innerHTML.includes('<br')) {
+                        const lines = el.innerHTML.split(/<br\s*\/?>/i);
+                        if (lines.length >= 2) {
+                            let halfway = Math.floor(lines.length / 2);
+                            const part1 = lines.slice(0, halfway).join('<br>');
+                            const part2 = lines.slice(halfway).join('<br>');
 
-                        const p1 = el.cloneNode(true);
-                        p1.innerHTML = part1;
-                        currentBlocks.push(p1);
-                        finalizeCurrentPage();
+                            const p1 = el.cloneNode(false);
+                            p1.innerHTML = part1;
+                            currentBlocks.push(p1);
+                            finalizeCurrentPage();
 
-                        const p2 = el.cloneNode(true);
-                        p2.innerHTML = part2;
-                        currentBlocks.push(p2);
-                        currentWeight += estimateElementWeight(p2);
-                        continue;
+                            const p2 = el.cloneNode(false);
+                            p2.innerHTML = part2;
+                            currentBlocks.push(p2);
+                            currentWeight += estimateElementWeight(p2);
+                            continue;
+                        }
+                    } else {
+                        const text = el.textContent;
+                        const sentences = text.match(/[^.!?]+[.!?]+(\s+|$)/g) || [text];
+                        if (sentences.length >= 2) {
+                            let halfway = Math.floor(sentences.length / 2);
+                            const part1 = sentences.slice(0, halfway).join('').trim();
+                            const part2 = sentences.slice(halfway).join('').trim();
+
+                            const p1 = el.cloneNode(true);
+                            p1.innerHTML = part1;
+                            currentBlocks.push(p1);
+                            finalizeCurrentPage();
+
+                            const p2 = el.cloneNode(true);
+                            p2.innerHTML = part2;
+                            currentBlocks.push(p2);
+                            currentWeight += estimateElementWeight(p2);
+                            continue;
+                        }
                     }
                 }
 
@@ -2231,18 +2251,22 @@ export class DocumentEngine {
                 const hasJustify = el.classList.contains('text-justify') || el.style.textAlign === 'justify';
                 const hasLeft = el.classList.contains('text-left') || el.style.textAlign === 'left';
 
+                const isMonospace = el.querySelector('code') ||
+                                    el.querySelector('pre') ||
+                                    /courier|monospace|consolas|menlo/i.test(el.innerHTML);
+
                 if (hasCenter) {
                     el.classList.add('text-center', 'my-2', 'leading-relaxed', 'text-gray-800');
                 } else if (hasRight) {
                     el.classList.add('text-right', 'my-2', 'leading-relaxed', 'text-gray-800');
                 } else if (hasJustify) {
-                    const indent = (isAcademic && cleanText.length > 100) ? 'indent-8' : '';
+                    const indent = (isAcademic && cleanText.length > 100 && !isMonospace) ? 'indent-8' : '';
                     el.classList.add('text-justify', 'my-3', 'leading-relaxed', 'text-gray-800');
                     if (indent) el.classList.add(indent);
                 } else if (hasLeft) {
                     el.classList.add('text-left', 'my-2', 'leading-relaxed', 'text-gray-800');
                 } else {
-                    if (isAcademic && cleanText.length > 100) {
+                    if (isAcademic && cleanText.length > 100 && !isMonospace) {
                         el.classList.add('text-justify', 'my-3', 'leading-relaxed', 'text-gray-800', 'indent-8');
                     } else {
                         el.classList.add('my-2', 'leading-relaxed', 'text-gray-800');

@@ -1537,3 +1537,54 @@ test('black-box: document engine client source prevents call stack overflow and 
     // Verify app.js outline navigation handles pending chunks gracefully
     expect($sourceAppJs)->toContain('if (!targetEl && window.documentEngine && window.documentEngine.isChunkLoading)');
 });
+
+test('black-box: user importing document with tables and code blocks receives intact closed tables and clean non-nested layout', function () {
+    $docxHtml = <<<'HTML'
+        <p class="cover-badge">SKRIPSI</p>
+        <p class="cover-title">SISTEM MONITORING KUALITAS AIR</p>
+        <div class="page-break" data-page-break="true"></div>
+        <p>BAB 2 TINJAUAN PUSTAKA</p>
+        <p>2.2 Penelitian Terdahulu</p>
+        <table class="border border-gray-300">
+            <tr><td>Peneliti</td><td>Metode</td></tr>
+            <tr><td>Peneliti A (2025)</td><td>Machine Learning</td></tr>
+        </table>
+        <p>BAB 3 METODE PENELITIAN</p>
+        <p>3.1 Metodologi</p>
+        <p>Berikut langkah-langkah metodologi penelitian.</p>
+        <p>LAMPIRAN</p>
+        <p><span style="font-family: 'Courier New';">import pandas as pd<br>import numpy as np</span></p>
+HTML;
+
+    // Simulate file import via API
+    $response = $this->postJson('/api/documents/import', [
+        'file' => UploadedFile::fake()->createWithContent('skripsi_test.html', $docxHtml),
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('success', true);
+
+    $contentHtml = $response->json('content_html');
+    $title = $response->json('title');
+
+    // Title should be the genuine cover title
+    expect($title)->toBe('SISTEM MONITORING KUALITAS AIR');
+
+    // Table must be properly closed
+    expect($contentHtml)->toContain('<table')
+        ->and($contentHtml)->toContain('</table>');
+
+    $tableEnd = strpos($contentHtml, '</table>');
+    $bab3Pos = strpos($contentHtml, 'BAB 3 METODE PENELITIAN');
+    $lampiranPos = strpos($contentHtml, 'LAMPIRAN');
+
+    // BAB 3 and LAMPIRAN must appear strictly outside and after the table
+    expect($bab3Pos)->toBeGreaterThan($tableEnd)
+        ->and($lampiranPos)->toBeGreaterThan($bab3Pos);
+
+    // Verify client document-engine source supports br-separated multi-line splitting and monospace indent immunity
+    $sourceEngineJs = file_get_contents(resource_path('js/editor/document-engine.js'));
+    expect($sourceEngineJs)->toContain('el.querySelector(\'br\') || el.innerHTML.includes(\'<br\'')
+        ->and($sourceEngineJs)->toContain('lines.slice(0, halfway).join(\'<br>\')')
+        ->and($sourceEngineJs)->toContain('!isMonospace');
+});

@@ -1076,3 +1076,68 @@ test('white-box: docx importer and document engine safeguard against maximum cal
         ->and($engineSource)->toContain("this.setMarginPreset('skripsi', false)")
         ->and($engineSource)->toContain('this.setFontFamily(academicFont, false)');
 });
+
+test('white-box: adaptDocumentStructure guarantees tables remain fully closed and protects subsequent sections from nesting inside table cells', function () {
+    $inputHtml = <<<'HTML'
+        <p>BAB 2 TINJAUAN PUSTAKA</p>
+        <p>2.2 Penelitian Terdahulu</p>
+        <p>Berikut rangkuman kajian penelitian terdahulu:</p>
+        <table class="border border-gray-300">
+            <tbody>
+                <tr>
+                    <td><p>Peneliti &amp; Tahun</p></td>
+                    <td><p>Metode</p></td>
+                </tr>
+                <tr>
+                    <td><p>Chen et al. (2024)</p></td>
+                    <td><p>Random Forest &amp; Gradient Boosting</p></td>
+                </tr>
+            </tbody>
+        </table>
+        <p>BAB 3 METODE PENELITIAN</p>
+        <p>3.1 Tempat dan Waktu Pelaksanaan</p>
+        <p>Penelitian ini bertempat di Laboratorium Komputasi.</p>
+        <p>LAMPIRAN</p>
+        <p><span style="font-family: 'Courier New', monospace;">import pandas as pd<br>import numpy as np</span></p>
+HTML;
+
+    $result = $this->service->adaptDocumentStructure($inputHtml, 'skripsi.docx');
+    $adaptedHtml = $result['adapted_html'];
+
+    // 1. Table must be completely closed with </table>
+    expect($adaptedHtml)->toContain('<table')
+        ->and($adaptedHtml)->toContain('</table>');
+
+    $tableStart = strpos($adaptedHtml, '<table');
+    $tableEnd = strpos($adaptedHtml, '</table>', $tableStart);
+    expect($tableEnd)->not->toBeFalse();
+
+    // 2. BAB 3 and LAMPIRAN must strictly appear AFTER </table>, never inside it
+    $bab3Pos = strpos($adaptedHtml, 'BAB 3 METODE PENELITIAN');
+    $lampiranPos = strpos($adaptedHtml, 'LAMPIRAN');
+    expect($bab3Pos)->toBeGreaterThan($tableEnd)
+        ->and($lampiranPos)->toBeGreaterThan($bab3Pos);
+
+    // 3. Monospace code must not have indent-8
+    expect($adaptedHtml)->toContain('Courier New')
+        ->and($adaptedHtml)->not->toContain('indent-8" style="margin-top: 4pt; margin-bottom: 4pt; line-height: 1;"><span style="font-family: \'Courier New\'');
+});
+
+test('white-box: extractTitle prioritizes cover title over preliminary headings like PERNYATAAN KEASLIAN SKRIPSI', function () {
+    $academicHtml = <<<'HTML'
+        <p class="cover-badge">SKRIPSI</p>
+        <p class="cover-title">PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL</p>
+        <p class="cover-author-nim">NIM. 236651071</p>
+        <div class="page-break" data-page-break="true"></div>
+        <h1>PERNYATAAN KEASLIAN SKRIPSI</h1>
+        <p>Saya menyatakan bahwa skripsi ini adalah hasil karya saya sendiri.</p>
+        <div class="page-break" data-page-break="true"></div>
+        <h1>BAB 1 PENDAHULUAN</h1>
+HTML;
+
+    $title = $this->service->extractTitle('SKRIPSI_236651071_BAITS_RIKA_SAPUTRA.docx', $academicHtml);
+
+    expect($title)->toBe('PENERAPAN ENSEMBLE LEARNING UNTUK KLASIFIKASI KUALITAS LIMBAH CAIR TEKSTIL')
+        ->and($title)->not->toBe('PERNYATAAN KEASLIAN SKRIPSI')
+        ->and($title)->not->toBe('BAB 1 PENDAHULUAN');
+});
