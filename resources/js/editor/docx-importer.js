@@ -865,7 +865,7 @@ export class DocxImporter {
                     latex = latex.replace(/(?<!\\)%/g, '\\%');
                     inlines.push(` $$${latex}$$ `);
                 }
-            } else if (childName === 'w:drawing' || childName === 'w:pict' || childName === 'mc:alternatecontent') {
+            } else if (childName === 'w:drawing' || childName === 'w:pict' || childName === 'mc:alternatecontent' || child.localName?.toLowerCase() === 'drawing' || child.localName?.toLowerCase() === 'pict' || child.localName?.toLowerCase() === 'alternatecontent') {
                 const imgHtml = await this.parseImage(child, zip, rels);
                 if (imgHtml) inlines.push(imgHtml);
             }
@@ -1112,7 +1112,7 @@ export class DocxImporter {
                 }
             } else if (childName === 'w:tab') {
                 htmlParts.push('&emsp;');
-            } else if (childName === 'w:drawing' || childName === 'w:pict' || childName === 'mc:alternatecontent') {
+            } else if (childName === 'w:drawing' || childName === 'w:pict' || childName === 'mc:alternatecontent' || child.localName?.toLowerCase() === 'drawing' || child.localName?.toLowerCase() === 'pict' || child.localName?.toLowerCase() === 'alternatecontent') {
                 const imgHtml = await this.parseImage(child, zip, rels);
                 if (imgHtml) htmlParts.push(imgHtml);
             }
@@ -1367,21 +1367,41 @@ export class DocxImporter {
         if (!container) return '';
 
         // Search for all embedded image IDs inside container (DrawingML or VML)
-        const blips = Array.from(container.getElementsByTagName('a:blip'));
-        const vmlImgs = Array.from(container.getElementsByTagName('v:imagedata'));
+        let blips = Array.from(container.getElementsByTagName('a:blip'));
+        if (blips.length === 0 && typeof container.getElementsByTagNameNS === 'function') {
+            blips = Array.from(container.getElementsByTagNameNS('*', 'blip'));
+        }
+        if (blips.length === 0) {
+            blips = Array.from(container.getElementsByTagName('blip'));
+        }
+
+        let vmlImgs = Array.from(container.getElementsByTagName('v:imagedata'));
+        if (vmlImgs.length === 0 && typeof container.getElementsByTagNameNS === 'function') {
+            vmlImgs = Array.from(container.getElementsByTagNameNS('*', 'imagedata'));
+        }
+        if (vmlImgs.length === 0) {
+            vmlImgs = Array.from(container.getElementsByTagName('imagedata'));
+        }
 
         const rIds = [];
         for (const blip of blips) {
             const rId = blip.getAttribute('r:embed') ||
                         blip.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'embed') ||
-                        blip.getAttribute('r:id');
+                        blip.getAttribute('embed') ||
+                        blip.getAttribute('r:id') ||
+                        blip.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') ||
+                        blip.getAttribute('id');
             if (rId && !rIds.includes(rId)) rIds.push(rId);
         }
 
         for (const vml of vmlImgs) {
             const rId = vml.getAttribute('r:id') ||
                         vml.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') ||
-                        vml.getAttribute('r:href');
+                        vml.getAttribute('id') ||
+                        vml.getAttribute('o:relid') ||
+                        vml.getAttributeNS('urn:schemas-microsoft-com:office:office', 'relid') ||
+                        vml.getAttribute('r:href') ||
+                        vml.getAttribute('href');
             if (rId && !rIds.includes(rId)) rIds.push(rId);
         }
 

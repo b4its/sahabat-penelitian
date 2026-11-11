@@ -1730,5 +1730,90 @@ test('black-box: document engine client source prevents infinite recursion betwe
     // 3. Importer supports mc:alternatecontent and colgroup
     expect($importerJs)->toContain('mc:alternatecontent')
         ->and($importerJs)->toContain('colgroupHtml')
-        ->and($importerJs)->toContain('formatBorder');
+        ->and($importerJs)->toContain('formatBorder')
+        ->and($importerJs)->toContain('getElementsByTagNameNS');
+});
+
+test('black-box: user uploading docx with both images and tables receives all images and tables preserved without data loss', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'docx_full_test_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $fakePng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+    $zip->addFromString('word/media/logo.png', $fakePng);
+
+    $relsXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>
+</Relationships>
+XML;
+    $zip->addFromString('word/_rels/document.xml.rels', $relsXml);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+    <w:body>
+        <w:p>
+            <w:r><w:t>BAB 1 PENDAHULUAN</w:t></w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:drawing>
+                    <wp:inline>
+                        <wp:extent cx="1905000" cy="1905000"/>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                <a:blip r:embed="rIdLogo"/>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:inline>
+                </w:drawing>
+            </w:r>
+        </w:p>
+        <w:tbl>
+            <w:tblPr>
+                <w:tblBorders>
+                    <w:top w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+                    <w:bottom w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+                    <w:left w:val="none"/>
+                    <w:right w:val="none"/>
+                </w:tblBorders>
+            </w:tblPr>
+            <w:tblGrid>
+                <w:gridCol w:w="3000"/>
+                <w:gridCol w:w="7000"/>
+            </w:tblGrid>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Kolom 1</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Kolom 2</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => new UploadedFile($zipPath, 'skripsi_lengkap.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true),
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('success', true);
+
+    $html = $response->json('content_html');
+    expect($html)->toContain('<img')
+        ->and($html)->toContain('data:image/png;base64,')
+        ->and($html)->toContain('<table')
+        ->and($html)->toContain('<colgroup>')
+        ->and($html)->toContain('width: 30.0%;')
+        ->and($html)->toContain('width: 70.0%;')
+        ->and($html)->toContain('Kolom 1')
+        ->and($html)->toContain('Kolom 2');
+
+    @unlink($zipPath);
 });

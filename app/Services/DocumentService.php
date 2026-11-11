@@ -605,8 +605,11 @@ class DocumentService
                     $item = $protectedBlocks[$blockId];
                     $bHtml = $item['html'];
                     if ($item['tag'] === 'table') {
+                        $hasCustomBorder = preg_match('/style=[^>]*border/i', $bHtml) || str_contains($bHtml, 'border-top') || str_contains($bHtml, 'border-bottom') || str_contains($bHtml, 'border-t-2');
                         $isBorderless = str_contains($bHtml, 'border-none') || str_contains($bHtml, 'border="0"');
-                        if ($isBorderless) {
+                        if ($hasCustomBorder) {
+                            // Preserve authentic OpenXML borders intact
+                        } elseif ($isBorderless) {
                             $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border-none">', $bHtml);
                         } else {
                             $bHtml = preg_replace('/<table\b([^>]*)>/i', '<table $1 class="w-full border-collapse my-4 text-sm border border-gray-300 dark:border-gray-700">', $bHtml);
@@ -718,7 +721,10 @@ class DocumentService
 
             // If it's a table, check if it's a borderless table (signature / approval sheets)
             if (str_starts_with($fullTag, '<table')) {
-                if (str_contains($fullTag, 'border-none') || str_contains($fullTag, 'border="0"')) {
+                $hasCustomBorder = preg_match('/style=[^>]*border/i', $fullTag) || str_contains($fullTag, 'border-top') || str_contains($fullTag, 'border-bottom') || str_contains($fullTag, 'border-t-2');
+                if ($hasCustomBorder) {
+                    $adaptedBlocks[] = $fullTag;
+                } elseif (str_contains($fullTag, 'border-none') || str_contains($fullTag, 'border="0"')) {
                     $adaptedBlocks[] = preg_replace(
                         '/<table\b([^>]*)>/i',
                         '<table $1 class="w-full border-collapse my-4 text-sm border-none">',
@@ -999,6 +1005,10 @@ class DocumentService
             $filename = $originalName ?? $file->getClientOriginalName();
             $mime = $file->getClientMimeType();
             $rawContent = file_get_contents($file->getRealPath());
+        } elseif (is_string($file) && file_exists($file) && is_file($file)) {
+            $filename = $originalName ?? basename($file);
+            $mime = function_exists('mime_content_type') ? @mime_content_type($file) : null;
+            $rawContent = @file_get_contents($file) ?: '';
         } else {
             $filename = $originalName ?? 'document.txt';
             $mime = null;

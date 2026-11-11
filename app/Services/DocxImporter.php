@@ -1056,7 +1056,7 @@ class DocxImporter
                 if ($latex !== '') {
                     $inlines[] = ' $$'.$latex.'$$ ';
                 }
-            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict' || $child->localName === 'AlternateContent') {
+            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict' || $child->localName === 'AlternateContent' || in_array(strtolower($child->localName), ['drawing', 'pict', 'alternatecontent'], true)) {
                 $imgHtml = $this->parseImage($child, $xpath, $zip, $rels);
                 if ($imgHtml !== '') {
                     $inlines[] = $imgHtml;
@@ -1355,7 +1355,7 @@ class DocxImporter
                 }
             } elseif ($child->nodeName === 'w:tab') {
                 $htmlParts[] = '&emsp;';
-            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict' || $child->localName === 'AlternateContent') {
+            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict' || $child->localName === 'AlternateContent' || in_array(strtolower($child->localName), ['drawing', 'pict', 'alternatecontent'], true)) {
                 $imgHtml = $this->parseImage($child, $xpath, $zip, $rels);
                 if (! empty($imgHtml)) {
                     $htmlParts[] = $imgHtml;
@@ -1681,9 +1681,16 @@ class DocxImporter
 
         // Query all blips (DrawingML)
         $blips = $xpath->query('.//a:blip', $container);
+        if ($blips->length === 0) {
+            $blips = $xpath->query('.//*[local-name()="blip"]', $container);
+        }
         foreach ($blips as $b) {
             if ($b instanceof DOMElement) {
-                $rId = $b->getAttribute('r:embed') ?: ($b->getAttributeNS(self::R_NS, 'embed') ?: $b->getAttribute('r:id'));
+                $rId = $b->getAttribute('r:embed')
+                    ?: ($b->getAttributeNS(self::R_NS, 'embed')
+                    ?: ($b->getAttribute('r:id')
+                    ?: ($b->getAttributeNS(self::R_NS, 'id')
+                    ?: $b->getAttribute('embed'))));
                 if ($rId && ! in_array($rId, $rIds, true)) {
                     $rIds[] = $rId;
                 }
@@ -1692,9 +1699,16 @@ class DocxImporter
 
         // Query all imagedata (VML)
         $vmlImgs = $xpath->query('.//v:imagedata', $container);
+        if ($vmlImgs->length === 0) {
+            $vmlImgs = $xpath->query('.//*[local-name()="imagedata"]', $container);
+        }
         foreach ($vmlImgs as $v) {
             if ($v instanceof DOMElement) {
-                $rId = $v->getAttribute('r:id') ?: ($v->getAttributeNS(self::R_NS, 'id') ?: $v->getAttribute('r:href'));
+                $rId = $v->getAttribute('r:id')
+                    ?: ($v->getAttributeNS(self::R_NS, 'id')
+                    ?: ($v->getAttribute('o:relid')
+                    ?: ($v->getAttributeNS('urn:schemas-microsoft-com:office:office', 'relid')
+                    ?: ($v->getAttribute('r:href') ?: $v->getAttribute('href')))));
                 if ($rId && ! in_array($rId, $rIds, true)) {
                     $rIds[] = $rId;
                 }

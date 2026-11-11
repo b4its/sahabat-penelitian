@@ -1285,3 +1285,81 @@ HTML;
         ->and($adaptedHtml)->not->toContain('indent-8"><img')
         ->and($adaptedHtml)->toContain('data:image/png;base64,');
 });
+
+test('white-box: parseFile handles direct disk file path and extracts docx tables and images intact', function () {
+    $zipFile = tempnam(sys_get_temp_dir(), 'docx_path_test_').'.docx';
+    $zip = new \ZipArchive;
+    $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    $fakePng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+    $zip->addFromString('word/media/fig.png', $fakePng);
+
+    $relsXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId10" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/fig.png"/>
+</Relationships>
+XML;
+    $zip->addFromString('word/_rels/document.xml.rels', $relsXml);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:t>BAB 1 PENDAHULUAN</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:drawing>
+                    <wp:inline>
+                        <wp:extent cx="1905000" cy="1905000"/>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                <a:blip r:embed="rId10"/>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:inline>
+                </w:drawing>
+            </w:r>
+        </w:p>
+        <w:tbl>
+            <w:tblPr>
+                <w:tblBorders>
+                    <w:top w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+                    <w:bottom w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+                    <w:left w:val="none"/>
+                    <w:right w:val="none"/>
+                </w:tblBorders>
+            </w:tblPr>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Header A</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Header B</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Data 1</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Data 2</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $res = $this->service->parseFile($zipFile, 'skripsi_disk_test.docx');
+
+    expect($res['format'])->toBe('docx')
+        ->and($res['content_html'])->toContain('<img')
+        ->and($res['content_html'])->toContain('data:image/png;base64,')
+        ->and($res['content_html'])->toContain('<table')
+        ->and($res['content_html'])->toContain('Header A')
+        ->and($res['content_html'])->toContain('Data 1');
+
+    @unlink($zipFile);
+});
