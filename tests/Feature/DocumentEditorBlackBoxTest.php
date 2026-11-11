@@ -1488,3 +1488,32 @@ test('black-box: generated table of contents provides editable elements and dele
         // Ensure action bar has delete button
         ->and($html)->toContain('btn-toc-delete');
 });
+
+test('black-box: editor view renders progressive document chunk loader UI elements', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Verify chunk loader elements exist in DOM
+    $response->assertSee('id="document-chunk-progress"', false);
+    $response->assertSee('id="chunk-progress-label"', false);
+    $response->assertSee('id="chunk-progress-percent"', false);
+    $response->assertSee('id="chunk-progress-bar"', false);
+    $response->assertSee('id="chunk-progress-page-count"', false);
+    $response->assertSee('Memuat lembar dokumen secara bertahap...', false);
+});
+
+test('black-box: document engine client source provides chunk rendering system and session cancellation', function () {
+    $sourceEngineJs = file_get_contents(resource_path('js/editor/document-engine.js'));
+
+    // Check chunk system methods
+    expect($sourceEngineJs)->toContain('createPageSheetElement(');
+    expect($sourceEngineJs)->toContain('createPageGapElement(');
+    expect($sourceEngineJs)->toContain('showChunkProgress(');
+    expect($sourceEngineJs)->toContain('hideChunkProgress(');
+    expect($sourceEngineJs)->toContain('ensureChunkLoadingFooter(');
+    expect($sourceEngineJs)->toContain('flushChunkQueue()');
+    expect($sourceEngineJs)->toContain('currentChunkSession');
+    expect($sourceEngineJs)->toContain('isChunkLoading');
+    expect($sourceEngineJs)->toContain('document:chunk-progress');
+    expect($sourceEngineJs)->toContain('document:chunk-complete');
+});

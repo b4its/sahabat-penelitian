@@ -1032,3 +1032,25 @@ HTML;
     $tocCount = substr_count($adaptedHtml, 'toc-entry');
     expect($tocCount)->toBe(2);
 });
+
+test('white-box: document engine client source implements progressive chunk system for loading multi-page documents from top to bottom', function () {
+    $engineSource = file_get_contents(realpath(__DIR__.'/../../resources/js/editor/document-engine.js'));
+
+    // Verify chunk system methods and options
+    expect($engineSource)->toContain('createPageSheetElement(p, pageNum, totalPages, docTitle = null)')
+        ->and($engineSource)->toContain('createPageGapElement(nextPageNum)')
+        ->and($engineSource)->toContain('renderPaginatedDocument(html, options = {})')
+        ->and($engineSource)->toContain('flushChunkQueue()')
+        ->and($engineSource)->toContain('showChunkProgress(current, total)')
+        ->and($engineSource)->toContain('hideChunkProgress()')
+        ->and($engineSource)->toContain('ensureChunkLoadingFooter(nextPage, total)')
+        ->and($engineSource)->toContain('updateChunkLoadingFooter(nextPage, total)')
+        ->and($engineSource)->toContain('removeChunkLoadingFooter()');
+
+    // Verify session cancellation and top-to-bottom chunking flow
+    expect($engineSource)->toContain('const sessionId = ++this.currentChunkSession;')
+        ->and($engineSource)->toContain('this.pendingChunks')
+        ->and($engineSource)->toContain('this.isChunkLoading = true;')
+        ->and($engineSource)->toContain('currentIndex: 1') // page 1 immediately loaded, page 2 onward queued
+        ->and($engineSource)->toContain('if (options.sync || totalPages <= 1)');
+});

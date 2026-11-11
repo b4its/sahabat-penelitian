@@ -1819,6 +1819,23 @@
                 </div>
             </div>
 
+            <!-- Progressive Document Page Chunk Loader Indicator -->
+            <div id="document-chunk-progress" class="hidden mx-6 sm:mx-14 mt-2 mb-2 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white/95 dark:bg-gray-800/95 shadow-md flex items-center justify-between gap-3 text-xs transition-all no-print z-20">
+                <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                    <span class="inline-block animate-spin text-sm" role="status" aria-label="Loading">⏳</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <span id="chunk-progress-label">Memuat lembar dokumen secara bertahap...</span>
+                            <span id="chunk-progress-percent" class="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">0%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div id="chunk-progress-bar" class="h-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-100 ease-out rounded-full" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <span id="chunk-progress-page-count" class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900 whitespace-nowrap">Halaman 1 / 1</span>
+            </div>
+
             <!-- A4 Document Multi-Page Sheets Container -->
             <div id="document-pages-wrapper" class="w-full flex flex-col items-center relative py-4 px-6 sm:px-14">
                 <!-- Vertical Metric Ruler (Microsoft Word Standard) -->

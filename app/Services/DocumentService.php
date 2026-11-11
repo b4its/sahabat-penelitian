@@ -1188,7 +1188,7 @@ HTML : '';
                     $docxBody
                 );
 
-                $msoHeaderStyle = $hasCustomHeader ? <<<CSS
+                $msoHeaderStyle = $hasCustomHeader ? <<<'CSS'
 table.MsoHeaderTable {
     width: 100%;
     border-collapse: collapse;
@@ -1203,7 +1203,7 @@ p.MsoHeader, div.MsoHeader {
 }
 CSS : '';
 
-                $msoFooterStyle = $hasCustomFooter ? <<<CSS
+                $msoFooterStyle = $hasCustomFooter ? <<<'CSS'
 table.MsoFooterTable {
     width: 100%;
     border-collapse: collapse;

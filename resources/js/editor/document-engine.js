@@ -123,6 +123,9 @@ export class DocumentEngine {
         this.autoSaveTimer = null;
         this.isTyping = false;
         this.isPaginating = false;
+        this.currentChunkSession = 0;
+        this.isChunkLoading = false;
+        this.pendingChunks = null;
         this.activeTable = null;
         this.activeImage = null;
         this.customHeaderText = '';
@@ -680,149 +683,412 @@ export class DocumentEngine {
     }
 
     /**
-     * Render paginated pages into this.pagesWrapper.
-     * Each page is a physical A4 sheet with header, editable body, footer, and page gaps.
+     * Create an individual A4 sheet element for the specified page.
      */
-    renderPaginatedDocument(html) {
-        if (!this.pagesWrapper) return;
+    createPageSheetElement(p, pageNum, totalPages, docTitle = null) {
+        const title = docTitle || this.getTitle() || 'Dokumen VelScribe Wordcraft';
+        const sheet = document.createElement('article');
+        sheet.className = 'document-page-sheet relative flex flex-col justify-between shadow-2xl';
+        sheet.setAttribute('data-page-index', pageNum);
+        sheet.setAttribute('id', pageNum === 1 ? 'document-page-canvas' : `document-page-${pageNum}`);
+
+        // Apply full page setup (paper size, orientation, and margins)
+        this.applyPageSetupToSheet(sheet, pageNum);
+
+        // Apply dark mode sheet if active
+        const isDark = document.getElementById('btn-toggle-dark-sheet')?.classList.contains('active-dark') || false;
+        if (isDark) {
+            sheet.classList.add('canvas-dark-sheet');
+        }
+
+        // Header (Pristine running header without synthetic in-content markers)
+        const isSuppressedFirstPage = this.differentFirstPage && pageNum === 1;
+        const isHeaderApplied = Boolean(this.customHeaderText && this.customHeaderText.trim());
+        const header = document.createElement('header');
+        header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
+        header.setAttribute('title', isHeaderApplied ? `Header Aktif: ${this.customHeaderText}` : 'Header: Belum diterapkan (Klik untuk mengatur)');
+        header.setAttribute('data-action', 'header-footer-modal');
+
+        const headerLeft = this.customHeaderText || '';
+        const headerRight = p.chapterName || '';
+        header.innerHTML = `
+            <span class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
+            <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%] text-right" title="${this.escapeHtml(headerRight)}">${this.escapeHtml(headerRight)}</span>
+        `;
+        sheet.appendChild(header);
+
+        // Body
+        const body = document.createElement('div');
+        body.className = 'page-sheet-body flex-1 outline-none';
+        if (this.currentFontFamily) {
+            body.style.fontFamily = this.currentFontFamily;
+        }
+        if (this.currentFontSize) {
+            body.style.fontSize = this.currentFontSize;
+        }
+        if (this.currentLineSpacing) {
+            body.style.lineHeight = this.currentLineSpacing;
+        }
+        body.setAttribute('contenteditable', 'true');
+        body.setAttribute('spellcheck', 'true');
+        body.setAttribute('role', 'textbox');
+        body.setAttribute('aria-multiline', 'true');
+        body.setAttribute('data-page-number', pageNum);
+        if (pageNum === 1) {
+            body.setAttribute('id', 'document-editor');
+            this.editorEl = body;
+            this.canvasEl = sheet;
+        }
+        body.innerHTML = p.contentHtml;
+        this.renderLatexInContainer(body);
+        sheet.appendChild(body);
+
+        // Footer (Clean document footer without synthetic page marks or 'halaman dari')
+        const isFooterApplied = Boolean(this.customFooterText && this.customFooterText.trim());
+        const footer = document.createElement('footer');
+        footer.className = `page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
+        footer.setAttribute('title', isFooterApplied ? `Footer Aktif: ${this.customFooterText}` : 'Footer: Belum diterapkan (Klik untuk mengatur)');
+        footer.setAttribute('data-action', 'header-footer-modal');
+
+        const footerText = this.customFooterText || '';
+        footer.innerHTML = `
+            <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[85%]" title="${this.escapeHtml(footerText)}">${this.escapeHtml(footerText)}</span>
+        `;
+        sheet.appendChild(footer);
+
+        // Side Page Indicator (Outside Document Canvas)
+        const sideIndicator = document.createElement('div');
+        sideIndicator.className = 'page-side-indicator absolute -left-12 sm:-left-16 top-6 select-none no-print pointer-events-auto flex flex-col items-center';
+        sideIndicator.title = `Lembar Halaman ${pageNum} dari ${totalPages}`;
+        sideIndicator.innerHTML = `
+            <div class="flex flex-col items-center justify-center min-w-[38px] px-2 py-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-600 dark:text-gray-300 font-mono text-[11px] hover:border-indigo-400 hover:text-indigo-600 transition">
+                <span class="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold leading-none mb-0.5">Hal</span>
+                <span class="font-bold text-xs leading-none text-indigo-600 dark:text-indigo-400">${pageNum}</span>
+                <span class="text-[9px] text-gray-400 dark:text-gray-500 leading-none mt-0.5">/ ${totalPages}</span>
+            </div>
+            ${isSuppressedFirstPage ? '<span class="mt-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-sans shadow-2xs">Sampul</span>' : ''}
+        `;
+        if (this.showPageNumber === false) {
+            sideIndicator.style.display = 'none';
+        }
+        sheet.appendChild(sideIndicator);
+
+        // Side Header & Footer Quick Action Badges (Outside Document Canvas)
+        const sideActions = document.createElement('div');
+        sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col items-center gap-1 pointer-events-auto';
+        sideActions.innerHTML = `
+            <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isHeaderApplied ? 'Header Aktif: ' + this.escapeHtml(this.customHeaderText) : 'Header: Belum diterapkan (Klik untuk mengatur)'}">
+                <span class="text-xs">🏷️</span>
+            </button>
+            <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] ${isHeaderApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isHeaderApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
+        `;
+        sheet.appendChild(sideActions);
+
+        const sideFooterAction = document.createElement('div');
+        sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex flex-col items-center gap-1';
+        sideFooterAction.innerHTML = `
+            <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isFooterApplied ? 'Footer Aktif: ' + this.escapeHtml(this.customFooterText) : 'Footer: Belum diterapkan (Klik untuk mengatur)'}">
+                <span class="text-xs">📋</span>
+            </button>
+            <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] ${isFooterApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isFooterApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
+        `;
+        sheet.appendChild(sideFooterAction);
+
+        return sheet;
+    }
+
+    /**
+     * Create a page gap separator element.
+     */
+    createPageGapElement(nextPageNum) {
+        const gap = document.createElement('div');
+        gap.className = 'page-sheet-gap select-none no-print';
+        gap.innerHTML = `<span class="page-gap-indicator">Pemisah Lembar A4 (Halaman ${nextPageNum})</span>`;
+        return gap;
+    }
+
+    /**
+     * Show or update progressive chunk loader indicator.
+     */
+    showChunkProgress(current, total) {
+        let container = document.getElementById('document-chunk-progress');
+        if (!container && this.pagesWrapper) {
+            container = document.createElement('div');
+            container.id = 'document-chunk-progress';
+            container.className = 'mx-6 sm:mx-14 mt-2 mb-2 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white/95 dark:bg-gray-800/95 shadow-md flex items-center justify-between gap-3 text-xs transition-all no-print z-20';
+            container.innerHTML = `
+                <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                    <span class="inline-block animate-spin text-sm" role="status" aria-label="Loading">⏳</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <span id="chunk-progress-label">Memuat lembar dokumen secara bertahap...</span>
+                            <span id="chunk-progress-percent" class="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">0%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div id="chunk-progress-bar" class="h-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-100 ease-out rounded-full" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <span id="chunk-progress-page-count" class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900 whitespace-nowrap">Halaman 1 / 1</span>
+            `;
+            if (this.pagesWrapper.parentNode) {
+                this.pagesWrapper.parentNode.insertBefore(container, this.pagesWrapper);
+            }
+        }
+        if (!container) return;
+
+        const percent = Math.min(100, Math.round((current / total) * 100));
+        const labelEl = document.getElementById('chunk-progress-label');
+        const percentEl = document.getElementById('chunk-progress-percent');
+        const barEl = document.getElementById('chunk-progress-bar');
+        const countEl = document.getElementById('chunk-progress-page-count');
+
+        if (labelEl) labelEl.textContent = `Memuat lembar dokumen secara bertahap (${current} dari ${total} halaman)...`;
+        if (percentEl) percentEl.textContent = `${percent}%`;
+        if (barEl) barEl.style.width = `${percent}%`;
+        if (countEl) countEl.textContent = `Halaman ${current} / ${total}`;
+
+        container.classList.remove('hidden');
+    }
+
+    /**
+     * Hide progressive chunk loader indicator.
+     */
+    hideChunkProgress() {
+        const container = document.getElementById('document-chunk-progress');
+        if (container) {
+            const barEl = document.getElementById('chunk-progress-bar');
+            if (barEl) barEl.style.width = '100%';
+            setTimeout(() => {
+                container.classList.add('hidden');
+            }, 300);
+        }
+    }
+
+    /**
+     * Ensure animated loading footer marker exists at the bottom of pages wrapper during progressive chunk rendering.
+     */
+    ensureChunkLoadingFooter(nextPage, total) {
+        if (!this.pagesWrapper || nextPage > total) return;
+        let footerMarker = document.getElementById('chunk-loading-footer');
+        if (!footerMarker) {
+            footerMarker = document.createElement('div');
+            footerMarker.id = 'chunk-loading-footer';
+            footerMarker.className = 'page-chunk-loading-marker my-4 py-2 px-4 rounded-full bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 text-center text-[11px] text-indigo-600 dark:text-indigo-400 font-medium select-none no-print flex items-center justify-center gap-2 shadow-xs';
+            this.pagesWrapper.appendChild(footerMarker);
+        }
+        footerMarker.innerHTML = `<span class="inline-block animate-spin text-xs">⏳</span> <span>Memuat lembar dokumen dari atas ke bawah: Halaman ${nextPage} dari ${total}...</span>`;
+    }
+
+    /**
+     * Update or remove loading footer marker.
+     */
+    updateChunkLoadingFooter(nextPage, total) {
+        const footerMarker = document.getElementById('chunk-loading-footer');
+        if (footerMarker) {
+            if (nextPage > total) {
+                footerMarker.remove();
+            } else {
+                footerMarker.innerHTML = `<span class="inline-block animate-spin text-xs">⏳</span> <span>Memuat lembar dokumen dari atas ke bawah: Halaman ${nextPage} dari ${total}...</span>`;
+            }
+        }
+    }
+
+    /**
+     * Remove chunk loading footer marker.
+     */
+    removeChunkLoadingFooter() {
+        const footerMarker = document.getElementById('chunk-loading-footer');
+        if (footerMarker) {
+            footerMarker.remove();
+        }
+    }
+
+    /**
+     * Synchronously flush any pending chunks into the DOM immediately.
+     */
+    flushChunkQueue() {
+        if (!this.pendingChunks || !this.isChunkLoading) return;
+        const { sessionId, pages, totalPages, docTitle, currentIndex } = this.pendingChunks;
+        if (this.currentChunkSession !== sessionId) return;
+
+        this.removeChunkLoadingFooter();
+
+        for (let i = currentIndex; i < totalPages; i++) {
+            const pageNum = i + 1;
+            const p = pages[i];
+            const gap = this.createPageGapElement(pageNum);
+            const sheet = this.createPageSheetElement(p, pageNum, totalPages, docTitle);
+            this.pagesWrapper.appendChild(gap);
+            this.pagesWrapper.appendChild(sheet);
+        }
+
+        this.pendingChunks = null;
+        this.isChunkLoading = false;
+        this.isPaginating = false;
+        this.hideChunkProgress();
+        this.updateRulerMarkersForPreset(this.currentMarginPreset);
+        this.updateStats();
+        this.updateOutline();
+    }
+
+    /**
+     * Render paginated pages into this.pagesWrapper with a progressive chunk system (from top to bottom).
+     * Page 1 is rendered immediately for instant interaction, and subsequent pages stream downward chunk by chunk.
+     */
+    renderPaginatedDocument(html, options = {}) {
+        if (!this.pagesWrapper) return Promise.resolve({ totalPages: 0, completedPages: 0 });
+
+        // Increment session ID to cancel any pending chunk rendering from previous call
+        const sessionId = ++this.currentChunkSession;
         this.isPaginating = true;
 
         const pages = this.paginateHtml(html);
         const totalPages = pages.length;
+        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
 
         // Clear existing sheets and gaps
         this.pagesWrapper.innerHTML = '';
 
-        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
+        // Synchronous execution mode: useful for unit tests, exports, or single-page documents
+        if (options.sync || totalPages <= 1) {
+            pages.forEach((p, idx) => {
+                const pageNum = idx + 1;
+                const sheet = this.createPageSheetElement(p, pageNum, totalPages, docTitle);
+                this.pagesWrapper.appendChild(sheet);
+                if (pageNum < totalPages) {
+                    this.pagesWrapper.appendChild(this.createPageGapElement(pageNum + 1));
+                }
+            });
 
-        pages.forEach((p, idx) => {
-            const pageNum = idx + 1;
-            const sheet = document.createElement('article');
-            sheet.className = 'document-page-sheet relative flex flex-col justify-between shadow-2xl';
-            sheet.setAttribute('data-page-index', pageNum);
-            sheet.setAttribute('id', pageNum === 1 ? 'document-page-canvas' : `document-page-${pageNum}`);
+            this.updateRulerMarkersForPreset(this.currentMarginPreset);
+            this.isPaginating = false;
+            this.isChunkLoading = false;
+            this.pendingChunks = null;
+            this.hideChunkProgress();
+            this.updateStats();
+            this.updateOutline();
 
-            // Apply full page setup (paper size, orientation, and margins)
-            this.applyPageSetupToSheet(sheet, pageNum);
-
-            // Apply dark mode sheet if active
-            const isDark = document.getElementById('btn-toggle-dark-sheet')?.classList.contains('active-dark') || false;
-            if (isDark) {
-                sheet.classList.add('canvas-dark-sheet');
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(totalPages);
             }
 
-            // Header (Pristine running header without synthetic in-content markers)
-            const isSuppressedFirstPage = this.differentFirstPage && pageNum === 1;
-            const isHeaderApplied = Boolean(this.customHeaderText && this.customHeaderText.trim());
-            const header = document.createElement('header');
-            header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
-            header.setAttribute('title', isHeaderApplied ? `Header Aktif: ${this.customHeaderText}` : 'Header: Belum diterapkan (Klik untuk mengatur)');
-            header.setAttribute('data-action', 'header-footer-modal');
+            return Promise.resolve({ totalPages, completedPages: totalPages, sessionId });
+        }
 
-            const headerLeft = this.customHeaderText || '';
-            const headerRight = p.chapterName || '';
-            header.innerHTML = `
-                <span class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
-                <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%] text-right" title="${this.escapeHtml(headerRight)}">${this.escapeHtml(headerRight)}</span>
-            `;
-            sheet.appendChild(header);
+        // Chunk / progressive loading mode:
+        // Render Page 1 immediately so user sees and can interact with the top page without blocking
+        this.isChunkLoading = true;
+        this.showChunkProgress(1, totalPages);
 
-            // Body
-            const body = document.createElement('div');
-            body.className = 'page-sheet-body flex-1 outline-none';
-            if (this.currentFontFamily) {
-                body.style.fontFamily = this.currentFontFamily;
-            }
-            if (this.currentFontSize) {
-                body.style.fontSize = this.currentFontSize;
-            }
-            if (this.currentLineSpacing) {
-                body.style.lineHeight = this.currentLineSpacing;
-            }
-            body.setAttribute('contenteditable', 'true');
-            body.setAttribute('spellcheck', 'true');
-            body.setAttribute('role', 'textbox');
-            body.setAttribute('aria-multiline', 'true');
-            body.setAttribute('data-page-number', pageNum);
-            if (pageNum === 1) {
-                body.setAttribute('id', 'document-editor');
-                this.editorEl = body;
-                this.canvasEl = sheet;
-            }
-            body.innerHTML = p.contentHtml;
-            this.renderLatexInContainer(body);
-            sheet.appendChild(body);
+        const firstPage = pages[0];
+        const firstSheet = this.createPageSheetElement(firstPage, 1, totalPages, docTitle);
+        this.pagesWrapper.appendChild(firstSheet);
 
-            // Footer (Clean document footer without synthetic page marks or 'halaman dari')
-            const isFooterApplied = Boolean(this.customFooterText && this.customFooterText.trim());
-            const footer = document.createElement('footer');
-            footer.className = `page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
-            footer.setAttribute('title', isFooterApplied ? `Footer Aktif: ${this.customFooterText}` : 'Footer: Belum diterapkan (Klik untuk mengatur)');
-            footer.setAttribute('data-action', 'header-footer-modal');
+        // Keep track of pending pages to render in chunks from top to bottom
+        this.pendingChunks = {
+            sessionId,
+            pages,
+            totalPages,
+            docTitle,
+            currentIndex: 1, // index for page 2
+        };
 
-            const footerText = this.customFooterText || '';
-            footer.innerHTML = `
-                <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[85%]" title="${this.escapeHtml(footerText)}">${this.escapeHtml(footerText)}</span>
-            `;
-            sheet.appendChild(footer);
+        // Add loading footer marker at the bottom of wrapper
+        this.ensureChunkLoadingFooter(2, totalPages);
 
-            // Side Page Indicator (Outside Document Canvas)
-            const sideIndicator = document.createElement('div');
-            sideIndicator.className = 'page-side-indicator absolute -left-12 sm:-left-16 top-6 select-none no-print pointer-events-auto flex flex-col items-center';
-            sideIndicator.title = `Lembar Halaman ${pageNum} dari ${totalPages}`;
-            sideIndicator.innerHTML = `
-                <div class="flex flex-col items-center justify-center min-w-[38px] px-2 py-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-600 dark:text-gray-300 font-mono text-[11px] hover:border-indigo-400 hover:text-indigo-600 transition">
-                    <span class="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold leading-none mb-0.5">Hal</span>
-                    <span class="font-bold text-xs leading-none text-indigo-600 dark:text-indigo-400">${pageNum}</span>
-                    <span class="text-[9px] text-gray-400 dark:text-gray-500 leading-none mt-0.5">/ ${totalPages}</span>
-                </div>
-                ${isSuppressedFirstPage ? '<span class="mt-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-sans shadow-2xs">Sampul</span>' : ''}
-            `;
-            if (this.showPageNumber === false) {
-                sideIndicator.style.display = 'none';
-            }
-            sheet.appendChild(sideIndicator);
-
-            // Side Header & Footer Quick Action Badges (Outside Document Canvas)
-            const sideActions = document.createElement('div');
-            sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col items-center gap-1 pointer-events-auto';
-            sideActions.innerHTML = `
-                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isHeaderApplied ? 'Header Aktif: ' + this.escapeHtml(this.customHeaderText) : 'Header: Belum diterapkan (Klik untuk mengatur)'}">
-                    <span class="text-xs">🏷️</span>
-                </button>
-                <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] ${isHeaderApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isHeaderApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
-            `;
-            sheet.appendChild(sideActions);
-
-            const sideFooterAction = document.createElement('div');
-            sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex flex-col items-center gap-1';
-            sideFooterAction.innerHTML = `
-                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isFooterApplied ? 'Footer Aktif: ' + this.escapeHtml(this.customFooterText) : 'Footer: Belum diterapkan (Klik untuk mengatur)'}">
-                    <span class="text-xs">📋</span>
-                </button>
-                <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] ${isFooterApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isFooterApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
-            `;
-            sheet.appendChild(sideFooterAction);
-
-            this.pagesWrapper.appendChild(sheet);
-
-            // Page gap between sheets
-            if (pageNum < totalPages) {
-                const gap = document.createElement('div');
-                gap.className = 'page-sheet-gap select-none no-print';
-                gap.innerHTML = `<span class="page-gap-indicator">Pemisah Lembar A4 (Halaman ${pageNum + 1})</span>`;
-                this.pagesWrapper.appendChild(gap);
-            }
-        });
-
-        // Ensure ruler markers match preset
-        this.updateRulerMarkersForPreset(this.currentMarginPreset);
-
-        this.isPaginating = false;
-
-        // Update stats and outline
+        // Notify initial page rendered
         this.updateStats();
         this.updateOutline();
+
+        return new Promise((resolve) => {
+            const renderNextChunk = () => {
+                // If a new rendering session has started, abort this one
+                if (this.currentChunkSession !== sessionId) {
+                    this.removeChunkLoadingFooter();
+                    resolve({ aborted: true, sessionId });
+                    return;
+                }
+
+                if (!this.pendingChunks || this.pendingChunks.sessionId !== sessionId) {
+                    this.removeChunkLoadingFooter();
+                    resolve({ aborted: true, sessionId });
+                    return;
+                }
+
+                const { pages, totalPages, docTitle, currentIndex } = this.pendingChunks;
+
+                if (currentIndex >= totalPages) {
+                    // All pages have been rendered
+                    this.removeChunkLoadingFooter();
+                    this.isPaginating = false;
+                    this.isChunkLoading = false;
+                    this.pendingChunks = null;
+                    this.updateRulerMarkersForPreset(this.currentMarginPreset);
+                    this.hideChunkProgress();
+                    this.updateStats();
+                    this.updateOutline();
+
+                    if (typeof options.onComplete === 'function') {
+                        options.onComplete(totalPages);
+                    }
+                    window.dispatchEvent(new CustomEvent('document:chunk-complete', {
+                        detail: { totalPages, sessionId }
+                    }));
+
+                    resolve({ totalPages, completedPages: totalPages, sessionId });
+                    return;
+                }
+
+                // Render next chunk: 1 page per chunk (one by one from top to bottom)
+                const pageNum = currentIndex + 1;
+                const p = pages[currentIndex];
+
+                const gap = this.createPageGapElement(pageNum);
+                const footerMarker = document.getElementById('chunk-loading-footer');
+                if (footerMarker && footerMarker.parentNode === this.pagesWrapper) {
+                    this.pagesWrapper.insertBefore(gap, footerMarker);
+                } else {
+                    this.pagesWrapper.appendChild(gap);
+                }
+
+                const sheet = this.createPageSheetElement(p, pageNum, totalPages, docTitle);
+                if (footerMarker && footerMarker.parentNode === this.pagesWrapper) {
+                    this.pagesWrapper.insertBefore(sheet, footerMarker);
+                } else {
+                    this.pagesWrapper.appendChild(sheet);
+                }
+
+                this.pendingChunks.currentIndex = currentIndex + 1;
+                this.showChunkProgress(pageNum, totalPages);
+                this.updateChunkLoadingFooter(pageNum + 1, totalPages);
+
+                if (typeof options.onProgress === 'function') {
+                    options.onProgress(pageNum, totalPages);
+                }
+                window.dispatchEvent(new CustomEvent('document:chunk-progress', {
+                    detail: { currentPage: pageNum, totalPages, sessionId }
+                }));
+
+                // Schedule next chunk sequentially from top to bottom
+                const delay = typeof options.delayMs === 'number' ? options.delayMs : 8;
+                if (window.requestAnimationFrame) {
+                    window.requestAnimationFrame(() => {
+                        setTimeout(renderNextChunk, delay);
+                    });
+                } else {
+                    setTimeout(renderNextChunk, Math.max(10, delay));
+                }
+            };
+
+            // Start loading from page 2 downward
+            const initialDelay = typeof options.delayMs === 'number' ? options.delayMs : 8;
+            if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(() => setTimeout(renderNextChunk, initialDelay));
+            } else {
+                setTimeout(renderNextChunk, Math.max(10, initialDelay));
+            }
+        });
     }
 
     formatPageNumber(pageNum, totalPages) {
@@ -4711,6 +4977,9 @@ ${entriesHtml}    </div>
     }
 
     async exportAs(format) {
+        if (this.isChunkLoading && this.pendingChunks) {
+            this.flushChunkQueue();
+        }
         const title = this.getTitle();
         const content = this.getContent();
 
@@ -4870,6 +5139,9 @@ ${entriesHtml}    </div>
     }
 
     saveToLocalStorage() {
+        if (this.isChunkLoading && this.pendingChunks) {
+            this.flushChunkQueue();
+        }
         try {
             const data = {
                 title: this.getTitle(),
@@ -4973,6 +5245,9 @@ ${entriesHtml}    </div>
     }
 
     getContent() {
+        if (this.isChunkLoading && this.pendingChunks) {
+            this.flushChunkQueue();
+        }
         const bodies = this.getAllEditorBodies();
         if (bodies.length === 0) {
             return this.editorEl ? this.editorEl.innerHTML : '';
@@ -4987,18 +5262,21 @@ ${entriesHtml}    </div>
             .join('\n<div class="page-break my-8 border-b-2 border-dashed border-gray-400 dark:border-gray-600 text-center py-2 select-none" data-page-break="true"><span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs text-gray-500 font-mono">Pemisah Halaman</span></div>\n');
     }
 
-    setContent(html, record = true) {
+    setContent(html, record = true, options = {}) {
         if (this.pagesWrapper) {
-            this.renderPaginatedDocument(html);
+            const renderPromise = this.renderPaginatedDocument(html, options);
             if (record) this.recordHistory();
             this.updateStats();
             this.updateOutline();
+            return renderPromise;
         } else if (this.editorEl) {
             this.editorEl.innerHTML = html;
             if (record) this.recordHistory();
             this.updateStats();
             this.updateOutline();
+            return Promise.resolve({ totalPages: 1, completedPages: 1 });
         }
+        return Promise.resolve({ totalPages: 0, completedPages: 0 });
     }
 
     setFormatBadge(format) {
