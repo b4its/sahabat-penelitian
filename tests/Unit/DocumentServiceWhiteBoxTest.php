@@ -701,6 +701,39 @@ test('white-box: exportDocument embeds Word MsoHeader and MsoFooter when headerT
         ->and($exported['content'])->not->toContain('Halaman <span style="mso-field-code: PAGE "></span> dari');
 });
 
+test('white-box: exportDocument omits MsoHeader and MsoFooter when headerText and footerText are omitted or empty', function () {
+    $exported = $this->service->exportDocument(
+        'Naskah Bebas Header',
+        '<p>Konten tanpa header footer</p>',
+        'docx',
+        null,
+        null
+    );
+
+    expect($exported['mime'])->toBe('application/msword; charset=UTF-8')
+        ->and($exported['content'])->not->toContain('mso-header: h1;')
+        ->and($exported['content'])->not->toContain('mso-footer: f1;')
+        ->and($exported['content'])->not->toContain('id="h1"')
+        ->and($exported['content'])->not->toContain('id="f1"')
+        ->and($exported['content'])->not->toContain('MsoHeader')
+        ->and($exported['content'])->not->toContain('MsoFooter')
+        ->and($exported['content'])->not->toContain('Dokumen VelScribe Wordcraft');
+
+    // Also verify when empty or whitespace strings are passed
+    $exportedEmpty = $this->service->exportDocument(
+        'Naskah String Kosong',
+        '<p>Konten teks biasa</p>',
+        'doc',
+        '   ',
+        ''
+    );
+
+    expect($exportedEmpty['content'])->not->toContain('mso-header: h1;')
+        ->and($exportedEmpty['content'])->not->toContain('mso-footer: f1;')
+        ->and($exportedEmpty['content'])->not->toContain('id="h1"')
+        ->and($exportedEmpty['content'])->not->toContain('id="f1"');
+});
+
 test('white-box: DocxImporter::formatFontFamily correctly assigns sans-serif, monospace, and serif fallbacks', function () {
     // Sans-serif fonts
     expect(DocxImporter::formatFontFamily('Arial'))->toBe("'Arial', sans-serif")

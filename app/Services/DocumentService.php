@@ -1151,8 +1151,31 @@ class DocumentService
 
             case 'docx':
             case 'doc':
-                $headerHtml = ! empty($headerText) ? htmlspecialchars($headerText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $footerHtml = ! empty($footerText) ? htmlspecialchars($footerText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 'Dokumen VelScribe Wordcraft';
+                $hasCustomHeader = ! empty($headerText) && trim($headerText) !== '';
+                $hasCustomFooter = ! empty($footerText) && trim($footerText) !== '';
+
+                $headerHtml = $hasCustomHeader ? htmlspecialchars(trim($headerText), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
+                $footerHtml = $hasCustomFooter ? htmlspecialchars(trim($footerText), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
+
+                $msoHeaderCss = $hasCustomHeader ? "mso-header-margin: 20mm;\n    mso-header: h1;" : '';
+                $msoFooterCss = $hasCustomFooter ? "mso-footer-margin: 20mm;\n    mso-footer: f1;" : '';
+
+                $msoHeaderBlock = $hasCustomHeader ? <<<HTML
+    <div style="mso-element:header" id="h1">
+        <p class="MsoHeader">
+            <span style="float:left;">{$headerHtml}</span>
+            <span style="clear:both; display:block;"></span>
+        </p>
+    </div>
+HTML : '';
+
+                $msoFooterBlock = $hasCustomFooter ? <<<HTML
+    <div style="mso-element:footer" id="f1">
+        <p class="MsoFooter">
+            <span>{$footerHtml}</span>
+        </p>
+    </div>
+HTML : '';
 
                 $docxBody = preg_replace(
                     '/<div[^>]*class=["\'][^"\']*column-break[^"\']*["\'][^>]*>.*?<\/div>/is',
@@ -1164,6 +1187,36 @@ class DocumentService
                     '<br clear="all" style="page-break-before:always;mso-break-type:section-break" />',
                     $docxBody
                 );
+
+                $msoHeaderStyle = $hasCustomHeader ? <<<CSS
+table.MsoHeaderTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+p.MsoHeader, div.MsoHeader {
+    margin: 0;
+    font-size: 10pt;
+    font-family: 'Times New Roman', serif;
+    color: #666666;
+    border-bottom: 1px solid #d1d5db;
+    padding-bottom: 4pt;
+}
+CSS : '';
+
+                $msoFooterStyle = $hasCustomFooter ? <<<CSS
+table.MsoFooterTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+p.MsoFooter, div.MsoFooter {
+    margin: 0;
+    font-size: 10pt;
+    font-family: 'Times New Roman', serif;
+    color: #666666;
+    border-top: 1px solid #d1d5db;
+    padding-top: 4pt;
+}
+CSS : '';
 
                 $wordContent = <<<XML
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -1184,10 +1237,8 @@ class DocumentService
     margin: {$marginStr};
     mso-page-orientation: {$msoOrientation};
     {$mirrorMarginsCss}
-    mso-header-margin: 20mm;
-    mso-footer-margin: 20mm;
-    mso-header: h1;
-    mso-footer: f1;
+    {$msoHeaderCss}
+    {$msoFooterCss}
 }
 div.Section1 {
     page: Section1;
@@ -1197,26 +1248,8 @@ div.Section1 {
     {$vertAlignCss}
 }
 {$lineNumbersCss}
-table.MsoHeaderTable, table.MsoFooterTable {
-    width: 100%;
-    border-collapse: collapse;
-}
-p.MsoHeader, div.MsoHeader {
-    margin: 0;
-    font-size: 10pt;
-    font-family: 'Times New Roman', serif;
-    color: #666666;
-    border-bottom: 1px solid #d1d5db;
-    padding-bottom: 4pt;
-}
-p.MsoFooter, div.MsoFooter {
-    margin: 0;
-    font-size: 10pt;
-    font-family: 'Times New Roman', serif;
-    color: #666666;
-    border-top: 1px solid #d1d5db;
-    padding-top: 4pt;
-}
+{$msoHeaderStyle}
+{$msoFooterStyle}
 body {
     font-family: 'Times New Roman', 'Calibri', serif;
     font-size: 12pt;
@@ -1274,21 +1307,11 @@ th {
 <body>
 <div class="Section1">
     {$watermarkHtml}
-    <div style="mso-element:header" id="h1">
-        <p class="MsoHeader">
-            <span style="float:left;">{$headerHtml}</span>
-            <span style="float:right; font-style:italic;">VelScribe Wordcraft</span>
-            <span style="clear:both; display:block;"></span>
-        </p>
-    </div>
+    {$msoHeaderBlock}
 
     {$docxBody}
 
-    <div style="mso-element:footer" id="f1">
-        <p class="MsoFooter">
-            <span>{$footerHtml}</span>
-        </p>
-    </div>
+    {$msoFooterBlock}
 </div>
 </body>
 </html>

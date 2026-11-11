@@ -1295,8 +1295,8 @@ export class UiController {
         const startNumInput = document.getElementById('hf-start-page-input');
 
         const populateFields = () => {
-            if (headerInput) headerInput.value = this.engine.customHeaderText || this.engine.getTitle();
-            if (footerInput) footerInput.value = this.engine.customFooterText || 'Dokumen VelScribe Wordcraft';
+            if (headerInput) headerInput.value = this.engine.customHeaderText || '';
+            if (footerInput) footerInput.value = this.engine.customFooterText || '';
             if (formatSelect) formatSelect.value = this.engine.pageNumberFormat || 'full';
             if (diffFirstToggle) diffFirstToggle.checked = Boolean(this.engine.differentFirstPage);
             if (showNumToggle) showNumToggle.checked = this.engine.showPageNumber !== false;

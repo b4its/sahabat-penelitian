@@ -713,12 +713,13 @@ export class DocumentEngine {
 
             // Header (Pristine running header without synthetic in-content markers)
             const isSuppressedFirstPage = this.differentFirstPage && pageNum === 1;
+            const isHeaderApplied = Boolean(this.customHeaderText && this.customHeaderText.trim());
             const header = document.createElement('header');
             header.className = `page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
-            header.setAttribute('title', 'Klik untuk menyesuaikan Header & Footer');
+            header.setAttribute('title', isHeaderApplied ? `Header Aktif: ${this.customHeaderText}` : 'Header: Belum diterapkan (Klik untuk mengatur)');
             header.setAttribute('data-action', 'header-footer-modal');
 
-            const headerLeft = this.customHeaderText || docTitle;
+            const headerLeft = this.customHeaderText || '';
             const headerRight = p.chapterName || '';
             header.innerHTML = `
                 <span class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300" title="${this.escapeHtml(headerLeft)}">${this.escapeHtml(headerLeft)}</span>
@@ -753,9 +754,10 @@ export class DocumentEngine {
             sheet.appendChild(body);
 
             // Footer (Clean document footer without synthetic page marks or 'halaman dari')
+            const isFooterApplied = Boolean(this.customFooterText && this.customFooterText.trim());
             const footer = document.createElement('footer');
             footer.className = `page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1 ${isSuppressedFirstPage ? 'opacity-30' : ''}`;
-            footer.setAttribute('title', 'Klik untuk menyesuaikan Header & Footer');
+            footer.setAttribute('title', isFooterApplied ? `Footer Aktif: ${this.customFooterText}` : 'Footer: Belum diterapkan (Klik untuk mengatur)');
             footer.setAttribute('data-action', 'header-footer-modal');
 
             const footerText = this.customFooterText || '';
@@ -781,22 +783,24 @@ export class DocumentEngine {
             }
             sheet.appendChild(sideIndicator);
 
-            // Side Header & Footer Quick Action Buttons (Outside Document Canvas)
+            // Side Header & Footer Quick Action Badges (Outside Document Canvas)
             const sideActions = document.createElement('div');
-            sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col gap-2 pointer-events-auto';
+            sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col items-center gap-1 pointer-events-auto';
             sideActions.innerHTML = `
-                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Header Dokumen">
+                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isHeaderApplied ? 'Header Aktif: ' + this.escapeHtml(this.customHeaderText) : 'Header: Belum diterapkan (Klik untuk mengatur)'}">
                     <span class="text-xs">🏷️</span>
                 </button>
+                <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] ${isHeaderApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isHeaderApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
             `;
             sheet.appendChild(sideActions);
 
             const sideFooterAction = document.createElement('div');
-            sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto';
+            sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex flex-col items-center gap-1';
             sideFooterAction.innerHTML = `
-                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Footer Dokumen">
+                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isFooterApplied ? 'Footer Aktif: ' + this.escapeHtml(this.customFooterText) : 'Footer: Belum diterapkan (Klik untuk mengatur)'}">
                     <span class="text-xs">📋</span>
                 </button>
+                <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] ${isFooterApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isFooterApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
             `;
             sheet.appendChild(sideFooterAction);
 
@@ -923,6 +927,7 @@ export class DocumentEngine {
 
             const isSuppressedFirstPage = this.differentFirstPage && pageNum === 1;
 
+            const isHeaderApplied = Boolean(this.customHeaderText && this.customHeaderText.trim());
             const headerEl = sheet.querySelector('.page-sheet-header');
             if (headerEl) {
                 headerEl.classList.remove('invisible');
@@ -931,11 +936,12 @@ export class DocumentEngine {
                 } else {
                     headerEl.classList.remove('opacity-30');
                 }
+                headerEl.setAttribute('title', isHeaderApplied ? `Header Aktif: ${this.customHeaderText}` : 'Header: Belum diterapkan (Klik untuk mengatur)');
             }
 
             const headerTitle = sheet.querySelector('.header-doc-title');
             if (headerTitle) {
-                const leftText = this.customHeaderText || docTitle;
+                const leftText = this.customHeaderText || '';
                 headerTitle.textContent = leftText;
                 headerTitle.title = leftText;
             }
@@ -946,6 +952,7 @@ export class DocumentEngine {
                 headerChapter.title = activeChapter;
             }
 
+            const isFooterApplied = Boolean(this.customFooterText && this.customFooterText.trim());
             const footerEl = sheet.querySelector('.page-sheet-footer');
             if (footerEl) {
                 footerEl.classList.remove('invisible');
@@ -954,6 +961,7 @@ export class DocumentEngine {
                 } else {
                     footerEl.classList.remove('opacity-30');
                 }
+                footerEl.setAttribute('title', isFooterApplied ? `Footer Aktif: ${this.customFooterText}` : 'Footer: Belum diterapkan (Klik untuk mengatur)');
             }
 
             const footerTitle = sheet.querySelector('.footer-doc-title');
@@ -990,28 +998,32 @@ export class DocumentEngine {
                 sideIndicator.style.display = '';
             }
 
-            // Side quick action buttons (outside document content)
-            if (!sheet.querySelector('.page-side-actions')) {
-                const sideActions = document.createElement('div');
-                sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col gap-2 pointer-events-auto';
-                sideActions.innerHTML = `
-                    <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Header Dokumen">
-                        <span class="text-xs">🏷️</span>
-                    </button>
-                `;
+            // Side quick action badges (outside document canvas)
+            let sideActions = sheet.querySelector('.page-side-actions');
+            if (!sideActions) {
+                sideActions = document.createElement('div');
+                sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col items-center gap-1 pointer-events-auto';
                 sheet.appendChild(sideActions);
             }
+            sideActions.innerHTML = `
+                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isHeaderApplied ? 'Header Aktif: ' + this.escapeHtml(this.customHeaderText) : 'Header: Belum diterapkan (Klik untuk mengatur)'}">
+                    <span class="text-xs">🏷️</span>
+                </button>
+                <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] ${isHeaderApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isHeaderApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
+            `;
 
-            if (!sheet.querySelector('.page-side-footer-action')) {
-                const sideFooterAction = document.createElement('div');
-                sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto';
-                sideFooterAction.innerHTML = `
-                    <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Footer Dokumen">
-                        <span class="text-xs">📋</span>
-                    </button>
-                `;
+            let sideFooterAction = sheet.querySelector('.page-side-footer-action');
+            if (!sideFooterAction) {
+                sideFooterAction = document.createElement('div');
+                sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex flex-col items-center gap-1';
                 sheet.appendChild(sideFooterAction);
             }
+            sideFooterAction.innerHTML = `
+                <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isFooterApplied ? 'Footer Aktif: ' + this.escapeHtml(this.customFooterText) : 'Footer: Belum diterapkan (Klik untuk mengatur)'}">
+                    <span class="text-xs">📋</span>
+                </button>
+                <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] ${isFooterApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isFooterApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
+            `;
         });
 
         if (this.pagesWrapper) {
@@ -1244,6 +1256,11 @@ export class DocumentEngine {
      * ------------------------------------------------------------- */
 
     async loadLocalFile(file) {
+        // Reset header & footer state so previous document state does not leak if file has no header/footer
+        this.customHeaderText = '';
+        this.customFooterText = '';
+        this.differentFirstPage = false;
+
         const filename = file.name;
         const extension = filename.split('.').pop().toLowerCase();
         let contentHtml = '';
@@ -4289,8 +4306,7 @@ ${entriesHtml}    </div>
 
         const header = document.createElement('header');
         header.className = 'page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none';
-        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
-        const hLeft = this.customHeaderText || docTitle;
+        const hLeft = this.customHeaderText || '';
         header.innerHTML = `
             <span class="header-doc-title truncate max-w-[55%] font-medium" title="${this.escapeHtml(hLeft)}">${this.escapeHtml(hLeft)}</span>
             <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%]"></span>
@@ -4831,9 +4847,15 @@ ${entriesHtml}    </div>
         } else {
             mime = 'application/msword; charset=utf-8';
             ext = 'doc';
-            const hText = this.customHeaderText || title;
-            const fText = this.customFooterText || 'Dokumen VelScribe Wordcraft';
-            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title><style>@page Section1{size:${pageSizeStr};margin:${marginStr};mso-page-orientation:${msoOrient};mso-header:h1;mso-footer:f1;}div.Section1{page:Section1;}p.MsoHeader{border-bottom:1px solid #ccc;padding-bottom:4px;font-size:10pt;color:#666;}p.MsoFooter{border-top:1px solid #ccc;padding-top:4px;font-size:10pt;color:#666;}body{font-family:'Times New Roman',serif;font-size:12pt;line-height:${lineSpacing};}h1{text-align:center;}p{text-align:justify;margin-top:${spaceBefore};margin-bottom:${spaceAfter};line-height:${lineSpacing};text-indent:1.25cm;}</style></head><body><div class="Section1"><div style="mso-element:header" id="h1"><p class="MsoHeader">${this.escapeHtml(hText)}</p></div>${htmlContent}<div style="mso-element:footer" id="f1"><p class="MsoFooter">${this.escapeHtml(fText)}</p></div></div></body></html>`;
+            const hasHeader = Boolean(this.customHeaderText && this.customHeaderText.trim());
+            const hasFooter = Boolean(this.customFooterText && this.customFooterText.trim());
+            const hText = hasHeader ? this.escapeHtml(this.customHeaderText.trim()) : '';
+            const fText = hasFooter ? this.escapeHtml(this.customFooterText.trim()) : '';
+            const msoHeaderRule = hasHeader ? 'mso-header:h1;' : '';
+            const msoFooterRule = hasFooter ? 'mso-footer:f1;' : '';
+            const headerBlock = hasHeader ? `<div style="mso-element:header" id="h1"><p class="MsoHeader">${hText}</p></div>` : '';
+            const footerBlock = hasFooter ? `<div style="mso-element:footer" id="f1"><p class="MsoFooter">${fText}</p></div>` : '';
+            content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title><style>@page Section1{size:${pageSizeStr};margin:${marginStr};mso-page-orientation:${msoOrient};${msoHeaderRule}${msoFooterRule}}div.Section1{page:Section1;}p.MsoHeader{border-bottom:1px solid #ccc;padding-bottom:4px;font-size:10pt;color:#666;}p.MsoFooter{border-top:1px solid #ccc;padding-top:4px;font-size:10pt;color:#666;}body{font-family:'Times New Roman',serif;font-size:12pt;line-height:${lineSpacing};}h1{text-align:center;}p{text-align:justify;margin-top:${spaceBefore};margin-bottom:${spaceAfter};line-height:${lineSpacing};text-indent:1.25cm;}</style></head><body><div class="Section1">${headerBlock}${htmlContent}${footerBlock}</div></body></html>`;
         }
 
         const blob = new Blob([content], { type: mime });
@@ -4937,16 +4959,17 @@ ${entriesHtml}    </div>
         if (this.titleInput) {
             this.titleInput.value = title;
         }
-        // Also update headers across sheets
-        const sheets = this.getAllPageSheets();
-        sheets.forEach(sheet => {
-            const hTitle = sheet.querySelector('.header-doc-title');
-            if (hTitle) {
-                const text = this.customHeaderText || title;
-                hTitle.textContent = text;
-                hTitle.title = text;
-            }
-        });
+        // Do not force document title into header if no custom header has been set
+        if (this.customHeaderText && this.customHeaderText.trim()) {
+            const sheets = this.getAllPageSheets();
+            sheets.forEach(sheet => {
+                const hTitle = sheet.querySelector('.header-doc-title');
+                if (hTitle) {
+                    hTitle.textContent = this.customHeaderText;
+                    hTitle.title = this.customHeaderText;
+                }
+            });
+        }
     }
 
     getContent() {

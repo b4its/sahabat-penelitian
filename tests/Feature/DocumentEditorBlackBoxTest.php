@@ -743,6 +743,43 @@ test('black-box: user can export document with custom header and footer into doc
         ->and($content)->toContain('Hasil pengujian model machine learning');
 });
 
+test('black-box: editor view does not force default header or footer in canvas and displays unapplied indicators outside canvas', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Document canvas header and footer must NOT contain forced text
+    $response->assertSee('class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300"></span>', false);
+    $response->assertSee('class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[85%]"></span>', false);
+
+    // Outside document canvas, side badges must indicate header & footer have not yet been applied
+    $response->assertSee('side-header-status', false);
+    $response->assertSee('side-footer-status', false);
+    $response->assertSee('Header:<br><span class="text-[7.5px] text-amber-500">Belum diterapkan</span>', false);
+    $response->assertSee('Footer:<br><span class="text-[7.5px] text-amber-500">Belum diterapkan</span>', false);
+});
+
+test('black-box: exporting document without custom header and footer omits Word MsoHeader and MsoFooter elements and synthetic text', function () {
+    $response = $this->postJson('/api/documents/export', [
+        'title' => 'Naskah Bersih Uji Coba',
+        'content' => '<p>Konten bebas header dan footer.</p>',
+        'format' => 'docx',
+        'header_text' => null,
+        'footer_text' => null,
+    ]);
+
+    $response->assertStatus(200);
+    $content = $response->getContent();
+
+    expect($content)->not->toContain('mso-header: h1;')
+        ->and($content)->not->toContain('mso-footer: f1;')
+        ->and($content)->not->toContain('id="h1"')
+        ->and($content)->not->toContain('id="f1"')
+        ->and($content)->not->toContain('MsoHeader')
+        ->and($content)->not->toContain('MsoFooter')
+        ->and($content)->not->toContain('Dokumen VelScribe Wordcraft')
+        ->and($content)->toContain('Konten bebas header dan footer');
+});
+
 test('black-box: user can upload docx with referenced headers and footers and receive them in response', function () {
     $zipPath = tempnam(sys_get_temp_dir(), 'docx_upload_hf_').'.docx';
     $zip = new ZipArchive;

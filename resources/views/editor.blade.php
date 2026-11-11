@@ -1838,8 +1838,8 @@
                 <!-- Initial / SSR Document Page Sheet -->
                 <article id="document-page-canvas" class="document-page-sheet page-a4 relative flex flex-col justify-between" data-page-index="1">
                     <!-- Page Sheet Header -->
-                    <header class="page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1" title="Klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
-                        <span class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300" title="{{ $initialTitle }}">{{ $initialTitle }}</span>
+                    <header class="page-sheet-header flex items-center justify-between text-[11px] text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1" title="Header belum diterapkan (Klik untuk mengatur)" data-action="header-footer-modal">
+                        <span class="header-doc-title truncate max-w-[55%] font-medium text-gray-600 dark:text-gray-300"></span>
                         <span class="header-chapter-name text-gray-400 font-serif italic text-[11px] truncate max-w-[42%] text-right"></span>
                     </header>
 
@@ -1856,7 +1856,7 @@
                     </div>
 
                     <!-- Page Footer Simulation (Print Layout - Clean without synthetic page marks) -->
-                    <footer class="page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1" title="Klik untuk menyesuaikan Header & Footer" data-action="header-footer-modal">
+                    <footer class="page-sheet-footer flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 select-none cursor-pointer transition hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 rounded px-1 -mx-1" title="Footer belum diterapkan (Klik untuk mengatur)" data-action="header-footer-modal">
                         <span class="footer-doc-title text-[11px] text-gray-400 font-mono truncate max-w-[85%]"></span>
                     </footer>
 
@@ -1870,15 +1870,17 @@
                     </div>
 
                     <!-- Side Header & Footer Quick Edit Actions (Outside Document Canvas) -->
-                    <div class="page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col gap-2 pointer-events-auto">
-                        <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Header Dokumen">
+                    <div class="page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col items-center gap-1 pointer-events-auto">
+                        <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Header: Belum diterapkan (Klik untuk mengatur)">
                             <span class="text-xs">🏷️</span>
                         </button>
+                        <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] text-amber-500">Belum diterapkan</span></span>
                     </div>
-                    <div class="page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto">
-                        <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Sesuaikan Footer Dokumen">
+                    <div class="page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex flex-col items-center gap-1">
+                        <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Footer: Belum diterapkan (Klik untuk mengatur)">
                             <span class="text-xs">📋</span>
                         </button>
+                        <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] text-amber-500">Belum diterapkan</span></span>
                     </div>
                 </article>
             </div>
