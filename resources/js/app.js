@@ -97,24 +97,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initialize Wordcraft AI Studio
-    const wordcraftAi = new WordcraftAi(engine, {
-        containerEl: document.getElementById('wordcraft-sidebar'),
-        resultsEl: document.getElementById('wordcraft-results-container'),
-        promptInput: document.getElementById('wordcraft-custom-prompt'),
-        styleSelect: document.getElementById('wordcraft-style-select'),
-        statusEl: document.getElementById('wordcraft-loading-spinner'),
-        onNotify: (msg) => {
-            if (window.uiController) {
-                window.uiController.showToast(msg, 'success');
-            }
-        },
-    });
+    let wordcraftAi;
+    try {
+        wordcraftAi = new WordcraftAi(engine, {
+            containerEl: document.getElementById('wordcraft-sidebar'),
+            resultsEl: document.getElementById('wordcraft-results-container'),
+            promptInput: document.getElementById('wordcraft-custom-prompt'),
+            styleSelect: document.getElementById('wordcraft-style-select'),
+            statusEl: document.getElementById('wordcraft-loading-spinner'),
+            onNotify: (msg) => {
+                if (window.uiController) {
+                    window.uiController.showToast(msg, 'success');
+                }
+            },
+        });
+        window.wordcraftAi = wordcraftAi;
+    } catch (aiErr) {
+        console.error('WordcraftAi init error:', aiErr);
+    }
 
     // Initialize UI Controller
-    const uiController = new UiController(engine, wordcraftAi);
-    window.uiController = uiController;
+    let uiController;
+    try {
+        uiController = new UiController(engine, wordcraftAi);
+        window.uiController = uiController;
+    } catch (uiErr) {
+        console.error('UiController init error:', uiErr);
+    }
+
     window.documentEngine = engine;
-    window.wordcraftAi = wordcraftAi;
 
     // Optional: Check if local storage draft exists
     try {

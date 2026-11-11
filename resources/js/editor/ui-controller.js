@@ -24,32 +24,42 @@ export class UiController {
     }
 
     init() {
-        this.bindRibbonTabs();
-        this.bindRibbonTools();
-        this.bindThemeSwitcher();
-        this.bindFormatPainter();
-        this.bindFontSteppers();
-        this.bindQuickStyles();
-        this.bindChecklist();
-        this.bindNewDocument();
-        this.bindReadAloud();
-        this.bindDocumentAdaptationBanner();
-        this.bindOutlineSearch();
-        this.bindBubbleMenu();
-        this.bindContextToolbars();
-        this.bindZoomControls();
-        this.bindLayoutModeSwitchers();
-        this.bindModals();
-        this.bindCoverPageModal();
-        this.bindSymbolsModal();
-        this.bindCitationModal();
-        this.bindLatexEquationModal();
-        this.bindHeaderFooterModal();
-        this.bindTableOfContentsSuite();
-        this.bindPageSetupAndParagraphSuite();
-        this.bindDragAndDrop();
-        this.bindGlobalKeyboardShortcuts();
-        this.renderRuler();
+        const tasks = [
+            ['bindRibbonTabs', () => this.bindRibbonTabs()],
+            ['bindRibbonTools', () => this.bindRibbonTools()],
+            ['bindThemeSwitcher', () => this.bindThemeSwitcher()],
+            ['bindFormatPainter', () => this.bindFormatPainter()],
+            ['bindFontSteppers', () => this.bindFontSteppers()],
+            ['bindQuickStyles', () => this.bindQuickStyles()],
+            ['bindChecklist', () => this.bindChecklist()],
+            ['bindNewDocument', () => this.bindNewDocument()],
+            ['bindReadAloud', () => this.bindReadAloud()],
+            ['bindDocumentAdaptationBanner', () => this.bindDocumentAdaptationBanner()],
+            ['bindOutlineSearch', () => this.bindOutlineSearch()],
+            ['bindBubbleMenu', () => this.bindBubbleMenu()],
+            ['bindContextToolbars', () => this.bindContextToolbars()],
+            ['bindZoomControls', () => this.bindZoomControls()],
+            ['bindLayoutModeSwitchers', () => this.bindLayoutModeSwitchers()],
+            ['bindModals', () => this.bindModals()],
+            ['bindCoverPageModal', () => this.bindCoverPageModal()],
+            ['bindSymbolsModal', () => this.bindSymbolsModal()],
+            ['bindCitationModal', () => this.bindCitationModal()],
+            ['bindLatexEquationModal', () => this.bindLatexEquationModal()],
+            ['bindHeaderFooterModal', () => this.bindHeaderFooterModal()],
+            ['bindTableOfContentsSuite', () => this.bindTableOfContentsSuite()],
+            ['bindPageSetupAndParagraphSuite', () => this.bindPageSetupAndParagraphSuite()],
+            ['bindDragAndDrop', () => this.bindDragAndDrop()],
+            ['bindGlobalKeyboardShortcuts', () => this.bindGlobalKeyboardShortcuts()],
+            ['renderRuler', () => this.renderRuler()],
+        ];
+
+        for (const [name, task] of tasks) {
+            try {
+                task();
+            } catch (err) {
+                console.error(`UiController ${name} error:`, err);
+            }
+        }
     }
 
     /* -------------------------------------------------------------

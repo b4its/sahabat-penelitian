@@ -695,6 +695,13 @@ test('black-box: editor view loads compiled client assets without temporal dead 
     // Verify source code doesn't call engine.escapeHtml before engine assignment
     $sourceAppJs = file_get_contents(resource_path('js/app.js'));
     expect($sourceAppJs)->not->toContain('engine.escapeHtml');
+    expect($sourceAppJs)->toContain('window.uiController = uiController');
+
+    // Verify getActiveParagraphFormat does not reference undefined indentLeft/indentRight shorthands
+    $sourceEngineJs = file_get_contents(resource_path('js/editor/document-engine.js'));
+    expect($sourceEngineJs)->not->toContain('indentLeft,');
+    expect($sourceEngineJs)->toContain('indentLeft: leftIndent,');
+    expect($sourceEngineJs)->toContain('indentRight: rightIndent,');
 });
 
 test('black-box: editor view renders Header & Footer customization modal with full controls', function () {

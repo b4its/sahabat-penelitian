@@ -2820,105 +2820,129 @@ export class DocumentEngine {
     }
 
     getActiveParagraphFormat() {
-        const paras = this.getSelectedParagraphElements();
-        const p = paras.length > 0 ? paras[0] : (this.getActiveEditor()?.querySelector('p') || null);
-        if (!p) {
+        try {
+            const paras = this.getSelectedParagraphElements();
+            const p = paras.length > 0 ? paras[0] : (this.getActiveEditor()?.querySelector('p') || null);
+            if (!p) {
+                return {
+                    alignment: 'justify',
+                    textAlign: 'justify',
+                    leftIndent: (this.paragraphIndent && this.paragraphIndent.left) || 0,
+                    indentLeft: (this.paragraphIndent && this.paragraphIndent.left) || 0,
+                    rightIndent: (this.paragraphIndent && this.paragraphIndent.right) || 0,
+                    indentRight: (this.paragraphIndent && this.paragraphIndent.right) || 0,
+                    specialIndent: (this.paragraphIndent && this.paragraphIndent.special) || 'first-line',
+                    specialIndentVal: (this.paragraphIndent && this.paragraphIndent.specialVal) || 1.25,
+                    specialVal: (this.paragraphIndent && this.paragraphIndent.specialVal) || 1.25,
+                    spaceBefore: (this.paragraphSpacing && this.paragraphSpacing.before) || 0,
+                    spacingBefore: (this.paragraphSpacing && this.paragraphSpacing.before) || 0,
+                    spaceAfter: (this.paragraphSpacing && this.paragraphSpacing.after) || 6,
+                    spacingAfter: (this.paragraphSpacing && this.paragraphSpacing.after) || 6,
+                    lineSpacing: this.currentLineSpacing || '1.5',
+                    keepWithNext: false,
+                    keepLinesTogether: false,
+                    pageBreakBefore: false,
+                    widowOrphan: true,
+                };
+            }
+
+            const computed = (window && typeof window.getComputedStyle === 'function') ? window.getComputedStyle(p) : {};
+            let align = p.style?.textAlign || computed?.textAlign || 'justify';
+            if (align === 'start') align = 'left';
+
+            let leftIndent = 0;
+            if (p.style?.marginLeft) {
+                leftIndent = parseFloat(p.style.marginLeft) || 0;
+            }
+
+            let rightIndent = 0;
+            if (p.style?.marginRight) {
+                rightIndent = parseFloat(p.style.marginRight) || 0;
+            }
+
+            let specialIndent = 'none';
+            let specialVal = 1.25;
+            if (p.style?.textIndent) {
+                const ti = parseFloat(p.style.textIndent);
+                if (ti < 0 || p.classList?.contains('indent-hanging')) {
+                    specialIndent = 'hanging';
+                    specialVal = Math.abs(ti) || 1.25;
+                } else if (ti > 0 || p.classList?.contains('indent-first-line')) {
+                    specialIndent = 'first-line';
+                    specialVal = ti || 1.25;
+                }
+            }
+
+            let spaceBefore = 0;
+            if (p.style?.marginTop) {
+                spaceBefore = parseFloat(p.style.marginTop) || 0;
+            }
+
+            let spaceAfter = 6;
+            if (p.style?.marginBottom) {
+                spaceAfter = parseFloat(p.style.marginBottom) || 0;
+            }
+
+            let lineSpacing = p.style?.lineHeight || this.currentLineSpacing || '1.5';
+
+            const keepWithNext = p.style?.pageBreakAfter === 'avoid' || p.style?.breakAfter === 'avoid';
+            const keepLinesTogether = p.style?.pageBreakInside === 'avoid' || p.style?.breakInside === 'avoid';
+            const pageBreakBefore = p.style?.pageBreakBefore === 'always' || p.style?.breakBefore === 'page';
+            const widowOrphan = p.style?.orphans !== '';
+            const suppressLineNumbers = Boolean(p.classList?.contains('suppress-line-numbers'));
+            const dontHyphenate = p.style?.hyphens === 'none';
+            const outlineLevel = p.getAttribute?.('data-outline-level') || (p.tagName?.startsWith('H') ? `level${p.tagName.replace('H', '')}` : 'body');
+            const dontAddSpaceSame = p.getAttribute?.('data-dont-add-space-same') === 'true';
+            const mirrorIndents = Boolean(this.paragraphIndent?.mirrorIndents);
+
+            return {
+                alignment: align,
+                textAlign: align,
+                leftIndent,
+                indentLeft: leftIndent,
+                rightIndent,
+                indentRight: rightIndent,
+                specialIndent,
+                specialIndentVal: specialVal,
+                specialVal,
+                spaceBefore,
+                spacingBefore: spaceBefore,
+                spaceAfter,
+                spacingAfter: spaceAfter,
+                lineSpacing,
+                keepWithNext,
+                keepLinesTogether,
+                pageBreakBefore,
+                widowOrphan,
+                suppressLineNumbers,
+                dontHyphenate,
+                outlineLevel,
+                dontAddSpaceSame,
+                mirrorIndents,
+            };
+        } catch (err) {
+            console.warn('getActiveParagraphFormat fallback:', err);
             return {
                 alignment: 'justify',
                 textAlign: 'justify',
-                leftIndent: this.paragraphIndent.left || 0,
-                indentLeft: this.paragraphIndent.left || 0,
-                rightIndent: this.paragraphIndent.right || 0,
-                indentRight: this.paragraphIndent.right || 0,
-                specialIndent: this.paragraphIndent.special || 'first-line',
-                specialIndentVal: this.paragraphIndent.specialVal || 1.25,
-                specialVal: this.paragraphIndent.specialVal || 1.25,
-                spaceBefore: this.paragraphSpacing.before || 0,
-                spacingBefore: this.paragraphSpacing.before || 0,
-                spaceAfter: this.paragraphSpacing.after || 6,
-                spacingAfter: this.paragraphSpacing.after || 6,
-                lineSpacing: this.currentLineSpacing || '1.5',
+                leftIndent: 0,
+                indentLeft: 0,
+                rightIndent: 0,
+                indentRight: 0,
+                specialIndent: 'first-line',
+                specialIndentVal: 1.25,
+                specialVal: 1.25,
+                spaceBefore: 0,
+                spacingBefore: 0,
+                spaceAfter: 6,
+                spacingAfter: 6,
+                lineSpacing: '1.5',
                 keepWithNext: false,
                 keepLinesTogether: false,
                 pageBreakBefore: false,
                 widowOrphan: true,
             };
         }
-
-        const computed = window.getComputedStyle(p);
-        let align = p.style.textAlign || computed.textAlign || 'justify';
-        if (align === 'start') align = 'left';
-
-        let leftIndent = 0;
-        if (p.style.marginLeft) {
-            leftIndent = parseFloat(p.style.marginLeft) || 0;
-        }
-
-        let rightIndent = 0;
-        if (p.style.marginRight) {
-            rightIndent = parseFloat(p.style.marginRight) || 0;
-        }
-
-        let specialIndent = 'none';
-        let specialVal = 1.25;
-        if (p.style.textIndent) {
-            const ti = parseFloat(p.style.textIndent);
-            if (ti < 0 || p.classList.contains('indent-hanging')) {
-                specialIndent = 'hanging';
-                specialVal = Math.abs(ti) || 1.25;
-            } else if (ti > 0 || p.classList.contains('indent-first-line')) {
-                specialIndent = 'first-line';
-                specialVal = ti || 1.25;
-            }
-        }
-
-        let spaceBefore = 0;
-        if (p.style.marginTop) {
-            spaceBefore = parseFloat(p.style.marginTop) || 0;
-        }
-
-        let spaceAfter = 6;
-        if (p.style.marginBottom) {
-            spaceAfter = parseFloat(p.style.marginBottom) || 0;
-        }
-
-        let lineSpacing = p.style.lineHeight || this.currentLineSpacing || '1.5';
-
-        const keepWithNext = p.style.pageBreakAfter === 'avoid' || p.style.breakAfter === 'avoid';
-        const keepLinesTogether = p.style.pageBreakInside === 'avoid' || p.style.breakInside === 'avoid';
-        const pageBreakBefore = p.style.pageBreakBefore === 'always' || p.style.breakBefore === 'page';
-        const widowOrphan = p.style.orphans !== '';
-        const suppressLineNumbers = p.classList.contains('suppress-line-numbers');
-        const dontHyphenate = p.style.hyphens === 'none';
-        const outlineLevel = p.getAttribute('data-outline-level') || (p.tagName.startsWith('H') ? `level${p.tagName.replace('H', '')}` : 'body');
-        const dontAddSpaceSame = p.getAttribute('data-dont-add-space-same') === 'true';
-        const mirrorIndents = Boolean(this.paragraphIndent.mirrorIndents);
-
-        return {
-            alignment: align,
-            textAlign: align,
-            leftIndent,
-            indentLeft,
-            rightIndent,
-            indentRight,
-            specialIndent,
-            specialIndentVal: specialVal,
-            specialVal,
-            spaceBefore,
-            spacingBefore: spaceBefore,
-            spaceAfter,
-            spacingAfter: spaceAfter,
-            lineSpacing,
-            keepWithNext,
-            keepLinesTogether,
-            pageBreakBefore,
-            widowOrphan,
-            suppressLineNumbers,
-            dontHyphenate,
-            outlineLevel,
-            dontAddSpaceSame,
-            mirrorIndents,
-        };
     }
 
     setFontFamily(fontName) {
