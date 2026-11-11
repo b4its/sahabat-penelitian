@@ -105,6 +105,10 @@ export class DocumentEngine {
         this.edgeHeader = 1.5;
         this.edgeFooter = 1.5;
         this.verticalAlign = 'top';
+        this.columns = 1;
+        this.hyphenation = 'none';
+        this.tabStops = [{ pos: 1.25, align: 'left', leader: 'none' }];
+        this.defaultTabStop = 1.27;
         this.paragraphSpacing = { before: 0, after: 6 };
         this.paragraphIndent = { left: 0, right: 0, special: 'none', specialVal: 1.25, mirrorIndents: false };
         this.activePageIndex = 1;
@@ -1065,6 +1069,38 @@ export class DocumentEngine {
                 sheetBody.style.flexDirection = '';
                 sheetBody.style.justifyContent = '';
             }
+
+            // Apply Columns
+            if (this.columns === '2' || this.columns === 2) {
+                sheetBody.style.columnCount = '2';
+                sheetBody.style.columnGap = '1.25cm';
+                sheetBody.style.columnRule = '1px solid #e5e7eb';
+            } else if (this.columns === '3' || this.columns === 3) {
+                sheetBody.style.columnCount = '3';
+                sheetBody.style.columnGap = '1cm';
+                sheetBody.style.columnRule = '1px solid #e5e7eb';
+            } else if (this.columns === 'left' || this.columns === 'right') {
+                sheetBody.style.columnCount = '2';
+                sheetBody.style.columnGap = '1.25cm';
+            } else {
+                sheetBody.style.columnCount = '';
+                sheetBody.style.columnGap = '';
+                sheetBody.style.columnRule = '';
+            }
+
+            // Apply Hyphenation
+            if (this.hyphenation === 'auto') {
+                sheetBody.style.hyphens = 'auto';
+                sheetBody.style.webkitHyphens = 'auto';
+            } else {
+                sheetBody.style.hyphens = 'none';
+                sheetBody.style.webkitHyphens = 'none';
+            }
+
+            // Apply Tab Stop
+            if (this.defaultTabStop) {
+                sheetBody.style.tabSize = `${this.defaultTabStop}cm`;
+            }
         }
 
         this.applyMarginsToSheet(sheet, this.currentMarginPreset, pageIndex);
@@ -1980,6 +2016,10 @@ export class DocumentEngine {
         if (options.edgeHeader !== undefined) this.edgeHeader = parseFloat(options.edgeHeader);
         if (options.edgeFooter !== undefined) this.edgeFooter = parseFloat(options.edgeFooter);
         if (options.verticalAlign) this.verticalAlign = options.verticalAlign;
+        if (options.columns !== undefined) this.columns = options.columns;
+        if (options.hyphenation !== undefined) this.hyphenation = options.hyphenation;
+        if (options.tabStops !== undefined) this.tabStops = options.tabStops;
+        if (options.defaultTabStop !== undefined) this.defaultTabStop = parseFloat(options.defaultTabStop);
 
         if (options.margins) {
             this.setCustomMargins(options.margins);
@@ -2203,6 +2243,74 @@ export class DocumentEngine {
 
     setSpecialIndent(type, cmVal = 1.25, scope = 'selection') {
         this.setParagraphFormatting({ specialIndent: type, specialIndentVal: cmVal }, scope);
+    }
+
+    setColumns(columnVal = 1, scope = 'document') {
+        this.columns = columnVal;
+        const bodies = scope === 'document' ? this.getAllEditorBodies() : [this.getActiveEditor() || this.editorEl];
+        bodies.forEach(body => {
+            if (!body) return;
+            if (columnVal === '2' || columnVal === 2) {
+                body.style.columnCount = '2';
+                body.style.columnGap = '1.25cm';
+                body.style.columnRule = '1px solid #e5e7eb';
+            } else if (columnVal === '3' || columnVal === 3) {
+                body.style.columnCount = '3';
+                body.style.columnGap = '1cm';
+                body.style.columnRule = '1px solid #e5e7eb';
+            } else if (columnVal === 'left' || columnVal === 'right') {
+                body.style.columnCount = '2';
+                body.style.columnGap = '1.25cm';
+            } else {
+                body.style.columnCount = '';
+                body.style.columnGap = '';
+                body.style.columnRule = '';
+            }
+        });
+        this.handleInput();
+    }
+
+    insertColumnBreak() {
+        const active = this.getActiveEditor();
+        if (active) active.focus();
+        const breakHtml = '<div class="column-break my-4 border-b border-dotted border-gray-400 select-none text-center" style="break-before: column; page-break-before: column;"><span class="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-[10px] text-gray-500 font-mono">Pemisah Kolom</span></div><p><br></p>';
+        document.execCommand('insertHTML', false, breakHtml);
+        this.handleInput();
+    }
+
+    insertSectionBreak(type = 'newpage') {
+        if (type === 'newpage') {
+            this.insertPageBreak();
+        } else {
+            const active = this.getActiveEditor();
+            if (active) active.focus();
+            const breakHtml = '<div class="section-break my-4 border-b-2 border-double border-indigo-300 dark:border-indigo-700 select-none text-center py-1"><span class="bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded text-[10px] text-indigo-600 dark:text-indigo-400 font-mono">Pemisah Bagian (Continuous)</span></div><p><br></p>';
+            document.execCommand('insertHTML', false, breakHtml);
+            this.handleInput();
+        }
+    }
+
+    setHyphenation(mode = 'none') {
+        this.hyphenation = mode;
+        this.getAllEditorBodies().forEach(body => {
+            if (mode === 'auto') {
+                body.style.hyphens = 'auto';
+                body.style.webkitHyphens = 'auto';
+            } else {
+                body.style.hyphens = 'none';
+                body.style.webkitHyphens = 'none';
+            }
+        });
+        this.handleInput();
+    }
+
+    setTabStops(stops = [], defaultStop = 1.27) {
+        this.tabStops = stops;
+        this.defaultTabStop = defaultStop;
+        this.getAllEditorBodies().forEach(body => {
+            body.style.tabSize = `${defaultStop}cm`;
+        });
+        this.handleInput();
     }
 
     getSelectedParagraphElements() {
@@ -4110,6 +4218,12 @@ ${entriesHtml}    </div>
                     line_spacing: this.currentLineSpacing,
                     paragraph_spacing: this.paragraphSpacing,
                     paragraph_indent: this.paragraphIndent,
+                    columns: this.columns,
+                    hyphenation: this.hyphenation,
+                    tab_stops: this.tabStops,
+                    default_tab_stop: this.defaultTabStop,
+                    multiple_pages: this.multiplePagesMode,
+                    vertical_align: this.verticalAlign,
                 }),
             });
 
@@ -4177,6 +4291,12 @@ ${entriesHtml}    </div>
                     line_spacing: this.currentLineSpacing,
                     paragraph_spacing: this.paragraphSpacing,
                     paragraph_indent: this.paragraphIndent,
+                    columns: this.columns,
+                    hyphenation: this.hyphenation,
+                    tab_stops: this.tabStops,
+                    default_tab_stop: this.defaultTabStop,
+                    multiple_pages: this.multiplePagesMode,
+                    vertical_align: this.verticalAlign,
                 },
                 exported_at: new Date().toISOString(),
             }, null, 2);
@@ -4223,6 +4343,15 @@ ${entriesHtml}    </div>
                 lineSpacing: this.currentLineSpacing,
                 paragraphSpacing: this.paragraphSpacing,
                 paragraphIndent: this.paragraphIndent,
+                columns: this.columns || 1,
+                hyphenation: this.hyphenation || 'none',
+                tabStops: this.tabStops || [],
+                defaultTabStop: this.defaultTabStop || 1.27,
+                multiplePagesMode: this.multiplePagesMode || 'normal',
+                verticalAlign: this.verticalAlign || 'top',
+                differentOddEven: this.differentOddEven || false,
+                edgeHeader: this.edgeHeader || 1.5,
+                edgeFooter: this.edgeFooter || 1.5,
                 customHeaderText: this.customHeaderText || '',
                 customFooterText: this.customFooterText || '',
                 differentFirstPage: this.differentFirstPage || false,
@@ -4259,6 +4388,12 @@ ${entriesHtml}    </div>
                 if (data.lineSpacing) this.setLineSpacing(data.lineSpacing);
                 if (data.paragraphSpacing) this.paragraphSpacing = data.paragraphSpacing;
                 if (data.paragraphIndent) this.paragraphIndent = data.paragraphIndent;
+                if (data.columns) this.setColumns(data.columns);
+                if (data.hyphenation) this.setHyphenation(data.hyphenation);
+                if (data.tabStops) this.setTabStops(data.tabStops, data.defaultTabStop || 1.27);
+                if (data.multiplePagesMode) this.multiplePagesMode = data.multiplePagesMode;
+                if (data.verticalAlign) this.verticalAlign = data.verticalAlign;
+                if (data.differentOddEven !== undefined) this.differentOddEven = Boolean(data.differentOddEven);
                 return true;
             }
         } catch (e) {

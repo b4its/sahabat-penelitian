@@ -1048,6 +1048,17 @@ class DocumentService
         $indentLeft = isset($layoutOptions['paragraph_indent']['left']) ? (is_numeric($layoutOptions['paragraph_indent']['left']) ? "{$layoutOptions['paragraph_indent']['left']}cm" : $layoutOptions['paragraph_indent']['left']) : '0cm';
         $indentRight = isset($layoutOptions['paragraph_indent']['right']) ? (is_numeric($layoutOptions['paragraph_indent']['right']) ? "{$layoutOptions['paragraph_indent']['right']}cm" : $layoutOptions['paragraph_indent']['right']) : '0cm';
 
+        $columns = $layoutOptions['columns'] ?? 1;
+        $columnCountCss = '';
+        if ($columns == 2 || $columns === '2') {
+            $columnCountCss = 'column-count: 2; column-gap: 1.25cm; mso-column-count: 2;';
+        } elseif ($columns == 3 || $columns === '3') {
+            $columnCountCss = 'column-count: 3; column-gap: 1cm; mso-column-count: 3;';
+        }
+
+        $hyphenation = strtolower($layoutOptions['hyphenation'] ?? 'none');
+        $hyphensCss = ($hyphenation === 'auto') ? 'hyphens: auto; -webkit-hyphens: auto; mso-hyphenate: auto;' : '';
+
         switch (strtolower($format)) {
             case 'markdown':
             case 'md':
@@ -1095,6 +1106,17 @@ class DocumentService
                 $headerHtml = ! empty($headerText) ? htmlspecialchars($headerText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 $footerHtml = ! empty($footerText) ? htmlspecialchars($footerText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 'Dokumen VelScribe Wordcraft';
 
+                $docxBody = preg_replace(
+                    '/<div[^>]*class=["\'][^"\']*column-break[^"\']*["\'][^>]*>.*?<\/div>/is',
+                    '<br clear="all" style="page-break-before:always;mso-break-type:column" />',
+                    $sanitizedHtml
+                );
+                $docxBody = preg_replace(
+                    '/<div[^>]*class=["\'][^"\']*section-break[^"\']*["\'][^>]*>.*?<\/div>/is',
+                    '<br clear="all" style="page-break-before:always;mso-break-type:section-break" />',
+                    $docxBody
+                );
+
                 $wordContent = <<<XML
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
@@ -1120,6 +1142,8 @@ class DocumentService
 }
 div.Section1 {
     page: Section1;
+    {$columnCountCss}
+    {$hyphensCss}
 }
 table.MsoHeaderTable, table.MsoFooterTable {
     width: 100%;
@@ -1204,7 +1228,7 @@ th {
         </p>
     </div>
 
-    {$sanitizedHtml}
+    {$docxBody}
 
     <div style="mso-element:footer" id="f1">
         <p class="MsoFooter">
@@ -1233,7 +1257,7 @@ XML;
     <title>{$title}</title>
     <style>
         @page { size: {$pageSizeStr}; margin: {$marginStr}; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: {$lineSpacing}; max-width: {$w}; margin: 40px auto; padding: {$marginStr}; color: #111827; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: {$lineSpacing}; max-width: {$w}; margin: 40px auto; padding: {$marginStr}; color: #111827; {$columnCountCss} {$hyphensCss} }
         h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-top: 24px; margin-bottom: 16px; text-transform: uppercase; }
         h2 { font-size: 13pt; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
         h3 { font-size: 12pt; font-weight: bold; margin-top: 16px; margin-bottom: 8px; }

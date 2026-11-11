@@ -1041,6 +1041,80 @@
                 </button>
             </div>
 
+            <!-- Group 1b: Columns, Breaks & Hyphenation Suite (Microsoft Word Parity) -->
+            <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <!-- Columns Dropdown -->
+                <div class="relative inline-block" id="columns-dropdown-wrapper">
+                    <button id="btn-columns-dropdown" type="button" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Format Kolom Dokumen (Columns)">
+                        <span>🏛️ Kolom</span>
+                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="columns-dropdown-menu" class="hidden absolute left-0 mt-1 w-44 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                        <button type="button" data-column-val="1" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 font-semibold">
+                            <span>📄</span> Satu Kolom (Standar)
+                        </button>
+                        <button type="button" data-column-val="2" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📰</span> Dua Kolom (Jurnal)
+                        </button>
+                        <button type="button" data-column-val="3" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📑</span> Tiga Kolom (Buletin)
+                        </button>
+                        <button type="button" data-column-val="left" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>◀️</span> Kiri (1/3 : 2/3)
+                        </button>
+                        <button type="button" data-column-val="right" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>▶️</span> Kanan (2/3 : 1/3)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Breaks Dropdown -->
+                <div class="relative inline-block" id="breaks-dropdown-wrapper">
+                    <button id="btn-breaks-dropdown" type="button" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Pemisah Halaman dan Bagian (Breaks)">
+                        <span>✂️ Pemisah</span>
+                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="breaks-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                        <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase">Pemisah Halaman</div>
+                        <button type="button" data-break-type="page" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📄</span> Halaman Baru (Page Break)
+                        </button>
+                        <button type="button" data-break-type="column" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>🏛️</span> Kolom (Column Break)
+                        </button>
+                        <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+                        <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase">Pemisah Bagian (Section)</div>
+                        <button type="button" data-break-type="section-next" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📑</span> Halaman Berikutnya
+                        </button>
+                        <button type="button" data-break-type="section-continuous" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📜</span> Berkelanjutan (Continuous)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hyphenation Dropdown -->
+                <div class="relative inline-block" id="hyphenation-dropdown-wrapper">
+                    <button id="btn-hyphenation-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Pemenggalan Kata / Tanda Hubung (Hyphenation)">
+                        <span>🔤 Tanda Hubung</span>
+                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="hyphenation-dropdown-menu" class="hidden absolute left-0 mt-1 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                        <button type="button" data-hyphen-val="none" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 font-semibold text-indigo-600">
+                            Tidak Ada (None)
+                        </button>
+                        <button type="button" data-hyphen-val="auto" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800">
+                            Otomatis (Automatic)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabs Dialog Launcher Button -->
+                <button type="button" id="btn-layout-open-tabs-modal" data-action="open-tabs-modal" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Atur Perhentian Tabulasi (Tabs Dialog)">
+                    <span>⇥ Tab</span>
+                </button>
+            </div>
+
             <!-- Group 2: Word Layout Paragraph Controls (Indent & Spacing Quick Inputs) -->
             <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <span class="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-wider">Paragraf:</span>
@@ -3162,6 +3236,9 @@
                         <option value="selection" selected>Paragraf yang dipilih / aktif</option>
                         <option value="all">Seluruh paragraf dokumen</option>
                     </select>
+                    <button type="button" id="btn-open-tabs-modal" data-action="open-tabs-modal" class="px-2.5 py-1 text-xs font-semibold rounded border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Buka Kotak Dialog Tabulasi Word">
+                        Tabulasi (Tabs)...
+                    </button>
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" id="btn-para-set-default" class="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 transition">
@@ -3173,6 +3250,105 @@
                     <button type="button" id="btn-confirm-paragraph-format" class="px-4 py-1.5 text-xs font-bold rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer">
                         OK / Terapkan
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 18: TABULASI (MICROSOFT WORD TABS DIALOG SUITE)                     -->
+    <!-- ========================================================================= -->
+    <div id="modal-tabs-format" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs">⇥</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Tabulasi (Tabs)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur perhentian tab, perataan, dan karakter pemandu standar Word</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3.5 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Posisi Perhentian Tab:</label>
+                        <div class="flex items-center">
+                            <input type="number" id="tab-stop-pos" value="1.25" step="0.25" min="0" max="25" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 text-right font-mono" />
+                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Perhentian Tab Standar:</label>
+                        <div class="flex items-center">
+                            <input type="number" id="tab-default-stop" value="1.27" step="0.01" min="0.5" max="5" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 text-right font-mono" />
+                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">cm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-2.5">
+                    <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Perataan (Alignment)</legend>
+                    <div class="grid grid-cols-3 gap-2 mt-1">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="tab-align-radio" value="left" checked class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Kiri (Left)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="tab-align-radio" value="center" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Tengah (Center)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="tab-align-radio" value="right" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Kanan (Right)</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-2.5">
+                    <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Karakter Pemandu (Leader)</legend>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="tab-leader-radio" value="none" checked class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>1 (Tidak ada)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="tab-leader-radio" value="dots" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>2 ....... (Titik-titik)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="tab-leader-radio" value="dashes" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>3 ------- (Putus-putus)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="tab-leader-radio" value="underline" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>4 _______ (Garis bawah)</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div>
+                    <span class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Daftar Tab yang Ditetapkan:</span>
+                    <select id="tab-stops-list" size="3" class="w-full px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 font-mono text-xs">
+                        <option value="1.25">1.25 cm (Kiri)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-1.5">
+                    <button type="button" id="btn-tab-set" class="px-2.5 py-1 text-xs font-semibold rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">Tetapkan</button>
+                    <button type="button" id="btn-tab-clear" class="px-2.5 py-1 text-xs font-semibold rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">Hapus</button>
+                    <button type="button" id="btn-tab-clear-all" class="px-2.5 py-1 text-xs font-semibold rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">Hapus Semua</button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
+                    <button type="button" id="btn-confirm-tabs" class="px-3.5 py-1 text-xs font-bold rounded bg-blue-600 hover:bg-blue-700 text-white shadow-xs">OK</button>
                 </div>
             </div>
         </div>

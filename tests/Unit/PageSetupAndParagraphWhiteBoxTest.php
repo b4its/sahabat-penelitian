@@ -290,4 +290,54 @@ XML;
         $this->assertStringContainsString('margin: 25.4mm 31.8mm 25.4mm 31.8mm;', $docxResult['content']);
         $this->assertStringContainsString('line-height: 1.15;', $docxResult['content']);
     }
+
+    public function test_document_service_export_docx_embeds_columns_hyphenation_and_break_tags(): void
+    {
+        $content = '<p>Paragraf pembuka.</p><div class="column-break">Pemisah Kolom</div><p>Paragraf kedua.</p><div class="section-break">Pemisah Bagian</div><p>Paragraf ketiga.</p>';
+        $layoutOptions = [
+            'paper_size' => 'a4',
+            'columns' => 2,
+            'hyphenation' => 'auto',
+            'tab_stops' => [
+                ['pos' => 1.25, 'align' => 'left', 'leader' => 'none'],
+                ['pos' => 5.0, 'align' => 'right', 'leader' => 'dots'],
+            ],
+            'default_tab_stop' => 1.27,
+        ];
+
+        $docxResult = $this->docService->exportDocument('Uji Kolom dan Tanda Hubung', $content, 'docx', null, null, $layoutOptions);
+        $docxContent = $docxResult['content'];
+
+        $this->assertStringContainsString('column-count: 2;', $docxContent);
+        $this->assertStringContainsString('mso-column-count: 2;', $docxContent);
+        $this->assertStringContainsString('hyphens: auto;', $docxContent);
+        $this->assertStringContainsString('mso-hyphenate: auto;', $docxContent);
+        $this->assertStringContainsString('mso-break-type:column', $docxContent);
+        $this->assertStringContainsString('mso-break-type:section-break', $docxContent);
+    }
+
+    public function test_document_service_export_json_preserves_columns_hyphenation_and_tab_stops(): void
+    {
+        $content = '<p>Dokumen Uji Multi-Kolom JSON</p>';
+        $layoutOptions = [
+            'paper_size' => 'a4',
+            'columns' => 3,
+            'hyphenation' => 'auto',
+            'tab_stops' => [
+                ['pos' => 2.0, 'align' => 'left'],
+                ['pos' => 8.0, 'align' => 'right'],
+            ],
+            'default_tab_stop' => 1.27,
+        ];
+
+        $jsonResult = $this->docService->exportDocument('Uji JSON Kolom', $content, 'json', null, null, $layoutOptions);
+        $data = json_decode($jsonResult['content'], true);
+
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('layout_options', $data);
+        $this->assertEquals(3, $data['layout_options']['columns']);
+        $this->assertEquals('auto', $data['layout_options']['hyphenation']);
+        $this->assertCount(2, $data['layout_options']['tab_stops']);
+        $this->assertEquals(1.27, $data['layout_options']['default_tab_stop']);
+    }
 }

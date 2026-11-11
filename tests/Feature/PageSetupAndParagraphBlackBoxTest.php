@@ -377,3 +377,78 @@ XML;
 
     @unlink($zipPath);
 });
+
+test('black-box: editor view renders Microsoft Word columns, breaks, and hyphenation dropdown suites', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Columns Dropdown
+    $response->assertSee('id="btn-columns-dropdown"', false);
+    $response->assertSee('id="columns-dropdown-menu"', false);
+    $response->assertSee('data-column-val="1"', false);
+    $response->assertSee('data-column-val="2"', false);
+    $response->assertSee('data-column-val="3"', false);
+    $response->assertSee('data-column-val="left"', false);
+    $response->assertSee('data-column-val="right"', false);
+
+    // Breaks Dropdown
+    $response->assertSee('id="btn-breaks-dropdown"', false);
+    $response->assertSee('id="breaks-dropdown-menu"', false);
+    $response->assertSee('data-break-type="page"', false);
+    $response->assertSee('data-break-type="column"', false);
+    $response->assertSee('data-break-type="section-next"', false);
+    $response->assertSee('data-break-type="section-continuous"', false);
+
+    // Hyphenation Dropdown
+    $response->assertSee('id="btn-hyphenation-dropdown"', false);
+    $response->assertSee('id="hyphenation-dropdown-menu"', false);
+    $response->assertSee('data-hyphen-val="none"', false);
+    $response->assertSee('data-hyphen-val="auto"', false);
+});
+
+test('black-box: editor view renders Microsoft Word Tab Stops (Tabs) dialog suite', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Modal container
+    $response->assertSee('id="modal-tabs-format"', false);
+    $response->assertSee('Tabulasi (Tabs)', false);
+
+    // Inputs & Radios
+    $response->assertSee('id="tab-stop-pos"', false);
+    $response->assertSee('id="tab-default-stop"', false);
+    $response->assertSee('name="tab-align-radio"', false);
+    $response->assertSee('name="tab-leader-radio"', false);
+    $response->assertSee('id="tab-stops-list"', false);
+
+    // Buttons
+    $response->assertSee('id="btn-tab-set"', false);
+    $response->assertSee('id="btn-tab-clear"', false);
+    $response->assertSee('id="btn-tab-clear-all"', false);
+    $response->assertSee('id="btn-confirm-tabs"', false);
+    $response->assertSee('id="btn-open-tabs-modal"', false);
+    $response->assertSee('id="btn-layout-open-tabs-modal"', false);
+});
+
+test('black-box: user can export document with columns and hyphenation layout parameters via api', function () {
+    $payload = [
+        'title' => 'Riset Kolom Ganda',
+        'content' => '<p>Artikel jurnal dua kolom.</p><div class="column-break">Pemisah Kolom</div><p>Kolom lanjutan.</p>',
+        'format' => 'docx',
+        'columns' => 2,
+        'hyphenation' => 'auto',
+        'paper_size' => 'a4',
+        'orientation' => 'portrait',
+    ];
+
+    $response = $this->postJson('/api/documents/export', $payload);
+
+    $response->assertStatus(200)
+        ->assertHeader('Content-Disposition')
+        ->assertHeader('Content-Type', 'application/msword; charset=UTF-8');
+
+    $content = $response->getContent();
+    expect($content)->toContain('column-count: 2;')
+        ->toContain('hyphens: auto;')
+        ->toContain('mso-break-type:column');
+});

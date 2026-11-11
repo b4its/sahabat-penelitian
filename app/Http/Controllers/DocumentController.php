@@ -163,6 +163,11 @@ HTML;
             'paragraph_spacing' => $request->input('paragraph_spacing'),
             'paragraph_indent' => $request->input('paragraph_indent'),
             'vertical_align' => $request->input('vertical_align'),
+            'columns' => $request->input('columns'),
+            'hyphenation' => $request->input('hyphenation'),
+            'tab_stops' => $request->input('tab_stops'),
+            'default_tab_stop' => $request->input('default_tab_stop'),
+            'multiple_pages' => $request->input('multiple_pages'),
         ];
 
         $exported = $this->documentService->exportDocument($title, $content, $format, $headerText, $footerText, $layoutOptions);

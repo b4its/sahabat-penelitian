@@ -2189,6 +2189,194 @@ export class UiController {
             });
         });
 
+        // Columns Dropdown
+        const btnColumnsDropdown = document.getElementById('btn-columns-dropdown');
+        const columnsMenu = document.getElementById('columns-dropdown-menu');
+        if (btnColumnsDropdown && columnsMenu) {
+            btnColumnsDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                columnsMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!columnsMenu.contains(e.target) && !btnColumnsDropdown.contains(e.target)) {
+                    columnsMenu.classList.add('hidden');
+                }
+            });
+
+            columnsMenu.querySelectorAll('[data-column-val]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.getAttribute('data-column-val');
+                    this.engine.setColumns(val);
+                    columnsMenu.classList.add('hidden');
+                    const label = val === '1' ? '1 kolom' : val === '2' ? '2 kolom' : val === '3' ? '3 kolom' : `kolom ${val}`;
+                    this.showToast(`Tata letak diatur ke ${label}`);
+                });
+            });
+        }
+
+        // Breaks Dropdown
+        const btnBreaksDropdown = document.getElementById('btn-breaks-dropdown');
+        const breaksMenu = document.getElementById('breaks-dropdown-menu');
+        if (btnBreaksDropdown && breaksMenu) {
+            btnBreaksDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                breaksMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!breaksMenu.contains(e.target) && !btnBreaksDropdown.contains(e.target)) {
+                    breaksMenu.classList.add('hidden');
+                }
+            });
+
+            breaksMenu.querySelectorAll('[data-break-type]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.getAttribute('data-break-type');
+                    breaksMenu.classList.add('hidden');
+                    if (type === 'page') {
+                        this.engine.insertPageBreak();
+                        this.showToast('Pemisah halaman (Page Break) disisipkan');
+                    } else if (type === 'column') {
+                        this.engine.insertColumnBreak();
+                        this.showToast('Pemisah kolom (Column Break) disisipkan');
+                    } else if (type === 'section-next') {
+                        this.engine.insertSectionBreak('newpage');
+                        this.showToast('Pemisah bagian (Halaman Berikutnya) disisipkan');
+                    } else if (type === 'section-continuous') {
+                        this.engine.insertSectionBreak('continuous');
+                        this.showToast('Pemisah bagian (Continuous) disisipkan');
+                    }
+                });
+            });
+        }
+
+        // Hyphenation Dropdown
+        const btnHyphenationDropdown = document.getElementById('btn-hyphenation-dropdown');
+        const hyphenationMenu = document.getElementById('hyphenation-dropdown-menu');
+        if (btnHyphenationDropdown && hyphenationMenu) {
+            btnHyphenationDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hyphenationMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!hyphenationMenu.contains(e.target) && !btnHyphenationDropdown.contains(e.target)) {
+                    hyphenationMenu.classList.add('hidden');
+                }
+            });
+
+            hyphenationMenu.querySelectorAll('[data-hyphen-val]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.getAttribute('data-hyphen-val');
+                    this.engine.setHyphenation(val);
+                    hyphenationMenu.classList.add('hidden');
+                    this.showToast(`Tanda hubung diatur ke ${val === 'auto' ? 'Otomatis' : 'Tidak Ada'}`);
+                });
+            });
+        }
+
+        // Tab Stops Modal Launchers
+        document.querySelectorAll('[data-action="open-tabs-modal"], #btn-open-tabs-modal, #btn-layout-open-tabs-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.openTabsModal();
+            });
+        });
+
+        // Tab Stops Modal Controls
+        const tabsModal = document.getElementById('modal-tabs-format');
+        if (tabsModal) {
+            const tabStopPosInput = document.getElementById('tab-stop-pos');
+            const tabDefaultStopInput = document.getElementById('tab-default-stop');
+            const tabStopsList = document.getElementById('tab-stops-list');
+            const btnTabSet = document.getElementById('btn-tab-set');
+            const btnTabClear = document.getElementById('btn-tab-clear');
+            const btnTabClearAll = document.getElementById('btn-tab-clear-all');
+            const btnConfirmTabs = document.getElementById('btn-confirm-tabs');
+
+            if (tabStopsList) {
+                tabStopsList.addEventListener('change', () => {
+                    const selOption = tabStopsList.selectedOptions[0];
+                    if (selOption) {
+                        const val = parseFloat(selOption.value) || 0;
+                        if (tabStopPosInput) tabStopPosInput.value = val;
+                        const align = selOption.getAttribute('data-align') || 'left';
+                        const leader = selOption.getAttribute('data-leader') || 'none';
+                        const alignRadio = tabsModal.querySelector(`input[name="tab-align-radio"][value="${align}"]`);
+                        if (alignRadio) alignRadio.checked = true;
+                        const leaderRadio = tabsModal.querySelector(`input[name="tab-leader-radio"][value="${leader}"]`);
+                        if (leaderRadio) leaderRadio.checked = true;
+                    }
+                });
+            }
+
+            if (btnTabSet && tabStopsList && tabStopPosInput) {
+                btnTabSet.addEventListener('click', () => {
+                    const pos = parseFloat(tabStopPosInput.value);
+                    if (isNaN(pos) || pos <= 0) {
+                        this.showToast('Masukkan nilai posisi tab yang valid (lebih besar dari 0)', 'warning');
+                        return;
+                    }
+                    const alignRadio = tabsModal.querySelector('input[name="tab-align-radio"]:checked');
+                    const align = alignRadio ? alignRadio.value : 'left';
+                    const leaderRadio = tabsModal.querySelector('input[name="tab-leader-radio"]:checked');
+                    const leader = leaderRadio ? leaderRadio.value : 'none';
+
+                    // Check if already exists in list, update or add
+                    let existing = Array.from(tabStopsList.options).find(opt => parseFloat(opt.value) === pos);
+                    if (!existing) {
+                        existing = document.createElement('option');
+                        tabStopsList.appendChild(existing);
+                    }
+                    existing.value = pos.toFixed(2);
+                    existing.setAttribute('data-align', align);
+                    existing.setAttribute('data-leader', leader);
+                    const alignLabel = align === 'center' ? 'Tengah' : align === 'right' ? 'Kanan' : 'Kiri';
+                    existing.textContent = `${pos.toFixed(2)} cm (${alignLabel})`;
+
+                    // Sort options numerically
+                    const sorted = Array.from(tabStopsList.options).sort((a, b) => parseFloat(a.value) - parseFloat(b.value));
+                    tabStopsList.innerHTML = '';
+                    sorted.forEach(opt => tabStopsList.appendChild(opt));
+                    existing.selected = true;
+                });
+            }
+
+            if (btnTabClear && tabStopsList) {
+                btnTabClear.addEventListener('click', () => {
+                    const selIndex = tabStopsList.selectedIndex;
+                    if (selIndex >= 0) {
+                        tabStopsList.remove(selIndex);
+                    }
+                });
+            }
+
+            if (btnTabClearAll && tabStopsList) {
+                btnTabClearAll.addEventListener('click', () => {
+                    tabStopsList.innerHTML = '';
+                });
+            }
+
+            if (btnConfirmTabs) {
+                btnConfirmTabs.addEventListener('click', () => {
+                    const defaultStop = parseFloat(tabDefaultStopInput ? tabDefaultStopInput.value : 1.27) || 1.27;
+                    const stops = [];
+                    if (tabStopsList) {
+                        Array.from(tabStopsList.options).forEach(opt => {
+                            stops.push({
+                                pos: parseFloat(opt.value),
+                                align: opt.getAttribute('data-align') || 'left',
+                                leader: opt.getAttribute('data-leader') || 'none',
+                            });
+                        });
+                    }
+                    this.engine.setTabStops(stops, defaultStop);
+                    this.closeModal(tabsModal);
+                    this.showToast('Perhentian tab (Tabs) berhasil diterapkan!', 'success');
+                });
+            }
+        }
+
         // 2. Layout Ribbon Paragraph Quick Inputs (Indent & Spacing)
         const layoutIndentLeft = document.getElementById('layout-indent-left');
         const layoutIndentRight = document.getElementById('layout-indent-right');
@@ -2552,6 +2740,44 @@ export class UiController {
                 });
             }
         }
+    }
+
+    openTabsModal() {
+        const modal = document.getElementById('modal-tabs-format');
+        if (!modal) return;
+
+        const defaultStop = this.engine.defaultTabStop || 1.27;
+        const defaultInput = document.getElementById('tab-default-stop');
+        if (defaultInput) defaultInput.value = defaultStop;
+
+        const tabStopsList = document.getElementById('tab-stops-list');
+        if (tabStopsList) {
+            tabStopsList.innerHTML = '';
+            const stops = Array.isArray(this.engine.tabStops) && this.engine.tabStops.length > 0
+                ? this.engine.tabStops
+                : [{ pos: 1.25, align: 'left', leader: 'none' }];
+
+            stops.forEach(st => {
+                const opt = document.createElement('option');
+                const pos = typeof st === 'object' ? parseFloat(st.pos) : parseFloat(st);
+                const align = typeof st === 'object' ? (st.align || 'left') : 'left';
+                const leader = typeof st === 'object' ? (st.leader || 'none') : 'none';
+                opt.value = pos.toFixed(2);
+                opt.setAttribute('data-align', align);
+                opt.setAttribute('data-leader', leader);
+                const alignLabel = align === 'center' ? 'Tengah' : align === 'right' ? 'Kanan' : 'Kiri';
+                opt.textContent = `${pos.toFixed(2)} cm (${alignLabel})`;
+                tabStopsList.appendChild(opt);
+            });
+
+            if (tabStopsList.options.length > 0) {
+                tabStopsList.options[0].selected = true;
+                const posIn = document.getElementById('tab-stop-pos');
+                if (posIn) posIn.value = tabStopsList.options[0].value;
+            }
+        }
+
+        this.openModal(modal);
     }
 
     openPageSetupModal(initialTab = 'margins') {
