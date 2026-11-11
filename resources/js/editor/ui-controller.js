@@ -1781,11 +1781,11 @@ export class UiController {
             `;
 
             this.engine.setTitle(title);
+            this.engine.setMarginPreset('skripsi', false);
+            this.engine.setFontFamily("'Times New Roman', serif", false);
+            this.engine.setFontSize('12pt', false);
+            this.engine.setLineSpacing('1.5', false);
             this.engine.setContent(sampleHtml);
-            this.engine.setMarginPreset('skripsi');
-            this.engine.setFontFamily("'Times New Roman', serif");
-            this.engine.setFontSize('12pt');
-            this.engine.setLineSpacing('1.5');
             this.showToast('Contoh Naskah Skripsi berhasil dimuat dengan format 4-4-3-3 cm!');
         } else if (type === 'report') {
             const title = 'Laporan Riset Evaluasi Sistem Monitoring IoT 2026';
@@ -1822,11 +1822,11 @@ export class UiController {
                 </table>
             `;
             this.engine.setTitle(title);
+            this.engine.setMarginPreset('normal', false);
+            this.engine.setFontFamily("'Instrument Sans', sans-serif", false);
+            this.engine.setFontSize('11pt', false);
+            this.engine.setLineSpacing('1.5', false);
             this.engine.setContent(sampleHtml);
-            this.engine.setMarginPreset('normal');
-            this.engine.setFontFamily("'Instrument Sans', sans-serif");
-            this.engine.setFontSize('11pt');
-            this.engine.setLineSpacing('1.5');
             this.showToast('Contoh Laporan Riset (Format Normal 2.54 cm) berhasil dimuat!');
         }
     }

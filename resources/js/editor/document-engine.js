@@ -947,8 +947,9 @@ export class DocumentEngine {
         const totalPages = pages.length;
         const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
 
-        // Clear existing sheets and gaps
-        this.pagesWrapper.innerHTML = '';
+        // Clear existing sheets and gaps while preserving vertical ruler and other static controls
+        const existingItems = this.pagesWrapper.querySelectorAll('.document-page-sheet, .page-sheet-gap, #chunk-loading-footer, .page-chunk-loading-marker');
+        existingItems.forEach(el => el.remove());
 
         // Synchronous execution mode: useful for unit tests, exports, or single-page documents
         if (options.sync || totalPages <= 1) {
@@ -1062,6 +1063,12 @@ export class DocumentEngine {
                 this.pendingChunks.currentIndex = currentIndex + 1;
                 this.showChunkProgress(pageNum, totalPages);
                 this.updateChunkLoadingFooter(pageNum + 1, totalPages);
+
+                // Dynamically update stats and outline as new sheets stream in
+                if (sheet.querySelector('h1, h2, h3, h4')) {
+                    this.updateOutline();
+                }
+                this.updateStats();
 
                 if (typeof options.onProgress === 'function') {
                     options.onProgress(pageNum, totalPages);
@@ -5213,13 +5220,12 @@ ${entriesHtml}    </div>
                 this.showPageNumber = data.showPageNumber !== false;
                 this.startPageNumber = parseInt(data.startPageNumber, 10) || 1;
                 this.setTitle(data.title || 'Dokumen Tanpa Judul');
-                this.setContent(data.content);
                 this.setFormatBadge(data.format || 'docx');
                 if (data.paperSize) this.setPaperSize(data.paperSize, data.customWidthMm, data.customHeightMm);
                 if (data.orientation) this.setOrientation(data.orientation);
                 if (data.margins) this.setCustomMargins(data.margins);
-                else if (data.marginPreset) this.setMarginPreset(data.marginPreset);
-                if (data.lineSpacing) this.setLineSpacing(data.lineSpacing);
+                else if (data.marginPreset) this.setMarginPreset(data.marginPreset, false);
+                if (data.lineSpacing) this.setLineSpacing(data.lineSpacing, false);
                 if (data.paragraphSpacing) this.paragraphSpacing = data.paragraphSpacing;
                 if (data.paragraphIndent) this.paragraphIndent = data.paragraphIndent;
                 if (data.columns) this.setColumns(data.columns);
@@ -5232,6 +5238,8 @@ ${entriesHtml}    </div>
                 if (data.pageColor) this.setPageColor(data.pageColor);
                 if (data.pageBorder) this.setPageBorder(data.pageBorder);
                 if (data.lineNumbers) this.setLineNumbers(data.lineNumbers);
+
+                this.setContent(data.content);
                 return true;
             }
         } catch (e) {
