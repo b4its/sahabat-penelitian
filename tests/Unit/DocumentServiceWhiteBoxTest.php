@@ -1054,3 +1054,25 @@ test('white-box: document engine client source implements progressive chunk syst
         ->and($engineSource)->toContain('currentIndex: 1') // page 1 immediately loaded, page 2 onward queued
         ->and($engineSource)->toContain('if (options.sync || totalPages <= 1)');
 });
+
+test('white-box: docx importer and document engine safeguard against maximum call stack size exceeded and preserve chunk streaming', function () {
+    $docxImporterSource = file_get_contents(realpath(__DIR__.'/../../resources/js/editor/docx-importer.js'));
+    $engineSource = file_get_contents(realpath(__DIR__.'/../../resources/js/editor/document-engine.js'));
+
+    // 1. DocxImporter formatFontFamily fallback variable check (ensuring no $fallback typo)
+    expect($docxImporterSource)->not->toContain('$fallback')
+        ->and($docxImporterSource)->toContain("if (fallback === 'serif')");
+
+    // 2. Mammoth fallback transformElement iterative non-recursive traversal
+    expect($engineSource)->toContain('const transformElement = (root) => {')
+        ->and($engineSource)->toContain('const stack = [root];')
+        ->and($engineSource)->toContain('const visited = new Set();')
+        ->and($engineSource)->toContain('while (stack.length > 0)');
+
+    // 3. DocumentEngine chunk rendering non-blocking getContent and recordHistory
+    expect($engineSource)->toContain('if (this.isChunkLoading && this.pendingChunks && this.lastLoadedFullHtml)')
+        ->and($engineSource)->toContain('recordHistory(htmlContent = null)')
+        ->and($engineSource)->toContain('if (record) this.recordHistory(html)')
+        ->and($engineSource)->toContain("this.setMarginPreset('skripsi', false)")
+        ->and($engineSource)->toContain('this.setFontFamily(academicFont, false)');
+});

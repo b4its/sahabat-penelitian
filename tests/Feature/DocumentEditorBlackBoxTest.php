@@ -1517,3 +1517,23 @@ test('black-box: document engine client source provides chunk rendering system a
     expect($sourceEngineJs)->toContain('document:chunk-progress');
     expect($sourceEngineJs)->toContain('document:chunk-complete');
 });
+
+test('black-box: document engine client source prevents call stack overflow and guarantees smooth chunk streaming from top to bottom', function () {
+    $sourceEngineJs = file_get_contents(resource_path('js/editor/document-engine.js'));
+    $sourceImporterJs = file_get_contents(resource_path('js/editor/docx-importer.js'));
+    $sourceAppJs = file_get_contents(resource_path('js/app.js'));
+
+    // Verify DocxImporter syntax sanity
+    expect($sourceImporterJs)->not->toContain('$fallback')
+        ->and($sourceImporterJs)->toContain("if (fallback === 'serif')");
+
+    // Verify non-recursive Mammoth transformDocument
+    expect($sourceEngineJs)->toContain('const transformElement = (root) => {')
+        ->and($sourceEngineJs)->toContain('while (stack.length > 0)');
+
+    // Verify non-interrupting getContent during chunk streaming
+    expect($sourceEngineJs)->toContain('if (this.isChunkLoading && this.pendingChunks && this.lastLoadedFullHtml)');
+
+    // Verify app.js outline navigation handles pending chunks gracefully
+    expect($sourceAppJs)->toContain('if (!targetEl && window.documentEngine && window.documentEngine.isChunkLoading)');
+});

@@ -1583,17 +1583,30 @@ export class DocumentEngine {
                             "p[style-name='Daftar Isi'] => p.toc-entry:fresh",
                         ];
 
-                        const transformElement = (element) => {
-                            if (element.children) {
-                                element.children = element.children.map(transformElement);
+                        const transformElement = (root) => {
+                            if (!root || typeof root !== 'object') return root;
+                            const stack = [root];
+                            const visited = new Set();
+                            while (stack.length > 0) {
+                                const current = stack.pop();
+                                if (!current || typeof current !== 'object' || visited.has(current)) continue;
+                                visited.add(current);
+
+                                if (Array.isArray(current.children)) {
+                                    for (let i = 0; i < current.children.length; i++) {
+                                        const child = current.children[i];
+                                        if (child && child.type === 'break' && child.breakType === 'page') {
+                                            current.children[i] = {
+                                                type: 'text',
+                                                value: '[[WORD_PAGE_BREAK]]'
+                                            };
+                                        } else if (child && child.children) {
+                                            stack.push(child);
+                                        }
+                                    }
+                                }
                             }
-                            if (element.type === 'break' && element.breakType === 'page') {
-                                return {
-                                    type: 'text',
-                                    value: '[[WORD_PAGE_BREAK]]'
-                                };
-                            }
-                            return element;
+                            return root;
                         };
 
                         const result = await window.mammoth.convertToHtml({
@@ -1686,12 +1699,6 @@ export class DocumentEngine {
             // Run semantic document structure & formatting adapter
             const adapted = this.adaptDocumentStructure(contentHtml, filename);
 
-            this.setContent(adapted.html);
-            this.setFormatBadge(detectedFormat);
-
-            const restoreBtn = document.getElementById('btn-restore-draft');
-            if (restoreBtn) restoreBtn.classList.add('hidden');
-
             // Include header & footer details in notification if detected
             let hfDetail = '';
             if (this.customHeaderText && this.customFooterText) {
@@ -1702,28 +1709,34 @@ export class DocumentEngine {
                 hfDetail = ` (Footer: "${this.customFooterText}")`;
             }
 
-            // Apply adapted typography and margins
+            // Apply adapted typography and margins BEFORE rendering chunks so every chunk sheet inherits them cleanly
             if (adapted.isAcademic) {
-                this.setMarginPreset('skripsi');
+                this.setMarginPreset('skripsi', false);
                 const academicFont = importedFont ? DocxImporter.formatFontFamily(importedFont) : "'Times New Roman', serif";
-                this.setFontFamily(academicFont);
-                this.setFontSize('12pt');
-                this.setLineSpacing('1.5');
+                this.setFontFamily(academicFont, false);
+                this.setFontSize('12pt', false);
+                this.setLineSpacing('1.5', false);
                 const cleanDisplayFont = (importedFont || 'Times New Roman').replace(/['"]/g, '').split(',')[0].trim();
                 this.onAdaptationNotice({
                     type: 'academic',
                     message: `Format Skripsi Terdeteksi: Margin 4-4-3-3 cm, Font ${cleanDisplayFont} 12pt, Spasi 1.5, dan ${adapted.headingCount} Bab/Subbab berhasil dipecah menjadi lembar halaman A4.${hfDetail}`,
                 });
             } else {
-                this.setMarginPreset('normal');
+                this.setMarginPreset('normal', false);
                 if (importedFont) {
-                    this.setFontFamily(DocxImporter.formatFontFamily(importedFont));
+                    this.setFontFamily(DocxImporter.formatFontFamily(importedFont), false);
                 }
                 this.onAdaptationNotice({
                     type: 'normal',
                     message: `Format ${detectedFormat.toUpperCase()} berhasil dimuat dan diselaraskan ke dalam lembar halaman A4.${hfDetail}`,
                 });
             }
+
+            this.setContent(adapted.html);
+            this.setFormatBadge(detectedFormat);
+
+            const restoreBtn = document.getElementById('btn-restore-draft');
+            if (restoreBtn) restoreBtn.classList.add('hidden');
 
             return {
                 success: true,
@@ -2265,7 +2278,7 @@ export class DocumentEngine {
      * Microsoft Word Page Setup & Margins Suite
      * ------------------------------------------------------------- */
 
-    setMarginPreset(preset) {
+    setMarginPreset(preset, triggerInput = true) {
         this.currentMarginPreset = preset;
         if (MARGIN_PRESETS[preset]) {
             const p = MARGIN_PRESETS[preset];
@@ -2291,7 +2304,7 @@ export class DocumentEngine {
         if (marginSelect) {
             marginSelect.value = preset;
         }
-        this.handleInput();
+        if (triggerInput) this.handleInput();
     }
 
     setCustomMargins(margins = {}) {
@@ -3228,7 +3241,7 @@ export class DocumentEngine {
         }
     }
 
-    setFontFamily(fontName) {
+    setFontFamily(fontName, triggerInput = true) {
         this.currentFontFamily = fontName;
         const active = this.getActiveEditor();
         if (active) active.focus();
@@ -3258,10 +3271,10 @@ export class DocumentEngine {
                 }
             }
         }
-        this.handleInput();
+        if (triggerInput) this.handleInput();
     }
 
-    setFontSize(ptSize) {
+    setFontSize(ptSize, triggerInput = true) {
         this.currentFontSize = ptSize;
         const active = this.getActiveEditor();
         if (active) active.focus();
@@ -3271,11 +3284,12 @@ export class DocumentEngine {
             span.style.fontSize = ptSize;
             span.appendChild(sel.getRangeAt(0).extractContents());
             sel.getRangeAt(0).insertNode(span);
-            this.handleInput();
+            if (triggerInput) this.handleInput();
         } else {
             this.getAllEditorBodies().forEach(b => {
                 b.style.fontSize = ptSize;
             });
+            if (triggerInput) this.handleInput();
         }
 
         const sizeSelect = document.getElementById('font-size-select');
@@ -3284,7 +3298,7 @@ export class DocumentEngine {
         }
     }
 
-    setLineSpacing(val) {
+    setLineSpacing(val, triggerInput = true) {
         this.currentLineSpacing = val;
         this.getAllEditorBodies().forEach(b => {
             b.style.lineHeight = val;
@@ -3297,7 +3311,7 @@ export class DocumentEngine {
         if (lineSelect) {
             lineSelect.value = val;
         }
-        this.handleInput();
+        if (triggerInput) this.handleInput();
     }
 
     setTextAlignment(align) {
@@ -4855,8 +4869,8 @@ ${entriesHtml}    </div>
         }
     }
 
-    recordHistory() {
-        const content = this.getContent();
+    recordHistory(htmlContent = null) {
+        const content = htmlContent !== null ? htmlContent : this.getContent();
         if (this.history[this.historyIndex] === content) return;
 
         this.history = this.history.slice(0, this.historyIndex + 1);
@@ -4906,7 +4920,9 @@ ${entriesHtml}    </div>
         const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
         const pageSheets = this.getAllPageSheets();
-        const pageCount = Math.max(pageSheets.length, 1);
+        const pageCount = (this.isChunkLoading && this.pendingChunks)
+            ? this.pendingChunks.totalPages
+            : Math.max(pageSheets.length, 1);
 
         this.onStatsChange({
             wordCount,
@@ -5139,8 +5155,9 @@ ${entriesHtml}    </div>
     }
 
     saveToLocalStorage() {
-        if (this.isChunkLoading && this.pendingChunks) {
-            this.flushChunkQueue();
+        if (this.isChunkLoading) {
+            // Defer auto-save until progressive chunk rendering finishes
+            return;
         }
         try {
             const data = {
@@ -5245,8 +5262,8 @@ ${entriesHtml}    </div>
     }
 
     getContent() {
-        if (this.isChunkLoading && this.pendingChunks) {
-            this.flushChunkQueue();
+        if (this.isChunkLoading && this.pendingChunks && this.lastLoadedFullHtml) {
+            return this.lastLoadedFullHtml;
         }
         const bodies = this.getAllEditorBodies();
         if (bodies.length === 0) {
@@ -5263,15 +5280,16 @@ ${entriesHtml}    </div>
     }
 
     setContent(html, record = true, options = {}) {
+        this.lastLoadedFullHtml = html;
         if (this.pagesWrapper) {
             const renderPromise = this.renderPaginatedDocument(html, options);
-            if (record) this.recordHistory();
+            if (record) this.recordHistory(html);
             this.updateStats();
             this.updateOutline();
             return renderPromise;
         } else if (this.editorEl) {
             this.editorEl.innerHTML = html;
-            if (record) this.recordHistory();
+            if (record) this.recordHistory(html);
             this.updateStats();
             this.updateOutline();
             return Promise.resolve({ totalPages: 1, completedPages: 1 });

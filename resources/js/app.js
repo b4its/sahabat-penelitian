@@ -72,7 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
 
                 li.addEventListener('click', () => {
-                    const targetEl = document.getElementById(h.id);
+                    let targetEl = document.getElementById(h.id);
+                    if (!targetEl && window.documentEngine && window.documentEngine.isChunkLoading) {
+                        window.documentEngine.flushChunkQueue();
+                        targetEl = document.getElementById(h.id);
+                    }
                     if (targetEl) {
                         targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         targetEl.classList.add('bg-indigo-100', 'dark:bg-indigo-950/60');

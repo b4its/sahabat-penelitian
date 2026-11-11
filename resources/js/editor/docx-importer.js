@@ -578,7 +578,7 @@ export class DocxImporter {
                 break;
             }
         }
-        if ($fallback === 'serif') {
+        if (fallback === 'serif') {
             for (const mono of monoFonts) {
                 if (lower.includes(mono)) {
                     fallback = 'monospace';
