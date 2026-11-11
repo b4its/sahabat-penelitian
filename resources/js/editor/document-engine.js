@@ -109,6 +109,11 @@ export class DocumentEngine {
         this.hyphenation = 'none';
         this.tabStops = [{ pos: 1.25, align: 'left', leader: 'none' }];
         this.defaultTabStop = 1.27;
+        this.watermark = null;
+        this.pageColor = '#ffffff';
+        this.pageBorder = null;
+        this.lineNumbers = 'none';
+        this.lineNumbersOptions = { startAt: 1, countBy: 1 };
         this.paragraphSpacing = { before: 0, after: 6 };
         this.paragraphIndent = { left: 0, right: 0, special: 'none', specialVal: 1.25, mirrorIndents: false };
         this.activePageIndex = 1;
@@ -1104,6 +1109,62 @@ export class DocumentEngine {
         }
 
         this.applyMarginsToSheet(sheet, this.currentMarginPreset, pageIndex);
+
+        // Apply Page Color
+        if (this.pageColor && this.pageColor !== 'none' && this.pageColor !== '#ffffff') {
+            sheet.style.backgroundColor = this.pageColor;
+        } else {
+            sheet.style.backgroundColor = '';
+        }
+
+        // Apply Watermark
+        sheet.querySelectorAll('.page-sheet-watermark').forEach(el => el.remove());
+        if (this.watermark && this.watermark.text) {
+            const wmDiv = document.createElement('div');
+            wmDiv.className = 'page-sheet-watermark select-none pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden z-0';
+            const rot = this.watermark.layout === 'horizontal' ? '0deg' : '-45deg';
+            const opacity = this.watermark.opacity || 0.25;
+            const fontSize = this.watermark.size && this.watermark.size !== 'auto' ? `${this.watermark.size}pt` : '72pt';
+            const fontFam = this.watermark.font || "'Times New Roman', serif";
+            const color = this.watermark.color || '#9ca3af';
+            wmDiv.innerHTML = `<span style="transform: rotate(${rot}); font-size: ${fontSize}; font-family: ${fontFam}; color: ${color}; opacity: ${opacity}; font-weight: bold; text-transform: uppercase; white-space: nowrap; user-select: none;">${this.escapeHtml(this.watermark.text)}</span>`;
+            sheet.insertBefore(wmDiv, sheet.firstChild);
+        }
+
+        // Apply Page Border
+        sheet.querySelectorAll('.page-sheet-border-frame').forEach(el => el.remove());
+        if (this.pageBorder && this.pageBorder.setting && this.pageBorder.setting !== 'none') {
+            const pIdx = pageIndex || parseInt(sheet.getAttribute('data-page-index') || '1', 10);
+            const shouldApply = (this.pageBorder.applyTo === 'document') ||
+                (this.pageBorder.applyTo === 'first-page' && pIdx === 1) ||
+                (this.pageBorder.applyTo === 'not-first-page' && pIdx > 1);
+            if (shouldApply) {
+                const borderDiv = document.createElement('div');
+                const inset = `${this.pageBorder.insetMm || 15}mm`;
+                const bStyle = this.pageBorder.style || 'solid';
+                const bWidth = this.pageBorder.width || '1.5pt';
+                const bColor = this.pageBorder.color || '#000000';
+                const shadow = this.pageBorder.setting === 'shadow' ? 'box-shadow: 4px 4px 0px rgba(0,0,0,0.25);' : '';
+                borderDiv.className = 'page-sheet-border-frame pointer-events-none absolute select-none';
+                borderDiv.style.cssText = `top: ${inset}; left: ${inset}; right: ${inset}; bottom: ${inset}; border: ${bWidth} ${bStyle} ${bColor}; ${shadow} z-index: 2;`;
+                sheet.appendChild(borderDiv);
+            }
+        }
+
+        // Apply Line Numbers
+        if (this.lineNumbers === 'page' || this.lineNumbers === 'continuous') {
+            sheet.classList.add('show-line-numbers');
+            if (this.lineNumbers === 'continuous') {
+                const pIdx = pageIndex || parseInt(sheet.getAttribute('data-page-index') || '1', 10);
+                const startOffset = Math.max(0, (pIdx - 1) * 25);
+                sheet.style.counterReset = `line-counter ${startOffset}`;
+            } else {
+                sheet.style.counterReset = 'line-counter 0';
+            }
+        } else {
+            sheet.classList.remove('show-line-numbers');
+            sheet.style.counterReset = '';
+        }
     }
 
     applyMarginsToSheet(sheet, preset = null, pageIndex = null) {
@@ -2020,6 +2081,10 @@ export class DocumentEngine {
         if (options.hyphenation !== undefined) this.hyphenation = options.hyphenation;
         if (options.tabStops !== undefined) this.tabStops = options.tabStops;
         if (options.defaultTabStop !== undefined) this.defaultTabStop = parseFloat(options.defaultTabStop);
+        if (options.watermark !== undefined) this.watermark = options.watermark;
+        if (options.pageColor !== undefined) this.pageColor = options.pageColor;
+        if (options.pageBorder !== undefined) this.pageBorder = options.pageBorder;
+        if (options.lineNumbers !== undefined) this.lineNumbers = options.lineNumbers;
 
         if (options.margins) {
             this.setCustomMargins(options.margins);
@@ -2186,6 +2251,31 @@ export class DocumentEngine {
                 el.style.orphans = options.widowOrphan ? '2' : '';
                 el.style.widows = options.widowOrphan ? '2' : '';
             }
+            if (options.suppressLineNumbers !== undefined) {
+                if (options.suppressLineNumbers) {
+                    el.classList.add('suppress-line-numbers');
+                } else {
+                    el.classList.remove('suppress-line-numbers');
+                }
+            }
+            if (options.dontHyphenate !== undefined) {
+                if (options.dontHyphenate) {
+                    el.style.hyphens = 'none';
+                    el.style.webkitHyphens = 'none';
+                } else {
+                    el.style.hyphens = '';
+                    el.style.webkitHyphens = '';
+                }
+            }
+            if (options.outlineLevel) {
+                el.setAttribute('data-outline-level', options.outlineLevel);
+            }
+            if (options.mirrorIndents !== undefined) {
+                this.paragraphIndent.mirrorIndents = Boolean(options.mirrorIndents);
+            }
+            if (options.dontAddSpaceSame !== undefined) {
+                el.setAttribute('data-dont-add-space-same', options.dontAddSpaceSame ? 'true' : 'false');
+            }
         });
 
         if (options.lineSpacing) {
@@ -2313,6 +2403,44 @@ export class DocumentEngine {
         this.handleInput();
     }
 
+    setWatermark(watermarkObj) {
+        this.watermark = watermarkObj;
+        this.getAllPageSheets().forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.handleInput();
+    }
+
+    removeWatermark() {
+        this.watermark = null;
+        this.getAllPageSheets().forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.handleInput();
+    }
+
+    setPageColor(color) {
+        this.pageColor = color;
+        this.getAllPageSheets().forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.handleInput();
+    }
+
+    setPageBorder(borderObj) {
+        this.pageBorder = borderObj;
+        this.getAllPageSheets().forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.handleInput();
+    }
+
+    removePageBorder() {
+        this.pageBorder = null;
+        this.getAllPageSheets().forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.handleInput();
+    }
+
+    setLineNumbers(mode = 'none', options = {}) {
+        this.lineNumbers = mode;
+        if (options.startAt) this.lineNumbersOptions.startAt = parseInt(options.startAt, 10);
+        if (options.countBy) this.lineNumbersOptions.countBy = parseInt(options.countBy, 10);
+        this.getAllPageSheets().forEach((sheet, idx) => this.applyPageSetupToSheet(sheet, idx + 1));
+        this.handleInput();
+    }
+
     getSelectedParagraphElements() {
         const sel = window.getSelection();
         if (!sel || sel.rangeCount === 0) return [];
@@ -2411,6 +2539,11 @@ export class DocumentEngine {
         const keepLinesTogether = p.style.pageBreakInside === 'avoid' || p.style.breakInside === 'avoid';
         const pageBreakBefore = p.style.pageBreakBefore === 'always' || p.style.breakBefore === 'page';
         const widowOrphan = p.style.orphans !== '';
+        const suppressLineNumbers = p.classList.contains('suppress-line-numbers');
+        const dontHyphenate = p.style.hyphens === 'none';
+        const outlineLevel = p.getAttribute('data-outline-level') || (p.tagName.startsWith('H') ? `level${p.tagName.replace('H', '')}` : 'body');
+        const dontAddSpaceSame = p.getAttribute('data-dont-add-space-same') === 'true';
+        const mirrorIndents = Boolean(this.paragraphIndent.mirrorIndents);
 
         return {
             alignment: align,
@@ -2431,6 +2564,11 @@ export class DocumentEngine {
             keepLinesTogether,
             pageBreakBefore,
             widowOrphan,
+            suppressLineNumbers,
+            dontHyphenate,
+            outlineLevel,
+            dontAddSpaceSame,
+            mirrorIndents,
         };
     }
 
@@ -4224,6 +4362,10 @@ ${entriesHtml}    </div>
                     default_tab_stop: this.defaultTabStop,
                     multiple_pages: this.multiplePagesMode,
                     vertical_align: this.verticalAlign,
+                    watermark: this.watermark,
+                    page_color: this.pageColor,
+                    page_border: this.pageBorder,
+                    line_numbers: this.lineNumbers,
                 }),
             });
 
@@ -4297,6 +4439,10 @@ ${entriesHtml}    </div>
                     default_tab_stop: this.defaultTabStop,
                     multiple_pages: this.multiplePagesMode,
                     vertical_align: this.verticalAlign,
+                    watermark: this.watermark,
+                    page_color: this.pageColor,
+                    page_border: this.pageBorder,
+                    line_numbers: this.lineNumbers,
                 },
                 exported_at: new Date().toISOString(),
             }, null, 2);
@@ -4347,6 +4493,10 @@ ${entriesHtml}    </div>
                 hyphenation: this.hyphenation || 'none',
                 tabStops: this.tabStops || [],
                 defaultTabStop: this.defaultTabStop || 1.27,
+                watermark: this.watermark || null,
+                pageColor: this.pageColor || '#ffffff',
+                pageBorder: this.pageBorder || null,
+                lineNumbers: this.lineNumbers || 'none',
                 multiplePagesMode: this.multiplePagesMode || 'normal',
                 verticalAlign: this.verticalAlign || 'top',
                 differentOddEven: this.differentOddEven || false,
@@ -4394,6 +4544,10 @@ ${entriesHtml}    </div>
                 if (data.multiplePagesMode) this.multiplePagesMode = data.multiplePagesMode;
                 if (data.verticalAlign) this.verticalAlign = data.verticalAlign;
                 if (data.differentOddEven !== undefined) this.differentOddEven = Boolean(data.differentOddEven);
+                if (data.watermark) this.setWatermark(data.watermark);
+                if (data.pageColor) this.setPageColor(data.pageColor);
+                if (data.pageBorder) this.setPageBorder(data.pageBorder);
+                if (data.lineNumbers) this.setLineNumbers(data.lineNumbers);
                 return true;
             }
         } catch (e) {

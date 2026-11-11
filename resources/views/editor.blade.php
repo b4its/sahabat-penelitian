@@ -492,6 +492,46 @@
             page-break-after: always;
             break-after: page;
         }
+
+        /* Microsoft Word Line Numbers Simulation */
+        .document-page-sheet.show-line-numbers {
+            counter-reset: line-counter;
+        }
+        .document-page-sheet.show-line-numbers .page-sheet-body > p,
+        .document-page-sheet.show-line-numbers .page-sheet-body > h1,
+        .document-page-sheet.show-line-numbers .page-sheet-body > h2,
+        .document-page-sheet.show-line-numbers .page-sheet-body > h3 {
+            position: relative;
+            counter-increment: line-counter;
+        }
+        .document-page-sheet.show-line-numbers .page-sheet-body > p::before,
+        .document-page-sheet.show-line-numbers .page-sheet-body > h1::before,
+        .document-page-sheet.show-line-numbers .page-sheet-body > h2::before,
+        .document-page-sheet.show-line-numbers .page-sheet-body > h3::before {
+            content: counter(line-counter);
+            position: absolute;
+            left: -2.2rem;
+            width: 1.8rem;
+            text-align: right;
+            font-family: monospace;
+            font-size: 9px;
+            color: #9ca3af;
+            user-select: none;
+            pointer-events: none;
+        }
+        .document-page-sheet.show-line-numbers .page-sheet-body > .suppress-line-numbers::before {
+            display: none !important;
+        }
+
+        /* Watermark & Page Border Helpers */
+        .page-sheet-watermark {
+            pointer-events: none;
+            user-select: none;
+        }
+        .page-sheet-border-frame {
+            pointer-events: none;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-100 h-full flex flex-col overflow-hidden select-none">
@@ -1112,6 +1152,95 @@
                 <!-- Tabs Dialog Launcher Button -->
                 <button type="button" id="btn-layout-open-tabs-modal" data-action="open-tabs-modal" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Atur Perhentian Tabulasi (Tabs Dialog)">
                     <span>⇥ Tab</span>
+                </button>
+
+                <!-- Line Numbers Dropdown (Microsoft Word Standard) -->
+                <div class="relative inline-block" id="line-numbers-dropdown-wrapper">
+                    <button id="btn-line-numbers-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Penomoran Baris Dokumen (Line Numbers)">
+                        <span>🔢 Baris</span>
+                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="line-numbers-dropdown-menu" class="hidden absolute left-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                        <button type="button" data-line-number-val="none" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 font-semibold">
+                            <span>❌</span> Tidak Ada (None)
+                        </button>
+                        <button type="button" data-line-number-val="continuous" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📜</span> Berkelanjutan (Continuous)
+                        </button>
+                        <button type="button" data-line-number-val="page" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📄</span> Mulai Ulang Tiap Halaman
+                        </button>
+                        <button type="button" data-line-number-val="suppress" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>🚫</span> Abaikan Paragraf Saat Ini
+                        </button>
+                        <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+                        <button type="button" data-action="open-line-numbers-modal" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium">
+                            Opsi Penomoran Baris...
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Watermark Dropdown (Microsoft Word Standard) -->
+                <div class="relative inline-block" id="watermark-dropdown-wrapper">
+                    <button id="btn-watermark-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Cap Air Dokumen (Watermark)">
+                        <span>💧 Cap Air</span>
+                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="watermark-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
+                        <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase">Standar Word</div>
+                        <button type="button" data-watermark-preset="DRAF" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📝</span> DRAF (Draft)
+                        </button>
+                        <button type="button" data-watermark-preset="RAHASIA" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 font-semibold text-red-600">
+                            <span>🔒</span> RAHASIA (Confidential)
+                        </button>
+                        <button type="button" data-watermark-preset="JANGAN DISALIN" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>🚫</span> JANGAN DISALIN
+                        </button>
+                        <button type="button" data-watermark-preset="CONTOH" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                            <span>📋</span> CONTOH (Sample)
+                        </button>
+                        <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+                        <button type="button" data-action="open-watermark-modal" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium">
+                            Cap Air Kustom (Custom)...
+                        </button>
+                        <button type="button" data-action="remove-watermark" class="w-full px-3 py-1.5 text-left hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400">
+                            Hapus Cap Air (Remove)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Page Color Dropdown (Microsoft Word Standard) -->
+                <div class="relative inline-block" id="page-color-dropdown-wrapper">
+                    <button id="btn-page-color-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Warna Latar Lembar Dokumen (Page Color)">
+                        <span>🎨 Warna</span>
+                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="page-color-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 p-2 text-xs text-gray-800 dark:text-gray-200 space-y-2">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase">Warna Standar Kertas</div>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button type="button" data-page-color="#ffffff" class="w-full h-6 rounded border border-gray-300 bg-white" title="Putih Standar"></button>
+                            <button type="button" data-page-color="#fdfbf7" class="w-full h-6 rounded border border-gray-300 bg-[#fdfbf7]" title="Ivory / Gading"></button>
+                            <button type="button" data-page-color="#fefae0" class="w-full h-6 rounded border border-gray-300 bg-[#fefae0]" title="Parchment / Kertas Tua"></button>
+                            <button type="button" data-page-color="#fef9c3" class="w-full h-6 rounded border border-amber-200 bg-[#fef9c3]" title="Kuning Lembut"></button>
+                            <button type="button" data-page-color="#ecfdf5" class="w-full h-6 rounded border border-emerald-200 bg-[#ecfdf5]" title="Mint Segar"></button>
+                            <button type="button" data-page-color="#eff6ff" class="w-full h-6 rounded border border-blue-200 bg-[#eff6ff]" title="Biru Lembut"></button>
+                            <button type="button" data-page-color="#f5f3ff" class="w-full h-6 rounded border border-purple-200 bg-[#f5f3ff]" title="Lavender"></button>
+                            <button type="button" data-page-color="#1f2937" class="w-full h-6 rounded border border-gray-600 bg-[#1f2937]" title="Abu-abu Gelap"></button>
+                        </div>
+                        <div class="border-t border-gray-100 dark:border-gray-800 pt-1 flex items-center justify-between">
+                            <span class="text-[11px] text-gray-500">Kustom:</span>
+                            <input type="color" id="input-custom-page-color" value="#ffffff" class="w-6 h-6 p-0 border border-gray-300 dark:border-gray-700 rounded cursor-pointer" />
+                        </div>
+                        <button type="button" data-page-color="none" class="w-full py-1 text-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                            Tanpa Warna (Standar)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Page Borders Button (Microsoft Word Standard) -->
+                <button type="button" id="btn-open-page-borders-modal" data-action="open-page-borders-modal" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Batas Halaman (Page Borders)">
+                    <span>🖼️ Batas</span>
                 </button>
             </div>
 
@@ -2992,6 +3121,15 @@
                                     <option value="bottom">Bawah (Bottom)</option>
                                 </select>
                             </div>
+
+                            <div class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                                <button type="button" data-action="open-line-numbers-modal" class="px-2.5 py-1 text-xs font-semibold rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                    Nomor Baris (Line Numbers)...
+                                </button>
+                                <button type="button" data-action="open-page-borders-modal" class="px-2.5 py-1 text-xs font-semibold rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                    Batas Halaman (Borders)...
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Layout Info -->
@@ -3224,6 +3362,24 @@
                                 <p class="text-[11px] text-gray-400">Selalu memulai paragraf atau bab ini pada lembar halaman baru.</p>
                             </div>
                         </label>
+
+                        <div class="border-t border-gray-100 dark:border-gray-800 my-2 pt-2">
+                            <span class="font-bold text-gray-500 text-[10px] uppercase block mb-1">Pengecualian Format (Formatting Exceptions)</span>
+                            <label class="flex items-center gap-2.5 cursor-pointer mb-2">
+                                <input type="checkbox" id="para-suppress-line-numbers" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                                <div>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">Abaikan nomor baris (Suppress line numbers)</span>
+                                    <p class="text-[11px] text-gray-400">Tidak menyertakan nomor baris pada paragraf ini saat penomoran baris aktif.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input type="checkbox" id="para-dont-hyphenate" class="rounded text-indigo-600 focus:ring-indigo-500" />
+                                <div>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">Jangan gunakan tanda hubung (Don't hyphenate)</span>
+                                    <p class="text-[11px] text-gray-400">Mencegah pemenggalan kata otomatis pada akhir baris untuk paragraf ini.</p>
+                                </div>
+                            </label>
+                        </div>
                     </fieldset>
                 </div>
             </div>
@@ -3350,6 +3506,255 @@
                     <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
                     <button type="button" id="btn-confirm-tabs" class="px-3.5 py-1 text-xs font-bold rounded bg-blue-600 hover:bg-blue-700 text-white shadow-xs">OK</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 19: CAP AIR / WATERMARK (MICROSOFT WORD WATERMARK SUITE)             -->
+    <!-- ========================================================================= -->
+    <div id="modal-watermark" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs">💧</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Cap Air Kustom (Watermark)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Sisipkan tanda teks transparan di latar belakang naskah</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Teks Cap Air (Text):</label>
+                    <input type="text" id="wm-text-input" value="DRAF" placeholder="Misal: DRAF, RAHASIA, JANGAN DISALIN" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 font-semibold uppercase" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Font:</label>
+                        <select id="wm-font-select" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+                            <option value="'Times New Roman', serif" selected>Times New Roman</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Calibri, sans-serif">Calibri</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="monospace">Courier New</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Ukuran (Size):</label>
+                        <select id="wm-size-select" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+                            <option value="auto">Otomatis (Auto)</option>
+                            <option value="36">36 pt</option>
+                            <option value="48">48 pt</option>
+                            <option value="54">54 pt</option>
+                            <option value="72" selected>72 pt (Standar)</option>
+                            <option value="96">96 pt</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 items-center">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Warna (Color):</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="wm-color-input" value="#9ca3af" class="w-8 h-8 p-0 border border-gray-300 dark:border-gray-700 rounded cursor-pointer" />
+                            <span class="text-[11px] text-gray-500 font-mono">Abu-abu Lembut</span>
+                        </div>
+                    </div>
+                    <div class="pt-3">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="wm-semitransparent" checked class="rounded text-indigo-600 focus:ring-indigo-500" />
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">Semitransparan (Washout)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-2.5">
+                    <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Tata Letak (Layout)</legend>
+                    <div class="flex items-center gap-4 mt-1">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="wm-layout-radio" value="diagonal" checked class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Miring (Diagonal - 45°)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="wm-layout-radio" value="horizontal" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Mendatar (Horizontal)</span>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                <button type="button" id="btn-remove-watermark-dialog" class="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition">
+                    Hapus Cap Air
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
+                    <button type="button" id="btn-confirm-watermark" class="px-3.5 py-1 text-xs font-bold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">Terapkan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 20: BATAS HALAMAN / PAGE BORDERS (MICROSOFT WORD SUITE)             -->
+    <!-- ========================================================================= -->
+    <div id="modal-page-borders" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs">🖼️</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Batas Halaman (Page Borders)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur garis bingkai sekeliling lembar halaman dokumen Word</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3.5 text-xs">
+                <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-2.5">
+                    <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Pengaturan (Setting)</legend>
+                    <div class="grid grid-cols-3 gap-2 mt-1">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="pb-setting-radio" value="none" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Tidak Ada</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="pb-setting-radio" value="box" checked class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Kotak (Box)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="pb-setting-radio" value="shadow" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Bayangan</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Gaya Garis (Style):</label>
+                        <select id="pb-style-select" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+                            <option value="solid" selected>Solid (Garis Tunggal)</option>
+                            <option value="dashed">Dashed (Garis Putus)</option>
+                            <option value="dotted">Dotted (Titik-titik)</option>
+                            <option value="double">Double (Garis Ganda)</option>
+                            <option value="groove">Groove (Ukiran)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Ketebalan (Width):</label>
+                        <select id="pb-width-select" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+                            <option value="0.5pt">0.5 pt</option>
+                            <option value="1pt">1.0 pt</option>
+                            <option value="1.5pt" selected>1.5 pt (Standar)</option>
+                            <option value="2.25pt">2.25 pt</option>
+                            <option value="3pt">3.0 pt</option>
+                            <option value="4.5pt">4.5 pt</option>
+                            <option value="6pt">6.0 pt</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 items-center">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Warna Batas (Color):</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="pb-color-input" value="#000000" class="w-8 h-8 p-0 border border-gray-300 dark:border-gray-700 rounded cursor-pointer" />
+                            <span class="text-[11px] text-gray-500">Warna Garis</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Jarak dari Tepi (Margin):</label>
+                        <div class="flex items-center">
+                            <input type="number" id="pb-margin-inset" value="15" min="5" max="35" step="1" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-l bg-white dark:bg-gray-800 text-right font-mono" />
+                            <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1.5 border-y border-r border-gray-300 dark:border-gray-700 rounded-r text-gray-500">mm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Terapkan ke (Apply to):</label>
+                    <select id="pb-apply-to" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+                        <option value="document" selected>Seluruh Dokumen (Whole document)</option>
+                        <option value="first-page">Halaman Pertama Saja (First page only)</option>
+                        <option value="not-first-page">Semua Kecuali Halaman Pertama</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                <button type="button" id="btn-remove-border-dialog" class="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition">
+                    Hapus Batas
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
+                    <button type="button" id="btn-confirm-page-border" class="px-3.5 py-1 text-xs font-bold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">Terapkan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 21: NOMOR BARIS / LINE NUMBERS (MICROSOFT WORD SUITE)               -->
+    <!-- ========================================================================= -->
+    <div id="modal-line-numbers" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-sm w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs">🔢</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Penomoran Baris (Line Numbers)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur penomoran baris naskah akademik & jurnal</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3.5 text-xs">
+                <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+                    <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Mode Penomoran</legend>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="ln-mode-radio" value="none" checked class="text-indigo-600 focus:ring-indigo-500" />
+                        <span>Tidak Ada (None)</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="ln-mode-radio" value="continuous" class="text-indigo-600 focus:ring-indigo-500" />
+                        <span>Berkelanjutan di Seluruh Dokumen</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="ln-mode-radio" value="page" class="text-indigo-600 focus:ring-indigo-500" />
+                        <span>Mulai Ulang di Tiap Halaman Baru</span>
+                    </label>
+                </fieldset>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Mulai Dari (Start at):</label>
+                        <input type="number" id="ln-start-at" value="1" min="1" max="1000" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-right font-mono" />
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Kenaikan (Count by):</label>
+                        <input type="number" id="ln-count-by" value="1" min="1" max="50" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-right font-mono" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2 shrink-0">
+                <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
+                <button type="button" id="btn-confirm-line-numbers" class="px-3.5 py-1 text-xs font-bold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">OK</button>
             </div>
         </div>
     </div>

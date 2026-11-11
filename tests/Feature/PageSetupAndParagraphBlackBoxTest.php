@@ -452,3 +452,118 @@ test('black-box: user can export document with columns and hyphenation layout pa
         ->toContain('hyphens: auto;')
         ->toContain('mso-break-type:column');
 });
+
+test('black-box: editor view renders Microsoft Word Line Numbers, Watermark, Page Color dropdowns, and Page Borders button', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Line Numbers Dropdown
+    $response->assertSee('id="btn-line-numbers-dropdown"', false);
+    $response->assertSee('id="line-numbers-dropdown-menu"', false);
+    $response->assertSee('data-line-number-val="none"', false);
+    $response->assertSee('data-line-number-val="continuous"', false);
+    $response->assertSee('data-line-number-val="page"', false);
+    $response->assertSee('data-line-number-val="suppress"', false);
+    $response->assertSee('data-action="open-line-numbers-modal"', false);
+
+    // Watermark Dropdown
+    $response->assertSee('id="btn-watermark-dropdown"', false);
+    $response->assertSee('id="watermark-dropdown-menu"', false);
+    $response->assertSee('data-watermark-preset="DRAF"', false);
+    $response->assertSee('data-watermark-preset="RAHASIA"', false);
+    $response->assertSee('data-watermark-preset="JANGAN DISALIN"', false);
+    $response->assertSee('data-watermark-preset="CONTOH"', false);
+    $response->assertSee('data-action="open-watermark-modal"', false);
+    $response->assertSee('data-action="remove-watermark"', false);
+
+    // Page Color Dropdown
+    $response->assertSee('id="btn-page-color-dropdown"', false);
+    $response->assertSee('id="page-color-dropdown-menu"', false);
+    $response->assertSee('data-page-color="#ffffff"', false);
+    $response->assertSee('data-page-color="#fdfbf7"', false);
+    $response->assertSee('data-page-color="#fefae0"', false);
+    $response->assertSee('data-page-color="#fef9c3"', false);
+    $response->assertSee('data-page-color="#ecfdf5"', false);
+    $response->assertSee('data-page-color="#eff6ff"', false);
+    $response->assertSee('data-page-color="#f5f3ff"', false);
+    $response->assertSee('data-page-color="#1f2937"', false);
+    $response->assertSee('id="input-custom-page-color"', false);
+
+    // Page Borders Trigger
+    $response->assertSee('id="btn-open-page-borders-modal"', false);
+});
+
+test('black-box: editor view renders Watermark, Page Borders, and Line Numbers modals (Modals 19, 20, 21)', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Modal 19: Watermark
+    $response->assertSee('id="modal-watermark"', false);
+    $response->assertSee('Cap Air Kustom (Watermark)', false);
+    $response->assertSee('id="wm-text-input"', false);
+    $response->assertSee('id="wm-font-select"', false);
+    $response->assertSee('id="wm-size-select"', false);
+    $response->assertSee('id="wm-color-input"', false);
+    $response->assertSee('id="wm-semitransparent"', false);
+    $response->assertSee('name="wm-layout-radio"', false);
+    $response->assertSee('id="btn-confirm-watermark"', false);
+    $response->assertSee('id="btn-remove-watermark-dialog"', false);
+
+    // Modal 20: Page Borders
+    $response->assertSee('id="modal-page-borders"', false);
+    $response->assertSee('Batas Halaman (Page Borders)', false);
+    $response->assertSee('name="pb-setting-radio"', false);
+    $response->assertSee('id="pb-style-select"', false);
+    $response->assertSee('id="pb-width-select"', false);
+    $response->assertSee('id="pb-color-input"', false);
+    $response->assertSee('id="pb-margin-inset"', false);
+    $response->assertSee('id="pb-apply-to"', false);
+    $response->assertSee('id="btn-confirm-page-border"', false);
+    $response->assertSee('id="btn-remove-border-dialog"', false);
+
+    // Modal 21: Line Numbers
+    $response->assertSee('id="modal-line-numbers"', false);
+    $response->assertSee('Penomoran Baris (Line Numbers)', false);
+    $response->assertSee('name="ln-mode-radio"', false);
+    $response->assertSee('id="ln-start-at"', false);
+    $response->assertSee('id="ln-count-by"', false);
+    $response->assertSee('id="btn-confirm-line-numbers"', false);
+});
+
+test('black-box: user can export document with watermark, page color, border, and line numbering parameters via api', function () {
+    $payload = [
+        'title' => 'Dokumen Kerahasiaan Tinggi',
+        'content' => '<p>Paragraf berisi materi penting rahasia.</p>',
+        'format' => 'docx',
+        'paper_size' => 'a4',
+        'orientation' => 'portrait',
+        'page_color' => '#fefce8',
+        'watermark' => [
+            'type' => 'text',
+            'text' => 'RAHASIA NEGARA',
+            'font' => 'Arial',
+            'color' => '#b91c1c',
+            'opacity' => 0.3,
+            'orientation' => 'diagonal',
+        ],
+        'page_border' => [
+            'style' => 'solid',
+            'width' => '2pt',
+            'color' => '#1e3a8a',
+            'margin' => '15mm',
+        ],
+        'line_numbers' => 'continuous',
+    ];
+
+    $response = $this->postJson('/api/documents/export', $payload);
+
+    $response->assertStatus(200)
+        ->assertHeader('Content-Disposition')
+        ->assertHeader('Content-Type', 'application/msword; charset=UTF-8');
+
+    $content = $response->getContent();
+    expect($content)->toContain('RAHASIA NEGARA')
+        ->toContain('background-color: #fefce8;')
+        ->toContain('border: 2pt solid #1e3a8a;')
+        ->toContain('counter-reset: line-counter;');
+});

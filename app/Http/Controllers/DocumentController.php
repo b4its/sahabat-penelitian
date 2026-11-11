@@ -168,6 +168,10 @@ HTML;
             'tab_stops' => $request->input('tab_stops'),
             'default_tab_stop' => $request->input('default_tab_stop'),
             'multiple_pages' => $request->input('multiple_pages'),
+            'watermark' => $request->input('watermark'),
+            'page_color' => $request->input('page_color'),
+            'page_border' => $request->input('page_border'),
+            'line_numbers' => $request->input('line_numbers'),
         ];
 
         $exported = $this->documentService->exportDocument($title, $content, $format, $headerText, $footerText, $layoutOptions);

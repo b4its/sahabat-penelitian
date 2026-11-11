@@ -1059,6 +1059,38 @@ class DocumentService
         $hyphenation = strtolower($layoutOptions['hyphenation'] ?? 'none');
         $hyphensCss = ($hyphenation === 'auto') ? 'hyphens: auto; -webkit-hyphens: auto; mso-hyphenate: auto;' : '';
 
+        $pageColor = $layoutOptions['page_color'] ?? '#ffffff';
+        $pageBgCss = ($pageColor && strtolower($pageColor) !== '#ffffff') ? "background-color: {$pageColor};" : '';
+
+        $pageBorder = $layoutOptions['page_border'] ?? null;
+        $borderCss = '';
+        if (! empty($pageBorder) && is_array($pageBorder) && ! empty($pageBorder['style']) && $pageBorder['style'] !== 'none') {
+            $borderStyle = $pageBorder['style'] ?? 'solid';
+            $borderWidth = $pageBorder['width'] ?? '1pt';
+            $borderColor = $pageBorder['color'] ?? '#000000';
+            $borderMargin = $pageBorder['margin'] ?? '15mm';
+            $borderCss = "border: {$borderWidth} {$borderStyle} {$borderColor}; padding: {$borderMargin};";
+        }
+
+        $watermark = $layoutOptions['watermark'] ?? null;
+        $watermarkHtml = '';
+        if (! empty($watermark) && is_array($watermark) && ! empty($watermark['text'])) {
+            $wmText = htmlspecialchars($watermark['text'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $wmFont = htmlspecialchars($watermark['font'] ?? 'Calibri', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $wmColor = htmlspecialchars($watermark['color'] ?? '#94a3b8', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $wmOpacity = is_numeric($watermark['opacity'] ?? null) ? $watermark['opacity'] : '0.25';
+            $wmOrientation = ($watermark['orientation'] ?? 'diagonal') === 'horizontal' ? '0deg' : '-45deg';
+            $wmSize = (! empty($watermark['size']) && is_numeric($watermark['size'])) ? "{$watermark['size']}pt" : '72pt';
+
+            $watermarkHtml = "<div class=\"watermark-overlay\" style=\"position: fixed; top: 40%; left: 10%; right: 10%; text-align: center; transform: rotate({$wmOrientation}); font-family: '{$wmFont}', sans-serif; font-size: {$wmSize}; color: {$wmColor}; opacity: {$wmOpacity}; font-weight: bold; pointer-events: none; z-index: -1; user-select: none; text-transform: uppercase;\">{$wmText}</div>";
+        }
+
+        $lineNumbers = strtolower($layoutOptions['line_numbers'] ?? 'none');
+        $lineNumbersCss = '';
+        if ($lineNumbers !== 'none' && ! empty($lineNumbers)) {
+            $lineNumbersCss = "body, div.Section1 { counter-reset: line-counter; }\np:not(.suppress-line-numbers)::before { counter-increment: line-counter; content: counter(line-counter); display: inline-block; width: 2.5em; margin-left: -3em; color: #9ca3af; font-size: 9pt; text-align: right; user-select: none; padding-right: 0.5em; }";
+        }
+
         switch (strtolower($format)) {
             case 'markdown':
             case 'md':
@@ -1144,7 +1176,9 @@ div.Section1 {
     page: Section1;
     {$columnCountCss}
     {$hyphensCss}
+    {$borderCss}
 }
+{$lineNumbersCss}
 table.MsoHeaderTable, table.MsoFooterTable {
     width: 100%;
     border-collapse: collapse;
@@ -1170,6 +1204,7 @@ body {
     font-size: 12pt;
     line-height: {$lineSpacing};
     color: #000000;
+    {$pageBgCss}
 }
 h1 {
     font-size: 14pt;
@@ -1220,6 +1255,7 @@ th {
 </head>
 <body>
 <div class="Section1">
+    {$watermarkHtml}
     <div style="mso-element:header" id="h1">
         <p class="MsoHeader">
             <span style="float:left;">{$headerHtml}</span>
@@ -1257,7 +1293,8 @@ XML;
     <title>{$title}</title>
     <style>
         @page { size: {$pageSizeStr}; margin: {$marginStr}; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: {$lineSpacing}; max-width: {$w}; margin: 40px auto; padding: {$marginStr}; color: #111827; {$columnCountCss} {$hyphensCss} }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: {$lineSpacing}; max-width: {$w}; margin: 40px auto; padding: {$marginStr}; color: #111827; {$pageBgCss} {$borderCss} {$columnCountCss} {$hyphensCss} }
+        {$lineNumbersCss}
         h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-top: 24px; margin-bottom: 16px; text-transform: uppercase; }
         h2 { font-size: 13pt; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
         h3 { font-size: 12pt; font-weight: bold; margin-top: 16px; margin-bottom: 8px; }
@@ -1270,6 +1307,7 @@ XML;
     </style>
 </head>
 <body>
+    {$watermarkHtml}
     {$sanitizedHtml}
 </body>
 </html>

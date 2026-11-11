@@ -340,4 +340,57 @@ XML;
         $this->assertCount(2, $data['layout_options']['tab_stops']);
         $this->assertEquals(1.27, $data['layout_options']['default_tab_stop']);
     }
+
+    public function test_document_service_export_embeds_watermark_page_color_border_and_line_numbers(): void
+    {
+        $content = '<p>Dokumen berstempel rahasia dan berbingkai warna.</p>';
+        $layoutOptions = [
+            'paper_size' => 'a4',
+            'watermark' => [
+                'type' => 'text',
+                'text' => 'SANGAT RAHASIA',
+                'font' => 'Georgia',
+                'color' => '#e11d48',
+                'opacity' => 0.35,
+                'orientation' => 'diagonal',
+            ],
+            'page_color' => '#fefce8',
+            'page_border' => [
+                'style' => 'double',
+                'width' => '3pt',
+                'color' => '#1e40af',
+                'margin' => '18mm',
+                'applyTo' => 'whole',
+            ],
+            'line_numbers' => 'continuous',
+        ];
+
+        // 1. DOCX/DOC Export
+        $docxResult = $this->docService->exportDocument('Uji Cap Air DOCX', $content, 'docx', null, null, $layoutOptions);
+        $docxContent = $docxResult['content'];
+
+        $this->assertStringContainsString('SANGAT RAHASIA', $docxContent);
+        $this->assertStringContainsString('background-color: #fefce8;', $docxContent);
+        $this->assertStringContainsString('border: 3pt double #1e40af;', $docxContent);
+        $this->assertStringContainsString('counter-reset: line-counter;', $docxContent);
+
+        // 2. HTML Export
+        $htmlResult = $this->docService->exportDocument('Uji Cap Air HTML', $content, 'html', null, null, $layoutOptions);
+        $htmlContent = $htmlResult['content'];
+
+        $this->assertStringContainsString('SANGAT RAHASIA', $htmlContent);
+        $this->assertStringContainsString('background-color: #fefce8;', $htmlContent);
+        $this->assertStringContainsString('border: 3pt double #1e40af;', $htmlContent);
+        $this->assertStringContainsString('counter-reset: line-counter;', $htmlContent);
+
+        // 3. JSON Export
+        $jsonResult = $this->docService->exportDocument('Uji Cap Air JSON', $content, 'json', null, null, $layoutOptions);
+        $jsonData = json_decode($jsonResult['content'], true);
+
+        $this->assertIsArray($jsonData);
+        $this->assertEquals('SANGAT RAHASIA', $jsonData['layout_options']['watermark']['text']);
+        $this->assertEquals('#fefce8', $jsonData['layout_options']['page_color']);
+        $this->assertEquals('double', $jsonData['layout_options']['page_border']['style']);
+        $this->assertEquals('continuous', $jsonData['layout_options']['line_numbers']);
+    }
 }

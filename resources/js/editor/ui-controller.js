@@ -2377,6 +2377,212 @@ export class UiController {
             }
         }
 
+        // Line Numbers Dropdown
+        const btnLineNumbersDropdown = document.getElementById('btn-line-numbers-dropdown');
+        const lineNumbersMenu = document.getElementById('line-numbers-dropdown-menu');
+        if (btnLineNumbersDropdown && lineNumbersMenu) {
+            btnLineNumbersDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                lineNumbersMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                if (!lineNumbersMenu.contains(e.target) && !btnLineNumbersDropdown.contains(e.target)) {
+                    lineNumbersMenu.classList.add('hidden');
+                }
+            });
+            lineNumbersMenu.querySelectorAll('[data-line-number-val]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.getAttribute('data-line-number-val');
+                    lineNumbersMenu.classList.add('hidden');
+                    if (val === 'suppress') {
+                        const paras = this.engine.getSelectedParagraphElements();
+                        paras.forEach(p => p.classList.toggle('suppress-line-numbers'));
+                        this.showToast('Penomoran baris untuk paragraf aktif dialihkan');
+                    } else {
+                        this.engine.setLineNumbers(val);
+                        const label = val === 'none' ? 'dinonaktifkan' : (val === 'continuous' ? 'berkelanjutan' : 'mulai ulang tiap halaman');
+                        this.showToast(`Penomoran baris ${label}`);
+                    }
+                });
+            });
+        }
+
+        // Line Numbers Modal Launchers
+        document.querySelectorAll('[data-action="open-line-numbers-modal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (lineNumbersMenu) lineNumbersMenu.classList.add('hidden');
+                this.openLineNumbersModal();
+            });
+        });
+        const lineNumbersModal = document.getElementById('modal-line-numbers');
+        if (lineNumbersModal) {
+            const btnConfirmLn = document.getElementById('btn-confirm-line-numbers');
+            if (btnConfirmLn) {
+                btnConfirmLn.addEventListener('click', () => {
+                    const modeRadio = lineNumbersModal.querySelector('input[name="ln-mode-radio"]:checked');
+                    const mode = modeRadio ? modeRadio.value : 'none';
+                    const startAt = parseInt(document.getElementById('ln-start-at')?.value, 10) || 1;
+                    const countBy = parseInt(document.getElementById('ln-count-by')?.value, 10) || 1;
+                    this.engine.setLineNumbers(mode, { startAt, countBy });
+                    this.closeModal(lineNumbersModal);
+                    this.showToast('Pengaturan penomoran baris berhasil diterapkan!');
+                });
+            }
+        }
+
+        // Watermark Dropdown
+        const btnWatermarkDropdown = document.getElementById('btn-watermark-dropdown');
+        const watermarkMenu = document.getElementById('watermark-dropdown-menu');
+        if (btnWatermarkDropdown && watermarkMenu) {
+            btnWatermarkDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                watermarkMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                if (!watermarkMenu.contains(e.target) && !btnWatermarkDropdown.contains(e.target)) {
+                    watermarkMenu.classList.add('hidden');
+                }
+            });
+            watermarkMenu.querySelectorAll('[data-watermark-preset]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const preset = btn.getAttribute('data-watermark-preset');
+                    watermarkMenu.classList.add('hidden');
+                    const color = preset === 'RAHASIA' ? '#ef4444' : '#9ca3af';
+                    this.engine.setWatermark({
+                        text: preset,
+                        font: "'Times New Roman', serif",
+                        size: 72,
+                        color,
+                        opacity: 0.25,
+                        layout: 'diagonal'
+                    });
+                    this.showToast(`Cap air "${preset}" diterapkan!`);
+                });
+            });
+            watermarkMenu.querySelectorAll('[data-action="remove-watermark"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    watermarkMenu.classList.add('hidden');
+                    this.engine.removeWatermark();
+                    this.showToast('Cap air dihapus');
+                });
+            });
+        }
+
+        // Watermark Modal Launchers
+        document.querySelectorAll('[data-action="open-watermark-modal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (watermarkMenu) watermarkMenu.classList.add('hidden');
+                this.openWatermarkModal();
+            });
+        });
+        const watermarkModal = document.getElementById('modal-watermark');
+        if (watermarkModal) {
+            const btnConfirmWm = document.getElementById('btn-confirm-watermark');
+            if (btnConfirmWm) {
+                btnConfirmWm.addEventListener('click', () => {
+                    const text = document.getElementById('wm-text-input')?.value?.trim() || 'DRAF';
+                    const font = document.getElementById('wm-font-select')?.value || "'Times New Roman', serif";
+                    const sizeRaw = document.getElementById('wm-size-select')?.value || '72';
+                    const size = sizeRaw === 'auto' ? 72 : parseInt(sizeRaw, 10);
+                    const color = document.getElementById('wm-color-input')?.value || '#9ca3af';
+                    const isSemitrans = Boolean(document.getElementById('wm-semitransparent')?.checked);
+                    const layoutRadio = watermarkModal.querySelector('input[name="wm-layout-radio"]:checked');
+                    const layout = layoutRadio ? layoutRadio.value : 'diagonal';
+
+                    this.engine.setWatermark({
+                        text, font, size, color, opacity: isSemitrans ? 0.25 : 0.6, layout
+                    });
+                    this.closeModal(watermarkModal);
+                    this.showToast(`Cap air "${text}" berhasil diterapkan!`);
+                });
+            }
+            const btnRemoveWm = document.getElementById('btn-remove-watermark-dialog');
+            if (btnRemoveWm) {
+                btnRemoveWm.addEventListener('click', () => {
+                    this.engine.removeWatermark();
+                    this.closeModal(watermarkModal);
+                    this.showToast('Cap air berhasil dihapus');
+                });
+            }
+        }
+
+        // Page Color Dropdown
+        const btnPageColorDropdown = document.getElementById('btn-page-color-dropdown');
+        const pageColorMenu = document.getElementById('page-color-dropdown-menu');
+        if (btnPageColorDropdown && pageColorMenu) {
+            btnPageColorDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                pageColorMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                if (!pageColorMenu.contains(e.target) && !btnPageColorDropdown.contains(e.target)) {
+                    pageColorMenu.classList.add('hidden');
+                }
+            });
+            pageColorMenu.querySelectorAll('[data-page-color]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const color = btn.getAttribute('data-page-color');
+                    pageColorMenu.classList.add('hidden');
+                    if (color === 'none') {
+                        this.engine.setPageColor('#ffffff');
+                        this.showToast('Warna halaman dikembalikan ke standar');
+                    } else {
+                        this.engine.setPageColor(color);
+                        this.showToast('Warna halaman berhasil diubah');
+                    }
+                });
+            });
+            const inputCustomColor = document.getElementById('input-custom-page-color');
+            if (inputCustomColor) {
+                inputCustomColor.addEventListener('change', () => {
+                    pageColorMenu.classList.add('hidden');
+                    this.engine.setPageColor(inputCustomColor.value);
+                    this.showToast('Warna halaman kustom diterapkan');
+                });
+            }
+        }
+
+        // Page Borders Modal Launchers
+        document.querySelectorAll('[data-action="open-page-borders-modal"], #btn-open-page-borders-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.openPageBordersModal();
+            });
+        });
+        const pageBordersModal = document.getElementById('modal-page-borders');
+        if (pageBordersModal) {
+            const btnConfirmPb = document.getElementById('btn-confirm-page-border');
+            if (btnConfirmPb) {
+                btnConfirmPb.addEventListener('click', () => {
+                    const settingRadio = pageBordersModal.querySelector('input[name="pb-setting-radio"]:checked');
+                    const setting = settingRadio ? settingRadio.value : 'box';
+                    const style = document.getElementById('pb-style-select')?.value || 'solid';
+                    const width = document.getElementById('pb-width-select')?.value || '1.5pt';
+                    const color = document.getElementById('pb-color-input')?.value || '#000000';
+                    const insetMm = parseFloat(document.getElementById('pb-margin-inset')?.value) || 15;
+                    const applyTo = document.getElementById('pb-apply-to')?.value || 'document';
+
+                    if (setting === 'none') {
+                        this.engine.removePageBorder();
+                        this.showToast('Batas halaman dihapus');
+                    } else {
+                        this.engine.setPageBorder({
+                            setting, style, width, color, insetMm, applyTo
+                        });
+                        this.showToast('Batas halaman berhasil diterapkan!');
+                    }
+                    this.closeModal(pageBordersModal);
+                });
+            }
+            const btnRemovePb = document.getElementById('btn-remove-border-dialog');
+            if (btnRemovePb) {
+                btnRemovePb.addEventListener('click', () => {
+                    this.engine.removePageBorder();
+                    this.closeModal(pageBordersModal);
+                    this.showToast('Batas halaman dihapus');
+                });
+            }
+        }
+
         // 2. Layout Ribbon Paragraph Quick Inputs (Indent & Spacing)
         const layoutIndentLeft = document.getElementById('layout-indent-left');
         const layoutIndentRight = document.getElementById('layout-indent-right');
@@ -2693,6 +2899,11 @@ export class UiController {
                     const keepLinesTogether = Boolean(document.getElementById('para-keep-lines-together')?.checked);
                     const pageBreakBefore = Boolean(document.getElementById('para-page-break-before')?.checked);
                     const widowOrphan = Boolean(document.getElementById('para-widow-orphan')?.checked);
+                    const outlineLevel = document.getElementById('para-outline-level')?.value || 'body';
+                    const mirrorIndents = Boolean(document.getElementById('para-mirror-indents')?.checked);
+                    const dontAddSpaceSame = Boolean(document.getElementById('para-dont-add-space-same')?.checked);
+                    const suppressLineNumbers = Boolean(document.getElementById('para-suppress-line-numbers')?.checked);
+                    const dontHyphenate = Boolean(document.getElementById('para-dont-hyphenate')?.checked);
 
                     const scope = document.getElementById('para-apply-scope')?.value || 'selection';
 
@@ -2708,7 +2919,12 @@ export class UiController {
                         keepWithNext,
                         keepLinesTogether,
                         pageBreakBefore,
-                        widowOrphan
+                        widowOrphan,
+                        outlineLevel,
+                        mirrorIndents,
+                        dontAddSpaceSame,
+                        suppressLineNumbers,
+                        dontHyphenate
                     }, scope);
 
                     this.closeModal(paraModal);
@@ -2740,6 +2956,58 @@ export class UiController {
                 });
             }
         }
+    }
+
+    openLineNumbersModal() {
+        const modal = document.getElementById('modal-line-numbers');
+        if (!modal) return;
+        const currentMode = this.engine.lineNumbers || 'none';
+        const radio = modal.querySelector(`input[name="ln-mode-radio"][value="${currentMode}"]`);
+        if (radio) radio.checked = true;
+        const startInput = document.getElementById('ln-start-at');
+        if (startInput) startInput.value = this.engine.lineNumbersOptions?.startAt || 1;
+        const countInput = document.getElementById('ln-count-by');
+        if (countInput) countInput.value = this.engine.lineNumbersOptions?.countBy || 1;
+        this.openModal(modal);
+    }
+
+    openWatermarkModal() {
+        const modal = document.getElementById('modal-watermark');
+        if (!modal) return;
+        const currentWm = this.engine.watermark || { text: 'DRAF', font: "'Times New Roman', serif", size: 72, color: '#9ca3af', opacity: 0.25, layout: 'diagonal' };
+        const textIn = document.getElementById('wm-text-input');
+        if (textIn) textIn.value = currentWm.text || 'DRAF';
+        const fontSel = document.getElementById('wm-font-select');
+        if (fontSel && currentWm.font) fontSel.value = currentWm.font;
+        const sizeSel = document.getElementById('wm-size-select');
+        if (sizeSel && currentWm.size) sizeSel.value = String(currentWm.size);
+        const colorIn = document.getElementById('wm-color-input');
+        if (colorIn && currentWm.color) colorIn.value = currentWm.color;
+        const semiCheck = document.getElementById('wm-semitransparent');
+        if (semiCheck) semiCheck.checked = currentWm.opacity <= 0.4;
+        const layout = currentWm.layout || 'diagonal';
+        const layRadio = modal.querySelector(`input[name="wm-layout-radio"][value="${layout}"]`);
+        if (layRadio) layRadio.checked = true;
+        this.openModal(modal);
+    }
+
+    openPageBordersModal() {
+        const modal = document.getElementById('modal-page-borders');
+        if (!modal) return;
+        const currentPb = this.engine.pageBorder || { setting: 'box', style: 'solid', width: '1.5pt', color: '#000000', insetMm: 15, applyTo: 'document' };
+        const settingRadio = modal.querySelector(`input[name="pb-setting-radio"][value="${currentPb.setting || 'box'}"]`);
+        if (settingRadio) settingRadio.checked = true;
+        const styleSel = document.getElementById('pb-style-select');
+        if (styleSel && currentPb.style) styleSel.value = currentPb.style;
+        const widthSel = document.getElementById('pb-width-select');
+        if (widthSel && currentPb.width) widthSel.value = currentPb.width;
+        const colorIn = document.getElementById('pb-color-input');
+        if (colorIn && currentPb.color) colorIn.value = currentPb.color;
+        const insetIn = document.getElementById('pb-margin-inset');
+        if (insetIn && currentPb.insetMm) insetIn.value = currentPb.insetMm;
+        const applySel = document.getElementById('pb-apply-to');
+        if (applySel && currentPb.applyTo) applySel.value = currentPb.applyTo;
+        this.openModal(modal);
     }
 
     openTabsModal() {
@@ -2991,6 +3259,21 @@ export class UiController {
 
         const widowOrphan = document.getElementById('para-widow-orphan');
         if (widowOrphan) widowOrphan.checked = format.widowOrphan !== false;
+
+        const outlineSelect = document.getElementById('para-outline-level');
+        if (outlineSelect) outlineSelect.value = format.outlineLevel || 'body';
+
+        const mirrorCheck = document.getElementById('para-mirror-indents');
+        if (mirrorCheck) mirrorCheck.checked = Boolean(format.mirrorIndents);
+
+        const sameSpaceCheck = document.getElementById('para-dont-add-space-same');
+        if (sameSpaceCheck) sameSpaceCheck.checked = Boolean(format.dontAddSpaceSame);
+
+        const suppressLn = document.getElementById('para-suppress-line-numbers');
+        if (suppressLn) suppressLn.checked = Boolean(format.suppressLineNumbers);
+
+        const dontHyphen = document.getElementById('para-dont-hyphenate');
+        if (dontHyphen) dontHyphen.checked = Boolean(format.dontHyphenate);
 
         this.updateParagraphPreview();
         this.openModal(modal);
