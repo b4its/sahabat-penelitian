@@ -628,3 +628,43 @@ test('black-box: editor view renders Microsoft Word Metric Horizontal Ruler with
     $response->assertSee('id="ruler-marker-left-indent"', false);
     $response->assertSee('id="ruler-marker-right-indent"', false);
 });
+
+test('black-box: editor view renders Microsoft Word Vertical Metric Ruler with top and bottom shaded margins and ticks', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Vertical ruler container and elements
+    $response->assertSee('id="vertical-ruler"', false);
+    $response->assertSee('id="v-ruler-top-shade"', false);
+    $response->assertSee('id="v-ruler-bottom-shade"', false);
+    $response->assertSee('id="vertical-ruler-ticks"', false);
+    $response->assertSee('id="v-ruler-top-margin"', false);
+    $response->assertSee('id="v-ruler-bottom-margin"', false);
+});
+
+test('black-box: editor view renders Microsoft Word Formatting Marks, Text Direction, and Paragraph Sorting suites', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // Toggle Formatting Marks (Pilcrow ¶) button
+    $response->assertSee('id="btn-toggle-formatting-marks"', false);
+
+    // Bi-Directional text direction buttons (LTR / RTL)
+    $response->assertSee('id="btn-text-dir-ltr"', false);
+    $response->assertSee('id="btn-text-dir-rtl"', false);
+
+    // Paragraph Sort A-Z button and Modal 23
+    $response->assertSee('id="btn-sort-paragraphs-modal"', false);
+    $response->assertSee('id="modal-sort-paragraphs"', false);
+    $response->assertSee('Urutkan Teks (Sort Text)', false);
+    $response->assertSee('name="sort-order-radio"', false);
+    $response->assertSee('value="asc"', false);
+    $response->assertSee('value="desc"', false);
+    $response->assertSee('id="sort-scope-select"', false);
+    $response->assertSee('id="btn-confirm-sort-paragraphs"', false);
+
+    // Page Setup apply scope includes active page option
+    $response->assertSee('id="ps-apply-scope"', false);
+    $response->assertSee('value="current"', false);
+    $response->assertSee('Halaman aktif saat ini', false);
+});

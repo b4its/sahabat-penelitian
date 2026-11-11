@@ -421,4 +421,51 @@ XML;
         $this->assertIsArray($jsonData);
         $this->assertStringContainsString('drop-cap', $jsonData['content']);
     }
+
+    public function test_bidirectional_text_direction_and_paragraph_sorting_export_fidelity(): void
+    {
+        $content = <<<'HTML'
+<p dir="rtl" style="direction: rtl; text-align: right; font-family: 'Amiri', 'Times New Roman', serif;">
+    بسم الله الرحمن الرحيم - Teks berbahasa Arab dengan arah penulisan Kanan-ke-Kiri (RTL).
+</p>
+<p dir="ltr" style="direction: ltr; text-align: left;">
+    Paragraf A: Analisis pendahuluan data penelitian.
+</p>
+<p dir="ltr" style="direction: ltr; text-align: left;">
+    Paragraf B: Batasan masalah dan tinjauan pustaka sistematis.
+</p>
+HTML;
+
+        $layoutOptions = [
+            'paper_size' => 'a4',
+            'orientation' => 'portrait',
+            'margins' => [
+                'top' => 40,
+                'left' => 40,
+                'bottom' => 30,
+                'right' => 30,
+            ],
+        ];
+
+        // 1. DOCX Export
+        $docxResult = $this->docService->exportDocument('Uji BiDi dan Urutan DOCX', $content, 'docx', null, null, $layoutOptions);
+        $docxContent = $docxResult['content'];
+        $this->assertStringContainsString('dir="rtl"', $docxContent);
+        $this->assertStringContainsString('direction: rtl;', $docxContent);
+        $this->assertStringContainsString('Paragraf A:', $docxContent);
+        $this->assertStringContainsString('Paragraf B:', $docxContent);
+
+        // 2. HTML Export
+        $htmlResult = $this->docService->exportDocument('Uji BiDi dan Urutan HTML', $content, 'html', null, null, $layoutOptions);
+        $htmlContent = $htmlResult['content'];
+        $this->assertStringContainsString('dir="rtl"', $htmlContent);
+        $this->assertStringContainsString('direction: rtl;', $htmlContent);
+        $this->assertStringContainsString('Paragraf A:', $htmlContent);
+
+        // 3. JSON Export
+        $jsonResult = $this->docService->exportDocument('Uji BiDi dan Urutan JSON', $content, 'json', null, null, $layoutOptions);
+        $jsonData = json_decode($jsonResult['content'], true);
+        $this->assertIsArray($jsonData);
+        $this->assertStringContainsString('dir="rtl"', $jsonData['content']);
+    }
 }

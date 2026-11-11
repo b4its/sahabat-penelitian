@@ -208,7 +208,9 @@ export class UiController {
             toggleRulerBtn.addEventListener('click', () => {
                 this.isRulerVisible = !this.isRulerVisible;
                 const ruler = document.getElementById('ruler-bar');
+                const vRuler = document.getElementById('vertical-ruler');
                 if (ruler) ruler.classList.toggle('hidden', !this.isRulerVisible);
+                if (vRuler) vRuler.classList.toggle('hidden', !this.isRulerVisible);
             });
         }
 
@@ -1469,6 +1471,8 @@ export class UiController {
                 if (ribbon) ribbon.classList.remove('hidden');
                 if (topNav) topNav.classList.remove('hidden');
                 if (ruler) ruler.classList.toggle('hidden', !this.isRulerVisible);
+                const vRuler = document.getElementById('vertical-ruler');
+                if (vRuler) vRuler.classList.toggle('hidden', !this.isRulerVisible);
             } else if (mode === 'web') {
                 sheets.forEach(sheet => {
                     sheet.classList.remove('page-a4', 'shadow-2xl');
@@ -1478,6 +1482,8 @@ export class UiController {
                 if (ribbon) ribbon.classList.remove('hidden');
                 if (topNav) topNav.classList.remove('hidden');
                 if (ruler) ruler.classList.add('hidden');
+                const vRuler = document.getElementById('vertical-ruler');
+                if (vRuler) vRuler.classList.add('hidden');
             } else if (mode === 'zen') {
                 sheets.forEach(sheet => {
                     sheet.classList.remove('page-a4', 'shadow-2xl');
@@ -1486,6 +1492,8 @@ export class UiController {
                 gaps.forEach(g => g.classList.add('hidden'));
                 if (ribbon) ribbon.classList.add('hidden');
                 if (ruler) ruler.classList.add('hidden');
+                const vRuler = document.getElementById('vertical-ruler');
+                if (vRuler) vRuler.classList.add('hidden');
                 if (outline) outline.classList.add('hidden');
                 if (wordcraft) wordcraft.classList.add('hidden');
                 this.showToast('Mode Zen aktif. Tekan Escape untuk kembali.');
@@ -2790,6 +2798,8 @@ export class UiController {
                     const edgeFooter = (parseFloat(document.getElementById('ps-edge-footer')?.value) || 1.5) * 10;
                     const verticalAlign = document.getElementById('ps-vert-align')?.value || 'top';
 
+                    const scope = document.getElementById('ps-apply-scope')?.value || 'document';
+
                     this.engine.setPageSetup({
                         margins: { top, bottom, left, right, gutter, gutterPos, multiplePages },
                         paperSize,
@@ -2802,7 +2812,8 @@ export class UiController {
                         diffFirstPage,
                         edgeHeader,
                         edgeFooter,
-                        verticalAlign
+                        verticalAlign,
+                        scope
                     });
 
                     this.closeModal(pageSetupModal);
@@ -3091,6 +3102,60 @@ export class UiController {
                     this.openPageSetupModal('margins');
                 }
             });
+        }
+
+        const verticalRuler = document.getElementById('vertical-ruler');
+        if (verticalRuler) {
+            verticalRuler.addEventListener('dblclick', () => {
+                this.openPageSetupModal('margins');
+            });
+        }
+
+        // 11. Formatting Marks (Microsoft Word Pilcrow ¶ Mode)
+        const btnFormattingMarks = document.getElementById('btn-toggle-formatting-marks');
+        if (btnFormattingMarks) {
+            btnFormattingMarks.addEventListener('click', () => {
+                const active = this.engine.toggleFormattingMarks();
+                this.showToast(active ? 'Tanda pemformatan (¶) ditampilkan' : 'Tanda pemformatan disembunyikan');
+            });
+        }
+
+        // 12. Bi-Directional Text Direction (LTR / RTL)
+        const btnLtr = document.getElementById('btn-text-dir-ltr');
+        if (btnLtr) {
+            btnLtr.addEventListener('click', () => {
+                this.engine.setTextDirection('ltr');
+                this.showToast('Arah teks paragraf: Kiri ke Kanan (LTR)');
+            });
+        }
+
+        const btnRtl = document.getElementById('btn-text-dir-rtl');
+        if (btnRtl) {
+            btnRtl.addEventListener('click', () => {
+                this.engine.setTextDirection('rtl');
+                this.showToast('Arah teks paragraf: Kanan ke Kiri (RTL)');
+            });
+        }
+
+        // 13. Sort Paragraphs (Microsoft Word Sort A-Z)
+        const btnSortModal = document.getElementById('btn-sort-paragraphs-modal');
+        const modalSort = document.getElementById('modal-sort-paragraphs');
+        if (btnSortModal && modalSort) {
+            btnSortModal.addEventListener('click', () => {
+                this.openModal(modalSort);
+            });
+
+            const btnConfirmSort = document.getElementById('btn-confirm-sort-paragraphs');
+            if (btnConfirmSort) {
+                btnConfirmSort.addEventListener('click', () => {
+                    const orderRadio = modalSort.querySelector('input[name="sort-order-radio"]:checked');
+                    const order = orderRadio ? orderRadio.value : 'asc';
+                    const scope = document.getElementById('sort-scope-select')?.value || 'selection';
+                    this.engine.sortParagraphs(order, scope);
+                    this.closeModal(modalSort);
+                    this.showToast(`Paragraf diurutkan secara alfabetis (${order === 'asc' ? 'A - Z' : 'Z - A'})`);
+                });
+            }
         }
     }
 

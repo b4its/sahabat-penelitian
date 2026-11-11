@@ -461,6 +461,34 @@
             user-select: none;
         }
 
+        /* Microsoft Word Formatting Marks (Pilcrow ¶ Mode) */
+        .show-formatting-marks p::after,
+        .show-formatting-marks h1::after,
+        .show-formatting-marks h2::after,
+        .show-formatting-marks h3::after,
+        .show-formatting-marks h4::after,
+        .show-formatting-marks h5::after,
+        .show-formatting-marks h6::after,
+        .show-formatting-marks blockquote::after {
+            content: " ¶";
+            color: #94a3b8;
+            font-weight: normal;
+            font-size: 0.8em;
+            user-select: none;
+            pointer-events: none;
+            opacity: 0.65;
+        }
+
+        .show-formatting-marks p:empty::before {
+            content: "¶";
+            color: #94a3b8;
+            font-weight: normal;
+            font-size: 0.8em;
+            user-select: none;
+            pointer-events: none;
+            opacity: 0.65;
+        }
+
         #document-editor figure,
         .page-sheet-body figure {
             margin: 14pt 0;
@@ -1001,6 +1029,26 @@
                             <span>✕</span> Tanpa Batas (No Border)
                         </button>
                     </div>
+                </div>
+
+                <!-- Sort Paragraphs (Microsoft Word A-Z) -->
+                <button type="button" id="btn-sort-paragraphs-modal" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition font-bold text-[11px] flex items-center" title="Urutkan Paragraf Alfabetis (A-Z)">
+                    <span>A↓Z</span>
+                </button>
+
+                <!-- Show/Hide Formatting Marks (Microsoft Word Pilcrow ¶) -->
+                <button type="button" id="btn-toggle-formatting-marks" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition font-serif font-black text-xs leading-none" title="Tampilkan/Sembunyikan Tanda Pemformatan (¶ Pilcrow - Format Paragraf Word)">
+                    ¶
+                </button>
+
+                <!-- Text Direction (LTR / RTL BiDi) -->
+                <div class="flex items-center gap-0.5 border border-gray-200 dark:border-gray-700 rounded p-0.5" title="Arah Teks Paragraf (Bi-Directional LTR / RTL)">
+                    <button type="button" id="btn-text-dir-ltr" class="px-1 py-0.5 text-[10px] font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded" title="Arah Teks Kiri ke Kanan (LTR)">
+                        LTR
+                    </button>
+                    <button type="button" id="btn-text-dir-rtl" class="px-1 py-0.5 text-[10px] font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded" title="Arah Teks Kanan ke Kiri (RTL)">
+                        RTL
+                    </button>
                 </div>
 
                 <button id="btn-open-paragraph-modal" data-action="open-paragraph-modal" class="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition ml-0.5" title="Kotak Dialog Format Paragraf (Microsoft Word Paragraph Options)">
@@ -1768,6 +1816,20 @@
 
             <!-- A4 Document Multi-Page Sheets Container -->
             <div id="document-pages-wrapper" class="w-full flex flex-col items-center relative py-4 px-6 sm:px-14">
+                <!-- Vertical Metric Ruler (Microsoft Word Standard) -->
+                <div id="vertical-ruler" class="w-5 shrink-0 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col absolute left-2 sm:left-4 top-4 select-none no-print rounded-xs overflow-hidden shadow-2xs z-10" style="height: 297mm;" title="Penggaris Vertikal (Klik ganda untuk Penyetelan Margin)">
+                    <!-- Top Margin Shaded Area -->
+                    <div id="v-ruler-top-shade" class="w-full bg-gray-200/70 dark:bg-gray-800/80 pointer-events-none absolute top-0 left-0" style="height: 40mm;"></div>
+                    <!-- Bottom Margin Shaded Area -->
+                    <div id="v-ruler-bottom-shade" class="w-full bg-gray-200/70 dark:bg-gray-800/80 pointer-events-none absolute bottom-0 left-0" style="height: 30mm;"></div>
+                    <!-- Vertical Ticks Container -->
+                    <div id="vertical-ruler-ticks" class="w-full h-full flex flex-col relative"></div>
+                    <!-- Top Margin Indicator line -->
+                    <div id="v-ruler-top-margin" class="absolute left-0 right-0 h-0.5 bg-indigo-500 opacity-90 cursor-ns-resize z-20" style="top: 40mm;" title="Margin Atas"></div>
+                    <!-- Bottom Margin Indicator line -->
+                    <div id="v-ruler-bottom-margin" class="absolute left-0 right-0 h-0.5 bg-indigo-500 opacity-90 cursor-ns-resize z-20" style="bottom: 30mm;" title="Margin Bawah"></div>
+                </div>
+
                 <!-- Initial / SSR Document Page Sheet -->
                 <article id="document-page-canvas" class="document-page-sheet page-a4 relative flex flex-col justify-between" data-page-index="1">
                     <!-- Page Sheet Header -->
@@ -3268,6 +3330,7 @@
                     <span class="text-gray-500 text-[11px]">Terapkan ke:</span>
                     <select id="ps-apply-scope" class="px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-xs outline-none">
                         <option value="document" selected>Seluruh dokumen</option>
+                        <option value="current">Halaman aktif saat ini</option>
                         <option value="forward">Mulai titik ini ke depan</option>
                     </select>
                 </div>
@@ -3951,6 +4014,56 @@
                     <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
                     <button type="button" id="btn-confirm-drop-cap" class="px-3.5 py-1 text-xs font-bold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">Terapkan</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 23: URUTKAN TEKS / PARAGRAF (MICROSOFT WORD SORT A-Z SUITE)          -->
+    <!-- ========================================================================= -->
+    <div id="modal-sort-paragraphs" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-sm w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-bold">A↓Z</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white">Urutkan Teks (Sort Text)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Urutkan paragraf atau daftar secara alfabetis</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3.5 text-xs">
+                <fieldset class="border border-gray-200 dark:border-gray-700 rounded-lg p-2.5">
+                    <legend class="font-bold text-gray-700 dark:text-gray-300 px-1 text-[11px] uppercase">Urutan (Order)</legend>
+                    <div class="flex items-center gap-4 mt-1">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="sort-order-radio" value="asc" checked class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Menaik (Ascending A - Z)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="sort-order-radio" value="desc" class="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Menurun (Descending Z - A)</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div>
+                    <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Cakupan (Scope):</label>
+                    <select id="sort-scope-select" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+                        <option value="selection" selected>Paragraf yang dipilih / disorot</option>
+                        <option value="all">Seluruh lembar aktif</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2 shrink-0">
+                <button type="button" data-close-modal class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Batal</button>
+                <button type="button" id="btn-confirm-sort-paragraphs" class="px-3.5 py-1 text-xs font-bold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">Urutkan</button>
             </div>
         </div>
     </div>

@@ -2096,6 +2096,25 @@ export class DocumentEngine {
             this.updateRulerForPageSetup();
         }
 
+        if (options.scope === 'current') {
+            const activeSheet = this.getActiveEditor()?.closest('.document-page-sheet') || this.canvasEl;
+            if (activeSheet) {
+                if (options.orientation === 'landscape') {
+                    activeSheet.setAttribute('data-orientation', 'landscape');
+                    const w = this.getDocumentHeightMm();
+                    const h = this.getDocumentWidthMm();
+                    activeSheet.style.setProperty('width', `${Math.max(w, h)}mm`, 'important');
+                    activeSheet.style.setProperty('min-height', `${Math.min(w, h)}mm`, 'important');
+                } else if (options.orientation === 'portrait') {
+                    activeSheet.setAttribute('data-orientation', 'portrait');
+                    const w = this.getDocumentWidthMm();
+                    const h = this.getDocumentHeightMm();
+                    activeSheet.style.setProperty('width', `${Math.min(w, h)}mm`, 'important');
+                    activeSheet.style.setProperty('min-height', `${Math.max(w, h)}mm`, 'important');
+                }
+            }
+        }
+
         const psSelect = document.getElementById('layout-paper-size');
         if (psSelect && this.currentPaperSize) psSelect.value = this.currentPaperSize;
 
@@ -2141,10 +2160,49 @@ export class DocumentEngine {
         }
 
         this.updateRulerMarkers(leftMarginCm, totalWidthCm - rightMarginCm, totalWidthCm);
+        this.updateVerticalRuler();
     }
 
     updateRulerMarkersForPreset(preset) {
         this.updateRulerForPageSetup();
+    }
+
+    updateVerticalRuler() {
+        const vRuler = document.getElementById('vertical-ruler');
+        const vTicks = document.getElementById('vertical-ruler-ticks');
+        const vTopShade = document.getElementById('v-ruler-top-shade');
+        const vBottomShade = document.getElementById('v-ruler-bottom-shade');
+        const vTopMargin = document.getElementById('v-ruler-top-margin');
+        const vBottomMargin = document.getElementById('v-ruler-bottom-margin');
+
+        if (!vRuler || !vTicks) return;
+
+        const heightMm = this.getDocumentHeightMm();
+        const heightCm = heightMm / 10;
+        vRuler.style.height = `${heightMm}mm`;
+
+        const topCm = ((this.currentMargins && this.currentMargins.top) || 25.4) / 10;
+        const bottomCm = ((this.currentMargins && this.currentMargins.bottom) || 25.4) / 10;
+
+        const topPct = (topCm / heightCm) * 100;
+        const bottomPct = (bottomCm / heightCm) * 100;
+
+        if (vTopShade) vTopShade.style.height = `${topPct}%`;
+        if (vBottomShade) vBottomShade.style.height = `${bottomPct}%`;
+        if (vTopMargin) vTopMargin.style.top = `${topPct}%`;
+        if (vBottomMargin) vBottomMargin.style.bottom = `${bottomPct}%`;
+
+        vTicks.innerHTML = '';
+        const totalCm = Math.max(1, Math.round(heightCm));
+        for (let cm = 0; cm <= totalCm; cm++) {
+            const tick = document.createElement('div');
+            tick.className = 'flex-1 border-b border-gray-300 dark:border-gray-700 w-full relative';
+            tick.innerHTML = `
+                <span class="absolute left-0.5 bottom-0.5 text-[8px] text-gray-400 font-mono select-none">${cm}</span>
+                <div class="absolute right-0 bottom-1/2 h-px w-1 bg-gray-200 dark:bg-gray-800"></div>
+            `;
+            vTicks.appendChild(tick);
+        }
     }
 
     updateRulerMarkers(leftCm, rightCm, totalCm = null) {
@@ -2518,6 +2576,80 @@ export class DocumentEngine {
             existing.replaceWith(char);
             this.handleInput();
         }
+    }
+
+    setTextDirection(dir = 'ltr', scope = 'selection') {
+        const targets = scope === 'all'
+            ? this.getAllEditorBodies().flatMap(b => Array.from(b.querySelectorAll('p, blockquote, h1, h2, h3, h4, h5, h6, li')))
+            : this.getSelectedParagraphElements();
+
+        if (targets.length === 0) {
+            const active = this.getActiveEditor();
+            if (active) {
+                const firstP = active.querySelector('p');
+                if (firstP) targets.push(firstP);
+            }
+        }
+
+        targets.forEach(el => {
+            el.setAttribute('dir', dir);
+            el.style.direction = dir;
+            el.style.textAlign = dir === 'rtl' ? 'right' : 'left';
+        });
+
+        this.handleInput();
+    }
+
+    toggleFormattingMarks() {
+        this.showFormattingMarks = !this.showFormattingMarks;
+        const bodies = this.getAllEditorBodies();
+        bodies.forEach(body => {
+            body.classList.toggle('show-formatting-marks', this.showFormattingMarks);
+        });
+        const btn = document.getElementById('btn-toggle-formatting-marks');
+        if (btn) {
+            btn.classList.toggle('bg-indigo-100', this.showFormattingMarks);
+            btn.classList.toggle('text-indigo-700', this.showFormattingMarks);
+            btn.classList.toggle('dark:bg-indigo-900', this.showFormattingMarks);
+            btn.classList.toggle('dark:text-indigo-300', this.showFormattingMarks);
+        }
+        return this.showFormattingMarks;
+    }
+
+    sortParagraphs(order = 'asc', scope = 'selection') {
+        let targets = [];
+        if (scope === 'all') {
+            const active = this.getActiveEditor();
+            if (active) targets = Array.from(active.querySelectorAll('p, li'));
+        } else {
+            targets = this.getSelectedParagraphElements();
+            if (targets.length <= 1) {
+                const active = this.getActiveEditor();
+                if (active) targets = Array.from(active.querySelectorAll('p, li'));
+            }
+        }
+
+        if (targets.length < 2) return;
+
+        const parent = targets[0].parentElement;
+        if (!parent) return;
+
+        const textArray = targets.map(el => ({
+            el,
+            text: el.textContent.trim(),
+            html: el.innerHTML
+        }));
+
+        textArray.sort((a, b) => {
+            const res = a.text.localeCompare(b.text, 'id', { numeric: true, sensitivity: 'base' });
+            return order === 'asc' ? res : -res;
+        });
+
+        textArray.forEach(item => {
+            parent.appendChild(item.el);
+        });
+
+        this.handleInput();
     }
 
     setColumns(columnVal = 1, scope = 'document') {
