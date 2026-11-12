@@ -182,6 +182,7 @@ export class DocumentEngine {
         if (targetContainer) {
             targetContainer.addEventListener('input', (e) => {
                 if (e.target.closest('.page-sheet-body') || e.target.id === 'document-editor') {
+                    this.updateParagraphTabs(e.target);
                     this.handleInput();
                 }
             });
@@ -422,21 +423,32 @@ export class DocumentEngine {
     }
 
     handleKeydown(e) {
-        // Tab indentation
         if (e.key === 'Tab') {
             e.preventDefault();
-            if (e.shiftKey) {
-                document.execCommand('outdent', false, null);
+            const selection = window.getSelection();
+            const node = selection?.anchorNode;
+            const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+            const cell = element?.closest('td, th');
+            if (cell) {
+                this.navigateTableCell(cell, e.shiftKey);
+            } else if (e.shiftKey) {
+                this.removePreviousTab();
             } else {
-                document.execCommand('indent', false, null);
+                this.insertTabAtCursor();
             }
-            this.handleInput();
+            return;
         }
 
         // Ctrl + Enter = Insert Page Break
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
             this.insertPageBreak();
+            return;
+        }
+
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && this.startNormalParagraphAfterTab()) {
+            e.preventDefault();
+            return;
         }
 
         // Backspace or Delete on focused or selected Table of Contents block
@@ -448,6 +460,151 @@ export class DocumentEngine {
                 return;
             }
         }
+    }
+
+    getTabStopAt(offsetPx) {
+        const pxPerCm = 96 / 2.54;
+        const stops = (this.tabStops || [])
+            .filter(stop => Number.isFinite(Number(stop.pos)) && Number(stop.pos) > 0)
+            .sort((a, b) => Number(a.pos) - Number(b.pos));
+        const next = stops.find(stop => Number(stop.pos) * pxPerCm > offsetPx + 2);
+        if (next) return next;
+        const spacing = Math.max(0.5, Number(this.defaultTabStop) || 1.27);
+        return { pos: (Math.floor(offsetPx / (spacing * pxPerCm)) + 1) * spacing, align: 'left', leader: 'none' };
+    }
+
+    insertTabAtCursor() {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        const element = range.startContainer.nodeType === Node.ELEMENT_NODE ? range.startContainer : range.startContainer.parentElement;
+        const block = element?.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote');
+        if (!block?.closest('.page-sheet-body') || block.closest('.table-of-contents')) return;
+
+        const blockRect = block.getBoundingClientRect();
+        const caretRect = range.getBoundingClientRect?.();
+        const offset = Math.max(0, (caretRect?.width || caretRect?.height ? caretRect.left : blockRect.left) - blockRect.left);
+        const stop = this.getTabStopAt(offset);
+        const tab = document.createElement('span');
+        tab.className = 'document-tab';
+        tab.contentEditable = 'false';
+        tab.dataset.tabPosition = String(stop.pos);
+        tab.dataset.tabAlign = stop.align || 'left';
+        tab.dataset.tabLeader = stop.leader || 'none';
+        tab.style.width = `${Math.max(4, stop.pos * 96 / 2.54 - offset)}px`;
+        tab.textContent = '\u00a0';
+        range.deleteContents();
+        range.insertNode(tab);
+        range.setStartAfter(tab);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        this.updateParagraphTabs(block);
+        this.handleInput();
+    }
+
+    removePreviousTab() {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount || !selection.isCollapsed) return;
+        const range = selection.getRangeAt(0);
+        let node = range.startContainer;
+        let previous = node.nodeType === Node.TEXT_NODE
+            ? (range.startOffset === 0 ? node.previousSibling : null)
+            : node.childNodes[range.startOffset - 1];
+        if (!previous && node.nodeType === Node.TEXT_NODE) {
+            node = node.parentNode;
+            previous = node.previousSibling;
+        }
+        if (!previous?.classList?.contains('document-tab')) return;
+        range.setStartBefore(previous);
+        range.collapse(true);
+        previous.remove();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        this.handleInput();
+    }
+
+    updateParagraphTabs(body) {
+        if (!body?.querySelectorAll) return;
+        const pxPerCm = 96 / 2.54;
+        body.querySelectorAll('.document-tab[data-tab-position]').forEach(tab => {
+            const block = tab.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote');
+            if (!block) return;
+            const following = tab.nextSibling;
+            const font = window.getComputedStyle?.(block);
+            const fontSize = parseFloat(font?.fontSize) || 16;
+            let textWidth = (following?.textContent?.length || 0) * fontSize * 0.52;
+            if (following?.nodeType === Node.TEXT_NODE && following.textContent) {
+                const textRange = document.createRange();
+                textRange.selectNodeContents(following);
+                textWidth = textRange.getBoundingClientRect?.().width || textWidth;
+            }
+            const correction = tab.dataset.tabAlign === 'right' ? textWidth : tab.dataset.tabAlign === 'center' ? textWidth / 2 : 0;
+            const offset = tab.getBoundingClientRect().left - block.getBoundingClientRect().left;
+            const position = Number(tab.dataset.tabPosition) * pxPerCm;
+            if (Number.isFinite(position) && Number.isFinite(offset)) {
+                tab.style.width = `${Math.max(4, position - offset - correction)}px`;
+            }
+        });
+    }
+
+    startNormalParagraphAfterTab() {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return false;
+        const range = selection.getRangeAt(0);
+        const element = range.startContainer.nodeType === Node.ELEMENT_NODE ? range.startContainer : range.startContainer.parentElement;
+        const paragraph = element?.closest('p');
+        if (!paragraph?.querySelector('.document-tab') || !paragraph.closest('.page-sheet-body') || paragraph.closest('td, th, li, blockquote, .table-of-contents')) return false;
+
+        range.deleteContents();
+        const remainder = range.cloneRange();
+        remainder.setEnd(paragraph, paragraph.childNodes.length);
+        const content = remainder.extractContents();
+        const next = paragraph.cloneNode(false);
+        next.removeAttribute('id');
+        next.classList.remove('indent-8', 'indent-first-line', 'indent-hanging');
+        next.style.marginLeft = '';
+        next.style.textIndent = '';
+        next.style.paddingLeft = '';
+        next.appendChild(content);
+        next.normalize();
+        if (!next.hasChildNodes()) next.appendChild(document.createElement('br'));
+        if (!paragraph.hasChildNodes()) paragraph.appendChild(document.createElement('br'));
+        paragraph.after(next);
+        range.setStart(next, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        this.handleInput();
+        return true;
+    }
+
+    navigateTableCell(cell, backwards = false) {
+        const table = cell.closest('table');
+        const cells = Array.from(table.querySelectorAll('th, td'));
+        const index = cells.indexOf(cell);
+        let next = cells[index + (backwards ? -1 : 1)];
+        if (!next && !backwards && table.rows.length) {
+            const lastRow = table.rows[table.rows.length - 1];
+            const newRow = document.createElement('tr');
+            for (const oldCell of lastRow.cells) {
+                const td = document.createElement('td');
+                td.innerHTML = '<br>';
+                if (oldCell.colSpan > 1) td.colSpan = oldCell.colSpan;
+                newRow.appendChild(td);
+            }
+            lastRow.after(newRow);
+            next = newRow.cells[0];
+            this.handleInput();
+        }
+        if (!next) return;
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(next);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        next.focus();
     }
 
     handlePaste(e) {

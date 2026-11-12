@@ -342,6 +342,20 @@
             line-height: 1.5;
         }
 
+        /* Tab stops are inline positions, not paragraph indentation. */
+        .page-sheet-body .document-tab {
+            display: inline-block;
+            vertical-align: baseline;
+            height: 1em;
+            max-width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .page-sheet-body .document-tab[data-tab-leader="dots"]::after { content: '................................................................'; letter-spacing: 0.1em; }
+        .page-sheet-body .document-tab[data-tab-leader="dashes"]::after { content: '--------------------------------'; letter-spacing: 0.1em; }
+        .page-sheet-body .document-tab[data-tab-leader="underline"]::after { content: '________________________________'; letter-spacing: 0.1em; }
+
         /* Perataan Paragraf & Sel Tabel */
         #document-editor .text-center,
         .page-sheet-body .text-center,
