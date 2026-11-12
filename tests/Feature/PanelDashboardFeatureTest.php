@@ -134,4 +134,49 @@ class PanelDashboardFeatureTest extends TestCase
         $responsePage2->assertStatus(200);
         $responsePage2->assertSee('Halaman', false);
     }
+
+    /**
+     * Test panel dashboard ensures audit logs card does not leak document pagination and prevents visual collision.
+     */
+    public function test_panel_dashboard_prevents_pagination_collision_in_audit_card(): void
+    {
+        for ($i = 1; $i <= 12; $i++) {
+            Document::create([
+                'title' => "Dokumen Uji Tabrakan {$i}",
+                'content_html' => "<p>Isi dokumen {$i}.</p>",
+                'restricted_mode' => 'none',
+            ]);
+        }
+
+        $response = $this->get('/panel/dashboard');
+        $response->assertStatus(200);
+
+        // Naskah Terbaru card must have pagination container with responsive overflow containment
+        $response->assertSee('overflow-x-auto max-w-full', false);
+
+        // Audit Trail card must NOT have duplicate document pagination links
+        $html = $response->getContent();
+        $auditSectionStart = strpos($html, 'Aktivitas Riset Terkini');
+        $this->assertNotFalse($auditSectionStart);
+        $auditSection = substr($html, $auditSectionStart);
+
+        // Verify the audit section does not contain recent_page or duplicate pagination
+        $this->assertStringNotContainsString('recent_page=2', $auditSection);
+    }
+
+    /**
+     * Test responsive layout classes across panel components prevent container clipping.
+     */
+    public function test_panel_responsive_classes_prevent_content_collision(): void
+    {
+        $response = $this->get('/panel/dashboard');
+        $response->assertStatus(200);
+
+        // Grid columns have min-w-0 to prevent flex/grid blowout
+        $response->assertSee('lg:col-span-8 space-y-6 min-w-0', false);
+        $response->assertSee('lg:col-span-4 space-y-6 min-w-0', false);
+
+        // Modal has max-h-[90vh] and overflow-y-auto for small/landscape devices
+        $response->assertSee('max-h-[90vh] overflow-y-auto', false);
+    }
 }

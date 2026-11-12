@@ -105,4 +105,21 @@ class LandingPageTest extends TestCase
         // 4. CTA to Editor
         $response->assertSee(url('/editor'), false);
     }
+
+    /**
+     * Test landing page uses non-colliding responsive grid and header structures across screen sizes.
+     */
+    public function test_landing_page_responsive_structures_prevent_collision(): void
+    {
+        $response = $this->get('/');
+        $response->assertStatus(200);
+
+        // Responsive workflow grid adapts to 1, 2, and 5 columns depending on device width
+        $response->assertSee('grid-cols-1 sm:grid-cols-2 lg:grid-cols-5', false);
+
+        // Header has responsive label hiding to prevent collision on narrow mobile screens (320px-375px)
+        $response->assertSee('hidden sm:inline', false);
+        $response->assertSee('inline sm:hidden', false);
+        $response->assertSee('min-w-0', false);
+    }
 }

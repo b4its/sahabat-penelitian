@@ -56,58 +56,58 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         <!-- Total Documents -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors min-w-0">
             <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
             </div>
-            <div>
-                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Naskah</span>
-                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{{ $totalDocuments }}</div>
-                <span class="text-[11px] font-bold text-blue-600 dark:text-blue-400">Tersimpan di Sistem</span>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block truncate">Total Naskah</span>
+                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5 truncate">{{ $totalDocuments }}</div>
+                <span class="text-[11px] font-bold text-blue-600 dark:text-blue-400 block truncate">Tersimpan di Sistem</span>
             </div>
         </div>
 
         <!-- Total Versions -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors min-w-0">
             <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-            <div>
-                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Snapshot Versi</span>
-                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{{ $totalVersions }}</div>
-                <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Riwayat Terlindungi</span>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block truncate">Snapshot Versi</span>
+                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5 truncate">{{ $totalVersions }}</div>
+                <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 block truncate">Riwayat Terlindungi</span>
             </div>
         </div>
 
         <!-- Protected Documents -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors min-w-0">
             <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
             </div>
-            <div>
-                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Proteksi Dokumen</span>
-                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{{ $protectedDocuments }}</div>
-                <span class="text-[11px] font-bold text-amber-600 dark:text-amber-400">Enkripsi Sandi / Read-Only</span>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block truncate">Proteksi Dokumen</span>
+                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5 truncate">{{ $protectedDocuments }}</div>
+                <span class="text-[11px] font-bold text-amber-600 dark:text-amber-400 block truncate">Enkripsi Sandi / Read-Only</span>
             </div>
         </div>
 
         <!-- Compliance & Integrity -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors min-w-0">
             <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
             </div>
-            <div>
-                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Integritas Format</span>
-                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5">100%</div>
-                <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">OPC DOCX Valid</span>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block truncate">Integritas Format</span>
+                <div class="text-2xl font-black text-slate-900 dark:text-white mt-0.5 truncate">100%</div>
+                <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block truncate">OPC DOCX Valid</span>
             </div>
         </div>
 
@@ -117,26 +117,26 @@
     <!-- ========================================================================= -->
     <!-- 3. TWO-COLUMN LAYOUT: RECENT DOCUMENTS & QUICK TOOLS / AUDIT              -->
     <!-- ========================================================================= -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         <!-- Left Column: Naskah Penelitian Terbaru (8 Cols) -->
-        <div class="lg:col-span-8 space-y-6">
+        <div class="lg:col-span-8 space-y-6 min-w-0">
             <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-blue-100 dark:border-blue-900/40 shadow-xs">
                 
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                         </div>
-                        <div>
-                            <h2 class="text-base font-bold text-slate-900 dark:text-white">Naskah Penelitian Terbaru</h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Dokumen yang paling sering dan terakhir Anda modifikasi.</p>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-bold text-slate-900 dark:text-white truncate">Naskah Penelitian Terbaru</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">Dokumen yang paling sering dan terakhir Anda modifikasi.</p>
                         </div>
                     </div>
 
-                    <a href="{{ route('panel.documents') }}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                    <a href="{{ route('panel.documents') }}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0">
                         <span>Lihat Semua Dokumen</span>
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                     </a>
@@ -188,11 +188,11 @@
                     </div>
 
                     @if ($recentDocuments->hasPages())
-                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                            <span class="text-slate-500 dark:text-slate-400">
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                            <span class="text-slate-500 dark:text-slate-400 text-center sm:text-left shrink-0">
                                 Halaman <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->currentPage() }}</span> dari <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->lastPage() }}</span>
                             </span>
-                            <div>
+                            <div class="w-full sm:w-auto flex justify-center sm:justify-end overflow-x-auto max-w-full py-0.5">
                                 {{ $recentDocuments->links() }}
                             </div>
                         </div>
@@ -212,12 +212,12 @@
 
             <!-- Publication Workflow Progress Strip -->
             <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-blue-100 dark:border-blue-900/40 shadow-xs space-y-4">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">Status Kelengkapan Publikasi Nasional &amp; Internasional</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Standar pemenuhan naskah ilmiah sesuai panduan dewan editor.</p>
                     </div>
-                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-1 rounded-full">
+                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-1 rounded-full shrink-0 self-start sm:self-center">
                         85% Siap Submit
                     </span>
                 </div>
@@ -240,7 +240,7 @@
 
 
         <!-- Right Column: Quick Research Tools & Audit Trail (4 Cols) -->
-        <div class="lg:col-span-4 space-y-6">
+        <div class="lg:col-span-4 space-y-6 min-w-0">
             
             <!-- Quick Tools Card -->
             <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-blue-100 dark:border-blue-900/40 shadow-xs space-y-4">
@@ -317,17 +317,6 @@
                             </div>
                         @endforeach
                     </div>
-
-                    @if ($recentDocuments->hasPages())
-                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                            <span class="text-slate-500 dark:text-slate-400">
-                                Halaman <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->currentPage() }}</span> dari <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->lastPage() }}</span>
-                            </span>
-                            <div>
-                                {{ $recentDocuments->links() }}
-                            </div>
-                        </div>
-                    @endif
                 @else
                     <p class="text-xs text-slate-500 dark:text-slate-400 text-center py-4">Belum ada aktivitas mutasi yang tercatat.</p>
                 @endif

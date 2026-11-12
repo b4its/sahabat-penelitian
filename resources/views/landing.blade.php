@@ -150,22 +150,22 @@
 
     <!-- Navigation Header (Sticky Glassmorphism) -->
     <header class="sticky top-0 z-50 glass-panel border-b border-blue-100 dark:border-blue-900/50 transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2">
             <!-- Brand Logo -->
-            <a href="{{ url('/') }}" class="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl p-1">
-                <div class="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform duration-300">
+            <a href="{{ url('/') }}" class="flex items-center gap-2.5 sm:gap-3 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl p-1 min-w-0">
+                <div class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
                     <!-- Atom & Feather Icon -->
-                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-ping"></span>
-                    <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                    <span class="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-ping"></span>
+                    <span class="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
                 </div>
-                <div class="flex flex-col">
-                    <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                <div class="flex flex-col min-w-0">
+                    <span class="text-base sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
                         Sahabat <span class="text-blue-600 dark:text-blue-400">Penelitian</span>
                     </span>
-                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400 -mt-0.5 tracking-wide">
+                    <span class="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 -mt-0.5 tracking-wide truncate hidden sm:block">
                         Platform Riset & Naskah Ilmiah
                     </span>
                 </div>
@@ -195,21 +195,21 @@
             </nav>
 
             <!-- Right Controls: Theme Switcher + CTA -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
                 <!-- Theme Switch Toggle Button -->
                 <button
                     id="theme-toggle"
                     type="button"
                     aria-label="Ganti Tema (Gelap / Terang)"
-                    class="relative p-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-white/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-600 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 group"
+                    class="relative p-2 sm:p-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-white/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-600 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 group shrink-0"
                     title="Ganti Tema (Gelap / Terang)"
                 >
                     <!-- Sun Icon (Shown in Dark Mode) -->
-                    <svg id="theme-toggle-light-icon" class="w-5 h-5 hidden dark:block text-amber-400 transform group-hover:rotate-45 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg id="theme-toggle-light-icon" class="w-4 h-4 sm:w-5 sm:h-5 hidden dark:block text-amber-400 transform group-hover:rotate-45 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                     <!-- Moon Icon (Shown in Light Mode) -->
-                    <svg id="theme-toggle-dark-icon" class="w-5 h-5 block dark:hidden text-blue-600 transform group-hover:-rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg id="theme-toggle-dark-icon" class="w-4 h-4 sm:w-5 sm:h-5 block dark:hidden text-blue-600 transform group-hover:-rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                 </button>
@@ -217,14 +217,17 @@
                 <!-- Enter Editor CTA Button -->
                 <a
                     href="{{ url('/editor') }}"
-                    class="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-700 shadow-md shadow-blue-600/30 hover:shadow-lg hover:shadow-blue-600/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                    class="relative inline-flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-white bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-700 shadow-md shadow-blue-600/30 hover:shadow-lg hover:shadow-blue-600/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0"
                 >
-                    <svg class="w-4 h-4 text-sky-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <svg class="w-4 h-4 text-sky-200 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    <span>Buka Editor Naskah</span>
+                    <span class="hidden sm:inline">Buka Editor Naskah</span>
+                    <span class="inline sm:hidden">Editor</span>
                 </a>
             </div>
+        </div>
+    </header>
         </div>
     </header>
 
@@ -675,7 +678,7 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 lg:gap-6 relative">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 relative">
                 <!-- Step 1 -->
                 <div class="glass-card rounded-2xl p-6 border border-blue-200/80 dark:border-blue-900/50 hover:border-blue-500 transition-all hover:-translate-y-1 duration-200">
                     <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-extrabold flex items-center justify-center mb-4 text-sm">

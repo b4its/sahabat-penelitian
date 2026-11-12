@@ -226,4 +226,20 @@ class PanelDocumentsFeatureTest extends TestCase
         $response->assertSee('q=Kecerdasan', false);
         $response->assertSee('page=2', false);
     }
+
+    /**
+     * Test documents table and pagination containers enforce responsive overflow containment.
+     */
+    public function test_documents_table_and_pagination_use_responsive_overflow_containment(): void
+    {
+        $response = $this->get('/panel/documents');
+        $response->assertStatus(200);
+
+        // Responsive table scrolling wrapper prevents table collapse or squashed columns
+        $response->assertSee('overflow-x-auto w-full', false);
+        $response->assertSee('min-w-[640px]', false);
+
+        // Pagination container supports flex wrapping across mobile and desktop
+        $response->assertSee('flex flex-col sm:flex-row items-center justify-between gap-4', false);
+    }
 }

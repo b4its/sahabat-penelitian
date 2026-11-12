@@ -11,9 +11,9 @@
     <!-- ========================================================================= -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex flex-wrap items-center gap-2">
                 <span>Manajemen Dokumen &amp; Naskah</span>
-                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 shrink-0">
                     {{ $documents->total() }} Naskah
                 </span>
             </h1>
@@ -22,7 +22,7 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 shrink-0">
             <button
                 type="button"
                 onclick="openCreateDocumentModal()"
@@ -88,8 +88,8 @@
     <!-- ========================================================================= -->
     <div class="bg-white dark:bg-slate-900 rounded-3xl border border-blue-100 dark:border-blue-900/40 shadow-xs overflow-hidden">
         @if ($documents->count() > 0)
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse min-w-[640px]">
                     <thead>
                         <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             <th class="px-6 py-4">Judul Naskah Penelitian</th>
@@ -211,11 +211,11 @@
 
             <!-- Pagination Bar -->
             <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-                <div class="text-slate-500 dark:text-slate-400 font-medium">
+                <div class="text-slate-500 dark:text-slate-400 font-medium text-center sm:text-left shrink-0">
                     Menampilkan <span class="font-bold text-slate-800 dark:text-slate-200">{{ $documents->firstItem() ?? 0 }}</span> sampai <span class="font-bold text-slate-800 dark:text-slate-200">{{ $documents->lastItem() ?? 0 }}</span> dari <span class="font-bold text-slate-800 dark:text-slate-200">{{ $documents->total() }}</span> naskah
                 </div>
                 @if ($documents->hasPages())
-                    <div class="pagination-container">
+                    <div class="pagination-container w-full sm:w-auto flex justify-center sm:justify-end overflow-x-auto max-w-full py-0.5">
                         {{ $documents->links() }}
                     </div>
                 @endif

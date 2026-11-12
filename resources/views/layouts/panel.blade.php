@@ -233,23 +233,23 @@
                 </button>
 
                 <!-- Page Breadcrumbs -->
-                <nav class="flex items-center text-xs font-medium text-slate-500 dark:text-slate-400">
-                    <a href="{{ route('panel.dashboard') }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Panel</a>
-                    <span class="mx-2 text-slate-300 dark:text-slate-700">/</span>
-                    <span class="font-bold text-slate-900 dark:text-white">@yield('breadcrumb', 'Dashboard')</span>
+                <nav class="flex items-center text-xs font-medium text-slate-500 dark:text-slate-400 min-w-0">
+                    <a href="{{ route('panel.dashboard') }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors hidden sm:inline">Panel</a>
+                    <span class="mx-2 text-slate-300 dark:text-slate-700 hidden sm:inline">/</span>
+                    <span class="font-bold text-slate-900 dark:text-white truncate max-w-[120px] sm:max-w-none">@yield('breadcrumb', 'Dashboard')</span>
                 </nav>
             </div>
 
             <!-- Right Header: Quick Actions, Theme Switch, & Profile -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
                 
                 <!-- Quick Create Document Button -->
                 <button
                     type="button"
                     onclick="openCreateDocumentModal()"
-                    class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition-all transform hover:-translate-y-0.5"
+                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 shrink-0"
                 >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
                     <span class="hidden sm:inline">Naskah Baru</span>
@@ -311,8 +311,8 @@
     <!-- ========================================================================= -->
     <!-- MODAL: BUAT NASKAH PENELITIAN BARU                                        -->
     <!-- ========================================================================= -->
-    <div id="modal-create-document" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-opacity">
-        <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-blue-200 dark:border-blue-900/60 shadow-2xl space-y-6">
+    <div id="modal-create-document" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-opacity overflow-y-auto">
+        <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-blue-200 dark:border-blue-900/60 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto my-auto">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center">

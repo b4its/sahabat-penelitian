@@ -688,10 +688,10 @@
     <!-- ========================================================================= -->
     <!-- 1. TOP APPLICATION BAR (Google Docs & Microsoft Word inspired)            -->
     <!-- ========================================================================= -->
-    <header id="top-nav" class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-2 flex items-center justify-between shrink-0 no-print z-30 shadow-xs">
-        <div class="flex items-center gap-3">
+    <header id="top-nav" class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-3 sm:px-4 py-2 flex items-center justify-between shrink-0 no-print z-30 shadow-xs gap-2 overflow-x-auto">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
             <!-- App Logo & Link to Landing Page -->
-            <a href="{{ url('/') }}" class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800 hover:opacity-90 transition group" title="Kembali ke Beranda Sahabat Penelitian">
+            <a href="{{ url('/') }}" class="flex items-center gap-2 pr-2 sm:pr-3 border-r border-gray-200 dark:border-gray-800 hover:opacity-90 transition group shrink-0" title="Kembali ke Beranda Sahabat Penelitian">
                 <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-400 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -706,62 +706,64 @@
             </a>
 
             <!-- Inline Editable Document Title -->
-            <div class="flex items-center gap-2">
-                <div class="relative flex items-center">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="relative flex items-center min-w-0">
                     <input
                         type="text"
                         id="document-title-input"
                         value="{{ $initialTitle }}"
-                        class="text-sm font-semibold text-gray-800 dark:text-gray-100 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-white dark:focus:bg-gray-900 border border-transparent focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none w-52 sm:w-80 transition"
+                        class="text-sm font-semibold text-gray-800 dark:text-gray-100 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-white dark:focus:bg-gray-900 border border-transparent focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none w-32 sm:w-52 md:w-80 transition truncate"
                         title="Klik untuk mengubah nama naskah/dokumen"
                     />
-                    <svg class="w-3.5 h-3.5 text-gray-400 pointer-events-none absolute right-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3.5 h-3.5 text-gray-400 pointer-events-none absolute right-2 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                     </svg>
                 </div>
 
                 <!-- Format & Auto-Save Badges -->
-                <span id="document-format-badge" class="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                <span id="document-format-badge" class="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shrink-0">
                     DOCX
                 </span>
-                <span id="document-protection-badge" class="hidden inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                <span id="document-protection-badge" class="hidden inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shrink-0">
                     🔒 Terproteksi
                 </span>
-                <span id="document-save-status" class="hidden md:inline-flex text-xs text-gray-500 dark:text-gray-400 items-center gap-1">
+                <span id="document-save-status" class="hidden md:inline-flex text-xs text-gray-500 dark:text-gray-400 items-center gap-1 shrink-0">
                     <svg class="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
                     Tersimpan di lokal
                 </span>
 
-                <button id="btn-restore-draft" class="hidden text-xs px-2.5 py-1 rounded bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium">
+                <button id="btn-restore-draft" class="hidden text-xs px-2.5 py-1 rounded bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium shrink-0">
                     Pulihkan Draf Tersimpan
                 </button>
             </div>
         </div>
 
         <!-- Top Right Actions -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
             <!-- Open Local File (Primary CTA) -->
             <button
                 data-action="open-file-modal"
-                class="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow transition flex items-center gap-1.5 cursor-pointer"
+                class="px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow transition flex items-center gap-1.5 cursor-pointer shrink-0"
                 title="Buka Dokumen dari File Komputer (Ctrl+O)"
             >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
-                <span>Buka Dokumen Lokal</span>
+                <span class="hidden sm:inline">Buka Dokumen Lokal</span>
+                <span class="inline sm:hidden">Buka</span>
             </button>
 
             <!-- Export / Download Dropdown -->
             <button
                 data-action="export-modal"
-                class="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition flex items-center gap-1.5 cursor-pointer"
+                class="px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition flex items-center gap-1.5 cursor-pointer shrink-0"
                 title="Ekspor Dokumen (Word, PDF, Markdown, HTML, dll)"
             >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                 </svg>
                 <span class="hidden sm:inline">Unduh / Ekspor</span>
+                <span class="inline sm:hidden">Ekspor</span>
             </button>
 
             <!-- Dark / Light Theme Visual Switcher -->
