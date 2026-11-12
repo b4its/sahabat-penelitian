@@ -5,6 +5,7 @@
  */
 
 import { PAPER_DIMENSIONS, MARGIN_PRESETS } from './document-engine.js';
+import { ReviewComments } from './review-comments.js';
 
 export class UiController {
     constructor(engine, wordcraftAi) {
@@ -27,6 +28,7 @@ export class UiController {
         const tasks = [
             ['bindRibbonTabs', () => this.bindRibbonTabs()],
             ['bindRibbonTools', () => this.bindRibbonTools()],
+            ['bindReviewComments', () => { this.reviewComments = new ReviewComments(this.engine); this.reviewComments.bind(); }],
             ['bindThemeSwitcher', () => this.bindThemeSwitcher()],
             ['bindFormatPainter', () => this.bindFormatPainter()],
             ['bindFontSteppers', () => this.bindFontSteppers()],

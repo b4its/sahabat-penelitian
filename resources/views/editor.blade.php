@@ -356,6 +356,9 @@
         .page-sheet-body .document-tab[data-tab-leader="dashes"]::after { content: '--------------------------------'; letter-spacing: 0.1em; }
         .page-sheet-body .document-tab[data-tab-leader="underline"]::after { content: '________________________________'; letter-spacing: 0.1em; }
 
+        .page-sheet-body .document-comment { background: #fef08a; box-decoration-break: clone; }
+        .page-sheet-body .document-comment[data-comment-resolved="true"] { background: #e5e7eb; }
+
         /* Perataan Paragraf & Sel Tabel */
         #document-editor .text-center,
         .page-sheet-body .text-center,
@@ -1541,6 +1544,11 @@
 
         <!-- Ribbon Panel 4: TINJAU & REFERENSI (REVIEW & REFERENCES) -->
         <div data-ribbon-panel="review" class="hidden flex-wrap items-center px-4 py-2 gap-3 overflow-x-auto text-xs bg-indigo-50/20 dark:bg-indigo-950/10">
+            <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
+                <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Komentar:</span>
+                <button type="button" id="btn-review-new-comment" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-semibold">Komentar baru</button>
+                <button type="button" id="btn-review-comments" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded">Lihat komentar</button>
+            </div>
             <!-- Table of Contents Group (Microsoft Word References Standard) -->
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Daftar Isi:</span>
@@ -2088,6 +2096,17 @@
         </aside>
 
     </main>
+
+    <aside id="review-comments-panel" aria-label="Komentar dokumen" class="hidden fixed right-4 top-36 bottom-12 w-80 max-w-[calc(100vw-2rem)] z-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 overflow-y-auto no-print">
+        <div class="flex items-center justify-between gap-3 mb-3">
+            <h2 class="font-semibold text-gray-900 dark:text-gray-100">Komentar dokumen</h2>
+            <button type="button" id="btn-close-review-comments" aria-label="Tutup komentar" class="text-gray-500 hover:text-gray-900 dark:hover:text-gray-100">✕</button>
+        </div>
+        <label for="review-comment-input" class="text-xs text-gray-600 dark:text-gray-300">Pilih teks dalam satu paragraf, lalu tambahkan komentar</label>
+        <textarea id="review-comment-input" maxlength="2000" rows="3" class="mt-2 w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 text-sm" placeholder="Tulis komentar..."></textarea>
+        <button type="button" id="btn-save-review-comment" class="mb-4 px-3 py-1.5 rounded bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700">Simpan komentar</button>
+        <div id="review-comments-list" class="space-y-2" aria-live="polite"></div>
+    </aside>
 
     <!-- ========================================================================= -->
     <!-- 5. STATUS BAR (BOTTOM)                                                    -->
