@@ -7,9 +7,12 @@ use App\Services\AiService;
 use App\Services\CitationService;
 use App\Services\CollaborationService;
 use App\Services\DocumentModelService;
+use App\Services\DocumentProtectionService;
 use App\Services\DocumentReviewService;
 use App\Services\DocumentService;
 use App\Services\DocumentTransactionService;
+use App\Services\MailMergeService;
+use App\Services\ProofingService;
 use App\Services\TocService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +30,9 @@ class DocumentController extends Controller
         protected DocumentTransactionService $documentTransactionService = new DocumentTransactionService,
         protected DocumentReviewService $documentReviewService = new DocumentReviewService,
         protected CollaborationService $collaborationService = new CollaborationService,
+        protected ProofingService $proofingService = new ProofingService,
+        protected MailMergeService $mailMergeService = new MailMergeService,
+        protected DocumentProtectionService $protectionService = new DocumentProtectionService,
     ) {}
 
     /**
@@ -837,5 +843,135 @@ HTML;
             'count' => $events->count(),
             'events' => $events,
         ]);
+    }
+
+    /**
+     * Check proofing, PUEBI, and readability.
+     */
+    public function checkProofing(Request $request): JsonResponse
+    {
+        $request->validate(['html' => ['required', 'string']]);
+
+        $result = $this->proofingService->checkProofing($request->input('html'));
+
+        return response()->json($result);
+    }
+
+    /**
+     * Generate text-to-speech segments for Read Aloud.
+     */
+    public function speechSegments(Request $request): JsonResponse
+    {
+        $request->validate(['html' => ['required', 'string']]);
+
+        $result = $this->proofingService->segmentForSpeech($request->input('html'));
+
+        return response()->json($result);
+    }
+
+    /**
+     * Preview single mail merge result.
+     */
+    public function previewMailMerge(Request $request): JsonResponse
+    {
+        $request->validate([
+            'template' => ['required', 'string'],
+            'record' => ['required', 'array'],
+        ]);
+
+        $merged = $this->mailMergeService->mergeSingle(
+            $request->input('template'),
+            $request->input('record')
+        );
+
+        return response()->json([
+            'success' => true,
+            'merged' => $merged,
+        ]);
+    }
+
+    /**
+     * Perform batch mail merge from template and records or CSV.
+     */
+    public function batchMailMerge(Request $request): JsonResponse
+    {
+        $request->validate([
+            'template' => ['required', 'string'],
+            'records' => ['nullable', 'array'],
+            'csv' => ['nullable', 'string'],
+            'max_batch' => ['nullable', 'integer', 'max:1000'],
+        ]);
+
+        $template = $request->input('template');
+        $records = $request->input('records');
+
+        if (empty($records) && $request->filled('csv')) {
+            $records = $this->mailMergeService->parseCsv($request->input('csv'));
+        }
+
+        if (empty($records)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada data penerima yang ditemukan.',
+            ], 422);
+        }
+
+        $maxBatch = (int) $request->input('max_batch', 500);
+        $result = $this->mailMergeService->mergeBatch($template, $records, $maxBatch);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get mail merge layout presets.
+     */
+    public function getMailMergePresets(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'presets' => $this->mailMergeService->getMergePresets(),
+        ]);
+    }
+
+    /**
+     * Set password protection and editing restriction on document.
+     */
+    public function setProtection(Request $request, string $uuid): JsonResponse
+    {
+        $request->validate([
+            'mode' => ['required', 'string', 'in:none,read_only,comments_only'],
+            'password' => ['nullable', 'string', 'min:4'],
+        ]);
+
+        $doc = Document::where('uuid', $uuid)->firstOrFail();
+        $this->protectionService->setProtection(
+            $doc,
+            $request->input('mode'),
+            $request->input('password')
+        );
+
+        return response()->json([
+            'success' => true,
+            'restricted_mode' => $doc->restricted_mode,
+            'is_protected' => ! empty($doc->password_hash),
+        ]);
+    }
+
+    /**
+     * Verify document password.
+     */
+    public function verifyProtection(Request $request, string $uuid): JsonResponse
+    {
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        $doc = Document::where('uuid', $uuid)->firstOrFail();
+        $valid = $this->protectionService->verifyPassword($doc, $request->input('password'));
+
+        return response()->json([
+            'success' => $valid,
+            'valid' => $valid,
+        ], $valid ? 200 : 403);
     }
 }

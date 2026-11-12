@@ -50,4 +50,13 @@ Route::prefix('api/documents')->name('documents.')->group(function () {
     Route::post('/server/{uuid}/presence', [DocumentController::class, 'heartbeatPresence'])->name('server.presence.heartbeat');
     Route::get('/server/{uuid}/presence', [DocumentController::class, 'getPresence'])->name('server.presence.get');
     Route::get('/server/{uuid}/audit', [DocumentController::class, 'getAuditEvents'])->name('server.audit');
+
+    // Proofing, Mail Merge & Protection (W11, W12, W13)
+    Route::post('/proofing/check', [DocumentController::class, 'checkProofing'])->name('proofing.check');
+    Route::post('/proofing/speech-segments', [DocumentController::class, 'speechSegments'])->name('proofing.speech-segments');
+    Route::post('/mail-merge/preview', [DocumentController::class, 'previewMailMerge'])->name('mail-merge.preview');
+    Route::post('/mail-merge/batch', [DocumentController::class, 'batchMailMerge'])->name('mail-merge.batch');
+    Route::get('/mail-merge/presets', [DocumentController::class, 'getMailMergePresets'])->name('mail-merge.presets');
+    Route::post('/server/{uuid}/protection', [DocumentController::class, 'setProtection'])->name('server.protection.set');
+    Route::post('/server/{uuid}/protection/verify', [DocumentController::class, 'verifyProtection'])->name('server.protection.verify');
 });
