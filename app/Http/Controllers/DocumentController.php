@@ -6,6 +6,7 @@ use App\Services\AiService;
 use App\Services\CitationService;
 use App\Services\DocumentModelService;
 use App\Services\DocumentService;
+use App\Services\DocumentTransactionService;
 use App\Services\TocService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class DocumentController extends Controller
         protected CitationService $citationService,
         protected TocService $tocService,
         protected DocumentModelService $documentModelService = new DocumentModelService,
+        protected DocumentTransactionService $documentTransactionService = new DocumentTransactionService,
     ) {}
 
     /**
@@ -429,5 +431,93 @@ HTML;
             'valid' => $validation['valid'],
             'errors' => $validation['errors'],
         ], $validation['valid'] ? 200 : 422);
+    }
+
+    /**
+     * Apply transactional operation to canonical document model.
+     */
+    public function applyTransaction(Request $request): JsonResponse
+    {
+        $request->validate([
+            'model' => ['required', 'array'],
+            'operation' => ['required', 'array'],
+            'operation.type' => ['required', 'string'],
+        ]);
+
+        $updatedModel = $this->documentTransactionService->applyOperation(
+            $request->input('model'),
+            $request->input('operation')
+        );
+
+        return response()->json([
+            'success' => true,
+            'model' => $updatedModel,
+        ]);
+    }
+
+    /**
+     * Compute the exact inverse of an operation for undo/redo stack.
+     */
+    public function invertTransaction(Request $request): JsonResponse
+    {
+        $request->validate([
+            'operation' => ['required', 'array'],
+            'operation.type' => ['required', 'string'],
+        ]);
+
+        $inverse = $this->documentTransactionService->invertOperation($request->input('operation'));
+
+        return response()->json([
+            'success' => true,
+            'inverse' => $inverse,
+        ]);
+    }
+
+    /**
+     * Safe search and replace preserving XML/HTML structure.
+     */
+    public function searchReplace(Request $request): JsonResponse
+    {
+        $request->validate([
+            'html' => ['required', 'string'],
+            'find' => ['required', 'string'],
+            'replace' => ['required', 'string'],
+            'options' => ['nullable', 'array'],
+        ]);
+
+        $result = $this->documentTransactionService->searchAndReplace(
+            $request->input('html'),
+            $request->input('find'),
+            $request->input('replace'),
+            $request->input('options', [])
+        );
+
+        return response()->json($result);
+    }
+
+    /**
+     * Audit accessibility rules on document model.
+     */
+    public function accessibilityAudit(Request $request): JsonResponse
+    {
+        $request->validate([
+            'model' => ['nullable', 'array'],
+            'html' => ['nullable', 'string'],
+        ]);
+
+        if ($request->filled('model')) {
+            $model = $request->input('model');
+        } elseif ($request->filled('html')) {
+            $model = $this->documentModelService->htmlToModel($request->input('html'));
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter model atau html wajib diberikan.',
+            ], 422);
+        }
+
+        $audit = $this->documentTransactionService->auditAccessibility($model);
+
+        return response()->json(array_merge(['success' => true], $audit));
     }
 }

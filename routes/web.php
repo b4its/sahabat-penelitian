@@ -28,4 +28,8 @@ Route::prefix('api/documents')->name('documents.')->group(function () {
     Route::post('/model/render', [DocumentController::class, 'renderModel'])->name('model.render');
     Route::post('/model/migrate', [DocumentController::class, 'migrateModel'])->name('model.migrate');
     Route::post('/model/validate', [DocumentController::class, 'validateModelEndpoint'])->name('model.validate');
+    Route::post('/transactions/apply', [DocumentController::class, 'applyTransaction'])->name('transactions.apply');
+    Route::post('/transactions/invert', [DocumentController::class, 'invertTransaction'])->name('transactions.invert');
+    Route::post('/search-replace', [DocumentController::class, 'searchReplace'])->name('search-replace');
+    Route::post('/accessibility-audit', [DocumentController::class, 'accessibilityAudit'])->name('accessibility-audit');
 });
