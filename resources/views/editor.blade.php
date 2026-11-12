@@ -2385,8 +2385,19 @@
                 <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
             </div>
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <button data-export-format="docx" class="p-4 border border-indigo-200 dark:border-indigo-800 hover:border-indigo-500 rounded-xl flex items-start gap-3 bg-indigo-50/40 dark:bg-indigo-950/30 hover:bg-indigo-50/70 transition text-left">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">DOCX</div>
+                    <div>
+                        <div class="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                            Microsoft Word Asli (.docx)
+                            <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 font-semibold">Open XML</span>
+                        </div>
+                        <div class="text-[11px] text-gray-500 mt-0.5">Berkas biner Open XML ZIP standar (.docx) yang kompatibel penuh dengan Word desktop, web, dan LibreOffice.</div>
+                    </div>
+                </button>
+
                 <button data-export-format="doc" class="p-4 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 rounded-xl flex items-start gap-3 bg-gray-50/50 dark:bg-gray-800/40 hover:bg-indigo-50/30 transition text-left">
-                    <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">W</div>
+                    <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">DOC</div>
                     <div>
                         <div class="font-bold text-gray-800 dark:text-gray-200">HTML untuk Word (.doc)</div>
                         <div class="text-[11px] text-gray-500 mt-0.5">Berkas HTML dengan ekstensi .doc, bukan DOCX asli. Format dan komentar mungkin berubah; Word dapat menampilkan peringatan format.</div>

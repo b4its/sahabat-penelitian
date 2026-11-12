@@ -33,6 +33,12 @@ class DocxImporter
 
     private array $pageSetup = [];
 
+    private bool $hasMacros = false;
+
+    private array $unsupportedParts = [];
+
+    private array $securityAlerts = [];
+
     public function getExtractedHeader(): string
     {
         return $this->extractedHeader;
@@ -58,6 +64,21 @@ class DocxImporter
         return $this->pageSetup;
     }
 
+    public function hasMacros(): bool
+    {
+        return $this->hasMacros;
+    }
+
+    public function getUnsupportedParts(): array
+    {
+        return $this->unsupportedParts;
+    }
+
+    public function getSecurityAlerts(): array
+    {
+        return $this->securityAlerts;
+    }
+
     /**
      * Parse DOCX with extracted headers and footers metadata.
      */
@@ -72,6 +93,9 @@ class DocxImporter
             'different_first_page' => $this->differentFirstPage,
             'default_font_family' => $this->defaultFontFamily,
             'page_setup' => $this->pageSetup,
+            'has_macros' => $this->hasMacros,
+            'unsupported_parts' => $this->unsupportedParts,
+            'security_alerts' => $this->securityAlerts,
         ];
     }
 
@@ -95,6 +119,44 @@ class DocxImporter
         $zip = new ZipArchive;
         if ($zip->open($filePath) !== true) {
             return $this->fallbackRawContent($raw);
+        }
+
+        $totalUncompressedSize = 0;
+        $maxUncompressedSize = 100 * 1024 * 1024; // 100 MB limit
+        $this->hasMacros = false;
+        $this->unsupportedParts = [];
+        $this->securityAlerts = [];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            if (! $stat) {
+                continue;
+            }
+
+            $entryName = $stat['name'];
+
+            // Zip slip / path traversal check
+            if (str_contains($entryName, '..') || str_starts_with($entryName, '/')) {
+                $this->securityAlerts[] = "Potensi path traversal ditolak: {$entryName}";
+                $zip->close();
+
+                return $this->fallbackRawContent($raw);
+            }
+
+            // Zip bomb check
+            $totalUncompressedSize += $stat['size'];
+            if ($totalUncompressedSize > $maxUncompressedSize) {
+                $this->securityAlerts[] = "Arsip melebihi batas ukuran dekompresi aman ({$maxUncompressedSize} bytes).";
+                $zip->close();
+
+                return $this->fallbackRawContent($raw);
+            }
+
+            // Macro / OLE / VBA detection and quarantine
+            if (str_contains(strtolower($entryName), 'vbaproject') || str_ends_with(strtolower($entryName), '.bin') || str_contains(strtolower($entryName), 'vba')) {
+                $this->hasMacros = true;
+                $this->unsupportedParts[] = "Macro quarantined: {$entryName}";
+            }
         }
 
         $docXml = $zip->getFromName('word/document.xml');

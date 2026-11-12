@@ -13,7 +13,7 @@ class DocumentService
     {
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-        if (in_array($extension, ['docx', 'doc'])) {
+        if (in_array($extension, ['docx', 'doc', 'docm', 'dotx', 'dotm', 'odt'])) {
             return 'docx';
         }
 
@@ -1268,6 +1268,15 @@ class DocumentService
                 ];
 
             case 'docx':
+                $generator = new DocxGenerator;
+                $docxBinary = $generator->generate($title, $sanitizedHtml, $headerText, $footerText, $layoutOptions);
+
+                return [
+                    'content' => $docxBinary,
+                    'mime' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'filename' => "{$safeTitle}.docx",
+                ];
+
             case 'doc':
                 $hasCustomHeader = ! empty($headerText) && trim($headerText) !== '';
                 $hasCustomFooter = ! empty($footerText) && trim($footerText) !== '';

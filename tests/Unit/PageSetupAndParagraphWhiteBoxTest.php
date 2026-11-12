@@ -210,7 +210,7 @@ XML;
             'paragraph_spacing' => ['before' => 0, 'after' => 6],
         ];
 
-        $result = $this->docService->exportDocument('Skripsi Bab I', $content, 'docx', null, null, $layoutOptions);
+        $result = $this->docService->exportDocument('Skripsi Bab I', $content, 'doc', null, null, $layoutOptions);
         $docOutput = $result['content'];
 
         $this->assertStringContainsString('@page Section1 {', $docOutput);
@@ -305,7 +305,7 @@ XML;
             'default_tab_stop' => 1.27,
         ];
 
-        $docxResult = $this->docService->exportDocument('Uji Kolom dan Tanda Hubung', $content, 'docx', null, null, $layoutOptions);
+        $docxResult = $this->docService->exportDocument('Uji Kolom dan Tanda Hubung', $content, 'doc', null, null, $layoutOptions);
         $docxContent = $docxResult['content'];
 
         $this->assertStringContainsString('column-count: 2;', $docxContent);
@@ -403,8 +403,8 @@ XML;
             'orientation' => 'portrait',
         ];
 
-        // DOCX Export
-        $docxResult = $this->docService->exportDocument('Uji Paragraf Lengkap DOCX', $content, 'docx', null, null, $layoutOptions);
+        // DOCX / Word HTML Export
+        $docxResult = $this->docService->exportDocument('Uji Paragraf Lengkap DOCX', $content, 'doc', null, null, $layoutOptions);
         $this->assertStringContainsString('background-color: #fef08a;', $docxResult['content']);
         $this->assertStringContainsString('border-left: 3.5px solid #4f46e5;', $docxResult['content']);
         $this->assertStringContainsString('class="drop-cap"', $docxResult['content']);
@@ -447,8 +447,8 @@ HTML;
             ],
         ];
 
-        // 1. DOCX Export
-        $docxResult = $this->docService->exportDocument('Uji BiDi dan Urutan DOCX', $content, 'docx', null, null, $layoutOptions);
+        // 1. DOCX / Word HTML Export
+        $docxResult = $this->docService->exportDocument('Uji BiDi dan Urutan DOCX', $content, 'doc', null, null, $layoutOptions);
         $docxContent = $docxResult['content'];
         $this->assertStringContainsString('dir="rtl"', $docxContent);
         $this->assertStringContainsString('direction: rtl;', $docxContent);
@@ -486,8 +486,8 @@ HTML;
             ],
         ];
 
-        // 1. DOCX Export
-        $docxResult = $this->docService->exportDocument('Uji Mirror Margins DOCX', $content, 'docx', null, null, $layoutOptions);
+        // 1. DOCX / Word HTML Export
+        $docxResult = $this->docService->exportDocument('Uji Mirror Margins DOCX', $content, 'doc', null, null, $layoutOptions);
         $this->assertStringContainsString('mso-mirror-margins: yes;', $docxResult['content']);
         $this->assertStringContainsString('justify-content: center;', $docxResult['content']);
 
@@ -501,7 +501,7 @@ HTML;
             'orientation' => 'landscape',
             'multiple_pages' => '2pages',
         ];
-        $twoPagesDocx = $this->docService->exportDocument('Uji 2 Pages DOCX', $content, 'docx', null, null, $twoPagesLayout);
+        $twoPagesDocx = $this->docService->exportDocument('Uji 2 Pages DOCX', $content, 'doc', null, null, $twoPagesLayout);
         $this->assertStringContainsString('column-count: 2;', $twoPagesDocx['content']);
         $this->assertStringContainsString('mso-column-count: 2;', $twoPagesDocx['content']);
     }

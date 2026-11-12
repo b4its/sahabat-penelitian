@@ -705,7 +705,7 @@ test('white-box: exportDocument omits MsoHeader and MsoFooter when headerText an
     $exported = $this->service->exportDocument(
         'Naskah Bebas Header',
         '<p>Konten tanpa header footer</p>',
-        'docx',
+        'doc',
         null,
         null
     );

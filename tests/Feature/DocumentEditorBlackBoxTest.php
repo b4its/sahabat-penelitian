@@ -305,8 +305,13 @@ test('black-box: user can export document in multiple formats', function () {
     // Export as Word (.docx / .doc)
     $resDocx = $this->postJson('/api/documents/export', array_merge($payload, ['format' => 'docx']));
     $resDocx->assertStatus(200);
-    expect($resDocx->headers->get('Content-Type'))->toContain('application/msword')
-        ->and($resDocx->headers->get('Content-Disposition'))->toContain('attachment');
+    expect($resDocx->headers->get('Content-Type'))->toContain('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        ->and($resDocx->headers->get('Content-Disposition'))->toContain('.docx');
+
+    $resDoc = $this->postJson('/api/documents/export', array_merge($payload, ['format' => 'doc']));
+    $resDoc->assertStatus(200);
+    expect($resDoc->headers->get('Content-Type'))->toContain('application/msword')
+        ->and($resDoc->headers->get('Content-Disposition'))->toContain('.doc');
 
     // Export as Markdown (.md)
     $resMd = $this->postJson('/api/documents/export', array_merge($payload, ['format' => 'markdown']));
@@ -780,7 +785,7 @@ test('black-box: exporting document without custom header and footer omits Word 
     $response = $this->postJson('/api/documents/export', [
         'title' => 'Naskah Bersih Uji Coba',
         'content' => '<p>Konten bebas header dan footer.</p>',
-        'format' => 'docx',
+        'format' => 'doc',
         'header_text' => null,
         'footer_text' => null,
     ]);
