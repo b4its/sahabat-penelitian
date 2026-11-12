@@ -24,4 +24,8 @@ Route::prefix('api/documents')->name('documents.')->group(function () {
     Route::post('/format-bibliography', [DocumentController::class, 'formatBibliography'])->name('format-bibliography');
     Route::post('/generate-toc', [DocumentController::class, 'generateToc'])->name('generate-toc');
     Route::post('/update-toc', [DocumentController::class, 'updateToc'])->name('update-toc');
+    Route::post('/model/parse', [DocumentController::class, 'parseModel'])->name('model.parse');
+    Route::post('/model/render', [DocumentController::class, 'renderModel'])->name('model.render');
+    Route::post('/model/migrate', [DocumentController::class, 'migrateModel'])->name('model.migrate');
+    Route::post('/model/validate', [DocumentController::class, 'validateModelEndpoint'])->name('model.validate');
 });

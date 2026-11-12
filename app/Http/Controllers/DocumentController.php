@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AiService;
 use App\Services\CitationService;
+use App\Services\DocumentModelService;
 use App\Services\DocumentService;
 use App\Services\TocService;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,7 @@ class DocumentController extends Controller
         protected AiService $aiService,
         protected CitationService $citationService,
         protected TocService $tocService,
+        protected DocumentModelService $documentModelService = new DocumentModelService,
     ) {}
 
     /**
@@ -341,5 +343,91 @@ HTML;
             'count' => count($headings),
             'html' => $html,
         ]);
+    }
+
+    /**
+     * Parse HTML into canonical Document model v1.
+     */
+    public function parseModel(Request $request): JsonResponse
+    {
+        $request->validate([
+            'html' => ['required', 'string'],
+            'title' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $model = $this->documentModelService->htmlToModel(
+            $request->input('html'),
+            $request->input('title', 'Dokumen')
+        );
+
+        return response()->json([
+            'success' => true,
+            'schemaVersion' => DocumentModelService::SCHEMA_VERSION,
+            'model' => $model,
+        ]);
+    }
+
+    /**
+     * Render canonical Document model v1 into sanitized HTML.
+     */
+    public function renderModel(Request $request): JsonResponse
+    {
+        $request->validate([
+            'model' => ['required', 'array'],
+        ]);
+
+        $model = $request->input('model');
+        $validation = $this->documentModelService->validateModel($model);
+
+        if (! $validation['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Model dokumen tidak valid.',
+                'errors' => $validation['errors'],
+            ], 422);
+        }
+
+        $html = $this->documentModelService->modelToHtml($model);
+
+        return response()->json([
+            'success' => true,
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * Migrate legacy HTML drafts into canonical model with validation & rollback snapshot.
+     */
+    public function migrateModel(Request $request): JsonResponse
+    {
+        $request->validate([
+            'html' => ['required', 'string'],
+            'title' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $result = $this->documentModelService->migrateLegacyHtml(
+            $request->input('html'),
+            $request->input('title', 'Dokumen Migrasi')
+        );
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * Validate canonical Document model v1 schema.
+     */
+    public function validateModelEndpoint(Request $request): JsonResponse
+    {
+        $request->validate([
+            'model' => ['required', 'array'],
+        ]);
+
+        $validation = $this->documentModelService->validateModel($request->input('model'));
+
+        return response()->json([
+            'success' => $validation['valid'],
+            'valid' => $validation['valid'],
+            'errors' => $validation['errors'],
+        ], $validation['valid'] ? 200 : 422);
     }
 }
