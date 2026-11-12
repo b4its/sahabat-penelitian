@@ -6,6 +6,7 @@
 
 import { PAPER_DIMENSIONS, MARGIN_PRESETS } from './document-engine.js';
 import { ReviewComments } from './review-comments.js';
+import { WordToolsSuite } from './word-tools-suite.js';
 
 export class UiController {
     constructor(engine, wordcraftAi) {
@@ -29,6 +30,7 @@ export class UiController {
             ['bindRibbonTabs', () => this.bindRibbonTabs()],
             ['bindRibbonTools', () => this.bindRibbonTools()],
             ['bindReviewComments', () => { this.reviewComments = new ReviewComments(this.engine); this.reviewComments.bind(); }],
+            ['bindWordToolsSuite', () => { this.wordToolsSuite = new WordToolsSuite(this.engine, this); this.wordToolsSuite.bind(); }],
             ['bindThemeSwitcher', () => this.bindThemeSwitcher()],
             ['bindFormatPainter', () => this.bindFormatPainter()],
             ['bindFontSteppers', () => this.bindFontSteppers()],

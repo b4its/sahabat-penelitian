@@ -514,12 +514,14 @@ HTML;
         $request->validate([
             'model' => ['nullable', 'array'],
             'html' => ['nullable', 'string'],
+            'content' => ['nullable', 'string'],
         ]);
 
         if ($request->filled('model')) {
             $model = $request->input('model');
-        } elseif ($request->filled('html')) {
-            $model = $this->documentModelService->htmlToModel($request->input('html'));
+        } elseif ($request->filled('html') || $request->filled('content')) {
+            $html = $request->input('html') ?? $request->input('content');
+            $model = $this->documentModelService->htmlToModel($html);
         } else {
             return response()->json([
                 'success' => false,
