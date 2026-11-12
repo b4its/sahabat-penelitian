@@ -423,6 +423,16 @@ export class DocumentEngine {
     }
 
     handleKeydown(e) {
+        if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.isComposing) {
+            const key = e.key.toLowerCase();
+            if (key === 'z' || (key === 'y' && !e.shiftKey)) {
+                e.preventDefault();
+                if (key === 'z' && !e.shiftKey) this.undo();
+                else this.redo();
+                return;
+            }
+        }
+
         if (e.key === 'Tab') {
             e.preventDefault();
             const selection = window.getSelection();
@@ -5402,21 +5412,85 @@ ${entriesHtml}    </div>
         this.historyIndex = this.history.length - 1;
     }
 
+    flushPendingHistory() {
+        const hasPendingEdit = Boolean(this.autoSaveTimer || this.isTyping);
+        if (this.autoSaveTimer) {
+            clearTimeout(this.autoSaveTimer);
+            this.autoSaveTimer = null;
+        }
+        if (this.isChunkLoading) this.flushChunkQueue();
+        const content = this.getContent();
+        if (hasPendingEdit && content !== this.history[this.historyIndex]) this.recordHistory(content);
+        this.isTyping = false;
+    }
+
+    restoreHistory(index) {
+        const selection = typeof window !== 'undefined' ? window.getSelection() : null;
+        const currentBody = this.getActiveEditor();
+        let caret = null;
+        if (selection?.rangeCount && currentBody?.contains?.(selection.anchorNode)) {
+            const beforeCaret = document.createRange();
+            beforeCaret.selectNodeContents(currentBody);
+            beforeCaret.setEnd(selection.anchorNode, selection.anchorOffset);
+            caret = {
+                page: this.getAllEditorBodies().indexOf(currentBody),
+                offset: beforeCaret.toString().length,
+            };
+        }
+        this.historyIndex = index;
+        this.setContent(this.history[index], false, {
+            onComplete: () => {
+                this.restoreHistoryCaret(caret);
+                this.saveToLocalStorage();
+                this.onSaveStateChange('Tersimpan di lokal');
+            },
+        });
+        // A streamed document has only its first sheet immediately; keep shortcuts
+        // directed at the editor until the target page is available.
+        if (this.isChunkLoading) this.getAllEditorBodies()[0]?.focus();
+    }
+
+    restoreHistoryCaret(caret) {
+        const bodies = this.getAllEditorBodies();
+        const body = bodies[Math.min(caret?.page ?? 0, bodies.length - 1)];
+        if (!body) return;
+        body.focus();
+        if (!caret || typeof window === 'undefined') return;
+        const walker = document.createTreeWalker(body, document.defaultView.NodeFilter.SHOW_TEXT);
+        let remaining = caret.offset;
+        let text = walker.nextNode();
+        let lastText = null;
+        while (text && remaining > text.textContent.length) {
+            remaining -= text.textContent.length;
+            lastText = text;
+            text = walker.nextNode();
+        }
+        const range = document.createRange();
+        if (text) range.setStart(text, Math.min(remaining, text.textContent.length));
+        else if (lastText) range.setStart(lastText, lastText.textContent.length);
+        else range.selectNodeContents(body);
+        range.collapse(Boolean(text || lastText));
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
     undo() {
+        this.flushPendingHistory();
         if (this.historyIndex > 0) {
-            this.historyIndex--;
-            this.setContent(this.history[this.historyIndex], false);
-            this.updateStats();
-            this.updateOutline();
+            this.restoreHistory(this.historyIndex - 1);
         }
     }
 
     redo() {
+        if (this.isChunkLoading) this.flushChunkQueue();
+        if (this.autoSaveTimer || this.isTyping) {
+            const previousIndex = this.historyIndex;
+            this.flushPendingHistory();
+            if (this.historyIndex !== previousIndex) return;
+        }
         if (this.historyIndex < this.history.length - 1) {
-            this.historyIndex++;
-            this.setContent(this.history[this.historyIndex], false);
-            this.updateStats();
-            this.updateOutline();
+            this.restoreHistory(this.historyIndex + 1);
         }
     }
 
