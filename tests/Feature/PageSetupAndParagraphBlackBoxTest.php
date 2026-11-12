@@ -434,7 +434,7 @@ test('black-box: user can export document with columns and hyphenation layout pa
     $payload = [
         'title' => 'Riset Kolom Ganda',
         'content' => '<p>Artikel jurnal dua kolom.</p><div class="column-break">Pemisah Kolom</div><p>Kolom lanjutan.</p>',
-        'format' => 'docx',
+        'format' => 'doc',
         'columns' => 2,
         'hyphenation' => 'auto',
         'paper_size' => 'a4',
@@ -534,7 +534,7 @@ test('black-box: user can export document with watermark, page color, border, an
     $payload = [
         'title' => 'Dokumen Kerahasiaan Tinggi',
         'content' => '<p>Paragraf berisi materi penting rahasia.</p>',
-        'format' => 'docx',
+        'format' => 'doc',
         'paper_size' => 'a4',
         'orientation' => 'portrait',
         'page_color' => '#fefce8',
@@ -707,7 +707,7 @@ test('black-box: user can export document with multiple pages mirror mode and ve
     $payload = [
         'title' => 'Dokumen Sampul Tengah',
         'content' => '<p>Lembar persetujuan ujian skripsi dengan perataan tengah dan mirror margins.</p>',
-        'format' => 'docx',
+        'format' => 'doc',
         'multiple_pages' => 'mirror',
         'vertical_align' => 'center',
     ];

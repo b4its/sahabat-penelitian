@@ -285,7 +285,7 @@ XML;
         $this->assertStringContainsString('margin: 25.4mm 31.8mm 25.4mm 31.8mm;', $htmlResult['content']);
         $this->assertStringContainsString('line-height: 1.15;', $htmlResult['content']);
 
-        $docxResult = $this->docService->exportDocument('Tabloid Docx', $content, 'docx', null, null, $layoutOptions);
+        $docxResult = $this->docService->exportDocument('Tabloid Docx', $content, 'doc', null, null, $layoutOptions);
         $this->assertStringContainsString('size: 431.8mm 279.4mm;', $docxResult['content']);
         $this->assertStringContainsString('margin: 25.4mm 31.8mm 25.4mm 31.8mm;', $docxResult['content']);
         $this->assertStringContainsString('line-height: 1.15;', $docxResult['content']);
@@ -365,8 +365,8 @@ XML;
             'line_numbers' => 'continuous',
         ];
 
-        // 1. DOCX/DOC Export
-        $docxResult = $this->docService->exportDocument('Uji Cap Air DOCX', $content, 'docx', null, null, $layoutOptions);
+        // 1. DOCX/DOC Export (Word HTML legacy format)
+        $docxResult = $this->docService->exportDocument('Uji Cap Air DOCX', $content, 'doc', null, null, $layoutOptions);
         $docxContent = $docxResult['content'];
 
         $this->assertStringContainsString('SANGAT RAHASIA', $docxContent);
