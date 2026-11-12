@@ -82,9 +82,9 @@ Referensi: [Perbandingan Word Desktop vs Web](https://support.microsoft.com/en-u
 ## 3. Matriks Hasil Pengujian
 
 ```
-PHP Tests:  232 passed (1909 assertions)
-JS Tests:   32 passed (0 failures)
-Pint Style: 70 files checked (0 warnings)
+PHP Tests:  235 passed (1935 assertions)
+JS Tests:   37 passed (0 failures)
+Pint Style: 71 files checked (0 warnings)
 Vite Build: Built successfully (0 errors)
 ```
 Semua skenario pengujian black-box (BB01–BB15) dan white-box pada lapisan model, serializer, review, kolaborasi, dan keamanan lolos 100%.
