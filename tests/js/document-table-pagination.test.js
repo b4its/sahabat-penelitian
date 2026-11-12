@@ -29,6 +29,7 @@ test('wide local table retains every row, repeated headings and column proportio
         assert.ok(table.classList.contains('wordcraft-wide-table'));
         assert.equal(table.querySelectorAll('col').length, 12);
         assert.equal(table.tHead.rows.length, 1);
+        assert.equal(table.dataset.tableGroup, tables[0].dataset.tableGroup);
     }
     assert.ok(pages.at(-1).contentHtml.includes('Setelah tabel'));
 });

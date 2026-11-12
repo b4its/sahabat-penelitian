@@ -562,6 +562,18 @@
         }
         .page-sheet-body .wordcraft-image-frame[data-image-mode="floating"]:active { cursor: grabbing; }
 
+        .page-sheet-body .wordcraft-image-frame img { cursor: grab; }
+        .page-sheet-body .wordcraft-image-frame img:active { cursor: grabbing; }
+        .wordcraft-drop-marker {
+            position: fixed;
+            height: 3px;
+            background: #4f46e5;
+            border-radius: 2px;
+            z-index: 60;
+            pointer-events: none;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+        }
+
         #document-editor figure figcaption,
         .page-sheet-body figure figcaption {
             font-size: 10pt;
@@ -1835,6 +1847,7 @@
             <!-- Floating Table Context Toolbar -->
             <div id="floating-table-toolbar" class="hidden fixed bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-2xl z-40 items-center gap-2 text-xs border border-gray-700 no-print">
                 <span class="text-gray-400 font-semibold mr-1">Tabel:</span>
+                <button type="button" data-table-action="move" class="px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 cursor-grab active:cursor-grabbing text-[11px] touch-none" title="Geser tabel ke sela paragraf atau halaman lain">⠿ Pindahkan</button>
                 <button data-table-action="add-row-above" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">+ Baris Atas</button>
                 <button data-table-action="add-row-below" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">+ Baris Bawah</button>
                 <button data-table-action="del-row" class="px-2 py-0.5 hover:bg-red-800 rounded text-red-300 text-[11px]">Hapus Baris</button>

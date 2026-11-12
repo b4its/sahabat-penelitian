@@ -1364,6 +1364,9 @@ export class UiController {
         // Table toolbar actions
         const tableToolbar = document.getElementById('floating-table-toolbar');
         if (tableToolbar) {
+            tableToolbar.querySelector('[data-table-action="move"]')?.addEventListener('pointerdown', (event) => {
+                if (this.engine.activeTable?.isConnected) this.engine.startDocumentObjectDrag(this.engine.activeTable, event);
+            });
             tableToolbar.querySelector('[data-table-action="add-row-above"]')?.addEventListener('click', () => this.engine.addRowAbove());
             tableToolbar.querySelector('[data-table-action="add-row-below"]')?.addEventListener('click', () => this.engine.addRowBelow());
             tableToolbar.querySelector('[data-table-action="del-row"]')?.addEventListener('click', () => this.engine.deleteRow());

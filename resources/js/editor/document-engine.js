@@ -266,7 +266,11 @@ export class DocumentEngine {
 
             targetContainer.addEventListener('pointerdown', (e) => {
                 const frame = e.target.closest('.wordcraft-image-frame[data-image-mode="floating"]');
-                if (!frame || !e.target.closest('img')) return;
+                if (!frame || !e.target.closest('img')) {
+                    const img = e.target.closest('.page-sheet-body img');
+                    if (img && e.button === 0) this.startDocumentObjectDrag(img, e);
+                    return;
+                }
                 e.preventDefault();
                 this.activeImage = frame.querySelector('img');
                 const startX = e.clientX;
@@ -512,6 +516,14 @@ export class DocumentEngine {
         let currentWeight = 0;
         let currentChapter = '';
         const MAX_PAGE_WEIGHT = 780; // Printable A4 body height budget in px (approx 220mm at 96dpi)
+        const tableGroups = new Set(Array.from(container.querySelectorAll('table[data-table-group]'), table => table.dataset.tableGroup));
+        let nextTableGroup = 1;
+        const newTableGroup = () => {
+            let id;
+            do { id = `wordcraft-table-${nextTableGroup++}`; } while (tableGroups.has(id));
+            tableGroups.add(id);
+            return id;
+        };
 
         // Keep imported grid tables within the printable width, and distribute long
         // tables across sheets by row rather than letting one block escape the page.
@@ -535,8 +547,10 @@ export class DocumentEngine {
                 return 22 + Math.ceil(longestCell / charsPerLine) * (columnCount > 8 ? 11 : 16);
             };
             const headerWeight = headerRows.reduce((sum, row) => sum + rowWeight(row), 20);
+            const group = table.dataset.tableGroup || newTableGroup();
             let part = null;
             let partWeight = 0;
+            let partIndex = 0;
 
             for (const row of dataRows) {
                 const weight = rowWeight(row);
@@ -550,6 +564,8 @@ export class DocumentEngine {
                 }
                 if (!part) {
                     part = table.cloneNode(false);
+                    part.dataset.tableGroup = group;
+                    if (partIndex++) part.removeAttribute('id');
                     // Copy the column grid and repeat the heading on each sheet.
                     if (table.querySelector(':scope > colgroup')) {
                         part.appendChild(table.querySelector(':scope > colgroup').cloneNode(true));
@@ -3817,6 +3833,135 @@ export class DocumentEngine {
         toolbar.style.left = `${Math.max(10, rect.left)}px`;
         toolbar.classList.remove('hidden');
         toolbar.classList.add('flex');
+    }
+
+    getDraggableBlock(element) {
+        if (!element) return null;
+        const body = element.closest('.page-sheet-body');
+        if (!body) return null;
+        if (element.matches('table')) return element;
+        const frame = this.getImageFrame(element);
+        const figure = frame.closest('figure');
+        if (figure?.parentElement === body) return figure;
+        const paragraph = frame.closest('p');
+        if (paragraph?.parentElement === body && paragraph.textContent.trim() === '' && paragraph.querySelectorAll('img').length === 1) {
+            return paragraph;
+        }
+        return frame;
+    }
+
+    findDocumentDropTarget(x, y, source) {
+        const hit = document.elementFromPoint(x, y);
+        const body = hit?.closest('.page-sheet-body') || hit?.closest('.document-page-sheet')?.querySelector('.page-sheet-body');
+        if (!body || !this.pagesWrapper?.contains(body)) return null;
+        const rect = body.getBoundingClientRect();
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return null;
+
+        let block = hit;
+        while (block && block !== body && block.parentElement !== body) block = block.parentElement;
+        if (block === body || !block) {
+            block = Array.from(body.children).find(child => y < child.getBoundingClientRect().top + child.getBoundingClientRect().height / 2) || null;
+            return { body, reference: block, before: true };
+        }
+        if (block === source || source.contains(block) || block.contains(source) ||
+            (source.matches('table[data-table-group]') && block.matches('table[data-table-group]') &&
+                source.dataset.tableGroup === block.dataset.tableGroup)) return null;
+        return { body, reference: block, before: y < block.getBoundingClientRect().top + block.getBoundingClientRect().height / 2 };
+    }
+
+    moveDocumentObject(source, destination) {
+        if (!source || !destination || !destination.body?.isConnected) return false;
+        const { body, reference, before } = destination;
+        if (reference && (reference === source || source.contains(reference) || reference.contains(source))) return false;
+        if (source.matches('table[data-table-group]')) {
+            const fragments = Array.from(this.pagesWrapper.querySelectorAll('table[data-table-group]'))
+                .filter(table => table.dataset.tableGroup === source.dataset.tableGroup);
+            if (reference && fragments.includes(reference)) return false;
+            if (fragments.length > 1) {
+                source = fragments[0];
+                for (const fragment of fragments.slice(1)) {
+                    for (const row of Array.from(fragment.tBodies[0]?.rows || [])) source.tBodies[0].appendChild(row);
+                    fragment.remove();
+                }
+            }
+        }
+        if (reference) body.insertBefore(source, before ? reference : reference.nextSibling);
+        else body.appendChild(source);
+        this.hideImageToolbar();
+        this.hideTableToolbar();
+        this.activeImage = null;
+        this.activeTable = null;
+        // Reflow the moved block and the surrounding content into printable sheets.
+        this.setContent(this.getContent(), false);
+        this.handleInput();
+        return true;
+    }
+
+    startDocumentObjectDrag(element, event) {
+        if (!element || event.button !== 0) return;
+        if (this.isChunkLoading) this.flushChunkQueue();
+        if (!element.closest('.page-sheet-body')) return;
+        let source = element.matches('table') ? element : null;
+        event.preventDefault();
+        const startX = event.clientX;
+        const startY = event.clientY;
+        let dragging = false;
+        let destination = null;
+        const marker = document.createElement('div');
+        marker.className = 'wordcraft-drop-marker no-print';
+        const preview = document.createElement('div');
+        preview.className = 'fixed z-[60] pointer-events-none bg-indigo-600 text-white rounded px-2 py-1 text-xs shadow-lg no-print';
+        preview.textContent = element.matches('table') ? '⠿ Pindahkan tabel' : '⠿ Pindahkan gambar';
+
+        const cleanup = () => {
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', end);
+            window.removeEventListener('pointercancel', cancel);
+            window.removeEventListener('keydown', keydown);
+            marker.remove();
+            preview.remove();
+            source?.classList.remove('opacity-50');
+        };
+        const cancel = () => cleanup();
+        const keydown = (e) => { if (e.key === 'Escape') cleanup(); };
+        const move = (e) => {
+            if (!dragging && Math.hypot(e.clientX - startX, e.clientY - startY) < 6) return;
+            if (!dragging) {
+                source = this.getDraggableBlock(element);
+                if (!source) return;
+                dragging = true;
+                source.classList.add('opacity-50');
+                this.hideImageToolbar();
+                this.hideTableToolbar();
+                document.body.append(marker, preview);
+            }
+            preview.style.left = `${e.clientX + 12}px`;
+            preview.style.top = `${e.clientY + 12}px`;
+            destination = this.findDocumentDropTarget(e.clientX, e.clientY, source);
+            marker.style.display = destination ? 'block' : 'none';
+            if (destination) {
+                const rect = destination.body.getBoundingClientRect();
+                const targetRect = destination.reference?.getBoundingClientRect();
+                marker.style.left = `${rect.left}px`;
+                marker.style.width = `${rect.width}px`;
+                marker.style.top = `${targetRect ? (destination.before ? targetRect.top : targetRect.bottom) : rect.bottom}px`;
+            }
+            const scroll = document.getElementById('document-canvas-container');
+            const scrollRect = scroll?.getBoundingClientRect();
+            if (scrollRect && e.clientY > scrollRect.top && e.clientY < scrollRect.bottom) {
+                if (e.clientY < scrollRect.top + 40) scroll.scrollTop -= 18;
+                if (e.clientY > scrollRect.bottom - 40) scroll.scrollTop += 18;
+            }
+        };
+        const end = (e) => {
+            const target = dragging ? this.findDocumentDropTarget(e.clientX, e.clientY, source) : null;
+            cleanup();
+            if (target) this.moveDocumentObject(source, target);
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', end, { once: true });
+        window.addEventListener('pointercancel', cancel, { once: true });
+        window.addEventListener('keydown', keydown);
     }
 
     hideTableToolbar() {
