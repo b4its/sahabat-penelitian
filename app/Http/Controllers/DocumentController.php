@@ -46,7 +46,7 @@ class DocumentController extends Controller
     /**
      * Display the document modification editor view.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $defaultTitle = 'Rencana Proyek Penelitian 2026.docx';
 
@@ -111,6 +111,16 @@ class DocumentController extends Controller
 <h2>4. Kesimpulan & Rekomendasi</h2>
 <p>Sistem ini memberikan fleksibilitas penuh bagi pengguna untuk memuat dokumen lokal dalam format apa pun, memodifikasinya dengan presisi tinggi, dan mengekspornya kembali dalam bentuk Word (.docx), PDF cetak, Markdown, maupun berkas mandiri lainnya.</p>
 HTML;
+
+        if ($request->filled('doc')) {
+            $doc = Document::where('uuid', $request->query('doc'))->first();
+            if ($doc) {
+                $defaultTitle = $doc->title;
+                if (! empty($doc->content_html)) {
+                    $defaultContent = $doc->content_html;
+                }
+            }
+        }
 
         $stats = $this->documentService->calculateStats($defaultContent);
 

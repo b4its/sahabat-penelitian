@@ -188,6 +188,10 @@
                 <a href="#faq" class="px-3.5 py-2 rounded-lg hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/70 dark:hover:bg-blue-950/40 transition-colors">
                     FAQ
                 </a>
+                <a href="{{ route('panel.dashboard') }}" class="px-3.5 py-2 rounded-lg text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50/70 dark:hover:bg-blue-950/40 transition-colors flex items-center gap-1.5">
+                    <span>Panel Riset</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
+                </a>
             </nav>
 
             <!-- Right Controls: Theme Switcher + CTA -->

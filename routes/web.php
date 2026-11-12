@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\PanelController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -12,6 +13,20 @@ Route::get('/', [DocumentController::class, 'landing'])->name('landing');
 Route::get('/landing', [DocumentController::class, 'landing'])->name('landing.page');
 Route::get('/editor', [DocumentController::class, 'index'])->name('editor.index');
 Route::get('/editor/workspace', [DocumentController::class, 'index'])->name('editor.home');
+
+/*
+|--------------------------------------------------------------------------
+| Panel Routes: Dashboard & Document Management
+|--------------------------------------------------------------------------
+*/
+Route::prefix('panel')->name('panel.')->group(function () {
+    Route::get('/', [PanelController::class, 'dashboard'])->name('home');
+    Route::get('/dashboard', [PanelController::class, 'dashboard'])->name('dashboard');
+    Route::get('/documents', [PanelController::class, 'documents'])->name('documents');
+    Route::post('/documents', [PanelController::class, 'storeDocument'])->name('documents.store');
+    Route::post('/documents/{uuid}/clone', [PanelController::class, 'cloneDocument'])->name('documents.clone');
+    Route::delete('/documents/{uuid}', [PanelController::class, 'destroyDocument'])->name('documents.destroy');
+});
 
 /*
 |--------------------------------------------------------------------------
