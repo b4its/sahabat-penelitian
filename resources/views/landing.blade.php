@@ -140,6 +140,19 @@
 </head>
 <body class="bg-slate-50 dark:bg-[#070d1e] text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-blue-600 selection:text-white transition-colors duration-300">
 
+    <!-- Flash Message Notification -->
+    @if (session('success'))
+        <div class="fixed top-24 right-4 z-50 max-w-md p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/90 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-sm font-semibold shadow-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4">
+            <div class="flex items-center gap-2.5">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{{ session('success') }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-100 cursor-pointer" aria-label="Tutup notifikasi">&times;</button>
+        </div>
+    @endif
+
     <!-- Ambient Glow Spots (Atmospheric Blue Lighting) -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute -top-32 -left-28 w-96 md:w-[600px] h-96 md:h-[600px] bg-blue-400/20 dark:bg-blue-600/15 rounded-full blur-3xl animate-pulse-glow"></div>

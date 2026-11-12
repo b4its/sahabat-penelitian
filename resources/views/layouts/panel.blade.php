@@ -273,14 +273,88 @@
                     </svg>
                 </button>
 
-                <!-- Academic User Badge -->
-                <div class="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-700 to-sky-400 text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                        DR
-                    </div>
-                    <div class="hidden lg:flex flex-col text-left">
-                        <span class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Dr. Peneliti</span>
-                        <span class="text-[10px] text-slate-500 dark:text-slate-400">Penulis Utama</span>
+                <!-- Academic User Profile Dropdown Button -->
+                <div class="relative" id="user-profile-menu-container">
+                    <button
+                        type="button"
+                        id="user-profile-menu-button"
+                        aria-expanded="false"
+                        aria-haspopup="true"
+                        class="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200 dark:border-slate-800 hover:opacity-95 transition group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl py-1 px-1.5 cursor-pointer"
+                        title="Menu Profil Peneliti"
+                    >
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-700 to-sky-400 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+                            {{ strtoupper(substr(session('panel_user_name', 'Dr. Peneliti'), 0, 2)) }}
+                        </div>
+                        <div class="hidden sm:flex flex-col text-left">
+                            <span class="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                                {{ session('panel_user_name', 'Dr. Peneliti') }}
+                            </span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400">
+                                {{ session('panel_user_role', 'Penulis Utama') }}
+                            </span>
+                        </div>
+                        <svg id="user-menu-chevron" class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div
+                        id="user-profile-dropdown"
+                        class="hidden absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/60 shadow-xl py-2 z-50 transition-all duration-150 animate-in fade-in"
+                        role="menu"
+                        aria-orientation="vertical"
+                    >
+                        <!-- User Identity Summary -->
+                        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                            <p class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                {{ session('panel_user_name', 'Dr. Peneliti') }}
+                            </p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                {{ session('panel_user_email', 'dr.peneliti@sahabatpenelitian.id') }}
+                            </p>
+                            <div class="mt-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                                    {{ session('panel_user_role', 'Penulis Utama') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Menu Items -->
+                        <div class="py-1">
+                            <!-- Edit Profile Item -->
+                            <button
+                                type="button"
+                                id="btn-open-edit-profile"
+                                onclick="openEditProfileModal()"
+                                class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left cursor-pointer"
+                                role="menuitem"
+                            >
+                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <span>Edit Profil</span>
+                            </button>
+                        </div>
+
+                        <!-- Logout Item -->
+                        <div class="border-t border-slate-100 dark:border-slate-800 pt-1">
+                            <form action="{{ route('panel.logout') }}" method="POST">
+                                @csrf
+                                <button
+                                    type="submit"
+                                    id="btn-panel-logout"
+                                    class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors text-left cursor-pointer"
+                                    role="menuitem"
+                                >
+                                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    <span>Keluar (Logout)</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
@@ -300,6 +374,34 @@
                             <span>{{ session('success') }}</span>
                         </div>
                         <button type="button" onclick="this.parentElement.remove()" class="text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-100">&times;</button>
+                    </div>
+                @endif
+
+                @if (session('error'))
+                    <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800/80 text-rose-800 dark:text-rose-200 text-sm font-semibold flex items-center justify-between gap-3 shadow-xs">
+                        <div class="flex items-center gap-2.5">
+                            <svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span>{{ session('error') }}</span>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:text-rose-800 dark:hover:text-rose-100">&times;</button>
+                    </div>
+                @endif
+
+                @if ($errors->any())
+                    <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800/80 text-rose-800 dark:text-rose-200 text-xs sm:text-sm font-semibold space-y-1 shadow-xs">
+                        <div class="flex items-center gap-2 font-bold text-rose-900 dark:text-rose-100">
+                            <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span>Terjadi kesalahan pada input data:</span>
+                        </div>
+                        <ul class="list-disc list-inside pl-2 space-y-0.5 text-rose-700 dark:text-rose-300">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
                     </div>
                 @endif
 
@@ -394,6 +496,104 @@
         </div>
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- MODAL: SUNTING PROFIL PENELITI (POPUP DITENGAH)                            -->
+    <!-- ========================================================================= -->
+    <div id="modal-edit-profile" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-opacity overflow-y-auto">
+        <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-blue-200 dark:border-blue-900/60 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto my-auto animate-in zoom-in-95">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-xs shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Sunting Profil Peneliti</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Perbarui identitas akademik dan afiliasi riset Anda.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEditProfileModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg cursor-pointer" aria-label="Tutup Modal">&times;</button>
+            </div>
+
+            <form action="{{ route('panel.profile.update') }}" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label for="profile-name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Nama Lengkap &amp; Gelar Akademik:
+                    </label>
+                    <input
+                        type="text"
+                        name="name"
+                        id="profile-name"
+                        required
+                        value="{{ session('panel_user_name', 'Dr. Peneliti') }}"
+                        placeholder="Contoh: Dr. Peneliti, M.Kom., Ph.D."
+                        class="w-full px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="profile-role" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Peran Peneliti:
+                    </label>
+                    <input
+                        type="text"
+                        name="role"
+                        id="profile-role"
+                        value="{{ session('panel_user_role', 'Penulis Utama') }}"
+                        placeholder="Contoh: Penulis Utama / Peneliti Senior"
+                        class="w-full px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="profile-email" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Alamat Email Riset:
+                    </label>
+                    <input
+                        type="email"
+                        name="email"
+                        id="profile-email"
+                        value="{{ session('panel_user_email', 'dr.peneliti@sahabatpenelitian.id') }}"
+                        placeholder="Contoh: dr.peneliti@sahabatpenelitian.id"
+                        class="w-full px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label for="profile-affiliation" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Institusi / Lembaga Afiliasi:
+                    </label>
+                    <input
+                        type="text"
+                        name="affiliation"
+                        id="profile-affiliation"
+                        value="{{ session('panel_user_affiliation', 'Pusat Riset Komputasi & Bahasa') }}"
+                        placeholder="Contoh: Universitas Riset Nasional"
+                        class="w-full px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                        type="button"
+                        onclick="closeEditProfileModal()"
+                        class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        type="submit"
+                        class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-md shadow-blue-500/25 cursor-pointer"
+                    >
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Panel Sidebar & Theme Switch Client Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -461,6 +661,71 @@
             if (mobileOpenBtn) mobileOpenBtn.addEventListener('click', openMobileSidebar);
             if (mobileCloseBtn) mobileCloseBtn.addEventListener('click', closeMobileSidebar);
             if (mobileBackdrop) mobileBackdrop.addEventListener('click', closeMobileSidebar);
+
+            // User Profile Dropdown Logic
+            const profileBtn = document.getElementById('user-profile-menu-button');
+            const profileDropdown = document.getElementById('user-profile-dropdown');
+            const profileChevron = document.getElementById('user-menu-chevron');
+
+            function toggleProfileDropdown() {
+                if (!profileDropdown) return;
+                const isHidden = profileDropdown.classList.contains('hidden');
+                if (isHidden) {
+                    profileDropdown.classList.remove('hidden');
+                    if (profileChevron) profileChevron.style.transform = 'rotate(180deg)';
+                    if (profileBtn) profileBtn.setAttribute('aria-expanded', 'true');
+                } else {
+                    closeProfileDropdown();
+                }
+            }
+
+            function closeProfileDropdown() {
+                if (!profileDropdown) return;
+                profileDropdown.classList.add('hidden');
+                if (profileChevron) profileChevron.style.transform = 'rotate(0deg)';
+                if (profileBtn) profileBtn.setAttribute('aria-expanded', 'false');
+            }
+
+            if (profileBtn) {
+                profileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleProfileDropdown();
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                const container = document.getElementById('user-profile-menu-container');
+                if (container && !container.contains(e.target)) {
+                    closeProfileDropdown();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeProfileDropdown();
+                    closeEditProfileModal();
+                    closeCreateDocumentModal();
+                }
+            });
+
+            // Backdrop click closing for modals
+            const editProfileModal = document.getElementById('modal-edit-profile');
+            if (editProfileModal) {
+                editProfileModal.addEventListener('click', (e) => {
+                    if (e.target === editProfileModal) {
+                        closeEditProfileModal();
+                    }
+                });
+            }
+
+            const createDocModal = document.getElementById('modal-create-document');
+            if (createDocModal) {
+                createDocModal.addEventListener('click', (e) => {
+                    if (e.target === createDocModal) {
+                        closeCreateDocumentModal();
+                    }
+                });
+            }
         });
 
         // Global Modal Helpers
@@ -471,6 +736,20 @@
 
         function closeCreateDocumentModal() {
             const modal = document.getElementById('modal-create-document');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function openEditProfileModal() {
+            const dropdown = document.getElementById('user-profile-dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+            const chevron = document.getElementById('user-menu-chevron');
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+            const modal = document.getElementById('modal-edit-profile');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeEditProfileModal() {
+            const modal = document.getElementById('modal-edit-profile');
             if (modal) modal.classList.add('hidden');
         }
     </script>
