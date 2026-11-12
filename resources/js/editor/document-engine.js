@@ -5304,6 +5304,7 @@ ${entriesHtml}    </div>
         const headings = [];
         const bodies = this.getAllEditorBodies();
         let headingIndex = 0;
+        const usedIds = new Set();
 
         const isTOC = (text) => {
             if (!text) return true;
@@ -5342,8 +5343,16 @@ ${entriesHtml}    </div>
                 // Normalize BAB chapter text (BAB 1PENDAHULUAN -> BAB 1 PENDAHULUAN)
                 text = text.replace(/^(BAB\s*(?:\d+|[IVXLCDM]+))\s*([A-Za-z])/i, '$1 $2');
 
-                const id = el.id || `heading-${headingIndex++}`;
-                el.id = id;
+                const ordinal = headingIndex++;
+                let id = el.id;
+                if (!id || usedIds.has(id) || document.getElementById(id) !== el) {
+                    const base = `outline-heading-${pageNum}-${ordinal}`;
+                    id = base;
+                    let suffix = 1;
+                    while (usedIds.has(id) || document.getElementById(id)) id = `${base}-${suffix++}`;
+                    el.id = id;
+                }
+                usedIds.add(id);
                 headings.push({
                     id,
                     level: parseInt(el.tagName.replace('H', ''), 10),

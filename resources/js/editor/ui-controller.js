@@ -679,7 +679,7 @@ export class UiController {
 
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();
-            const outlineList = document.getElementById('outline-list');
+            const outlineList = document.getElementById('outline-headings-list');
             if (!outlineList) return;
 
             const items = outlineList.querySelectorAll('li');

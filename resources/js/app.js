@@ -66,21 +66,38 @@ document.addEventListener('DOMContentLoaded', () => {
                                     'pl-6 text-gray-500 dark:text-gray-400 text-[11px]';
 
                 li.className = `py-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center justify-between gap-1 transition ${indentClass}`;
+                li.setAttribute('role', 'button');
+                li.setAttribute('tabindex', '0');
                 li.innerHTML = `
                     <span class="truncate" title="${escapeHtml(h.text || 'Judul Kosong')}">${escapeHtml(h.text || 'Judul Kosong')}</span>
                     <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shrink-0 font-mono font-normal">Hal ${h.pageNumber || 1}</span>
                 `;
+                const query = document.getElementById('outline-search-input')?.value.toLowerCase().trim();
+                li.classList.toggle('hidden', Boolean(query && !h.text.toLowerCase().includes(query)));
 
-                li.addEventListener('click', () => {
+                const navigate = () => {
                     let targetEl = document.getElementById(h.id);
                     if (!targetEl && window.documentEngine && window.documentEngine.isChunkLoading) {
                         window.documentEngine.flushChunkQueue();
                         targetEl = document.getElementById(h.id);
                     }
-                    if (targetEl) {
-                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const canvas = document.getElementById('document-canvas-container');
+                    if (targetEl && canvas && engine.pagesWrapper.contains(targetEl)) {
+                        const sheet = targetEl.closest('.document-page-sheet');
+                        const page = Number(sheet?.dataset.pageIndex) || 1;
+                        const top = canvas.scrollTop + targetEl.getBoundingClientRect().top - canvas.getBoundingClientRect().top - 24;
+                        canvas.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                        engine.activePageIndex = page;
+                        engine.updateStats();
                         targetEl.classList.add('bg-indigo-100', 'dark:bg-indigo-950/60');
                         setTimeout(() => targetEl.classList.remove('bg-indigo-100', 'dark:bg-indigo-950/60'), 1800);
+                    }
+                };
+                li.addEventListener('click', navigate);
+                li.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate();
                     }
                 });
 
