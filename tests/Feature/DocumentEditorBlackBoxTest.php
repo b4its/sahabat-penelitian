@@ -10,24 +10,20 @@ use Illuminate\Http\UploadedFile;
 | Wordcraft AI operations, status codes, and security boundaries.
 */
 
-test('black-box: document editor view loads successfully at root and /editor routes', function () {
-    $responseRoot = $this->get('/');
-    $responseRoot->assertStatus(200);
-    $responseRoot->assertSee('VelScribe', false);
-    $responseRoot->assertSee('Wordcraft', false);
-    $responseRoot->assertSee('document-editor', false);
-    $responseRoot->assertSee('document-page-canvas', false);
-    $responseRoot->assertSee('outline-sidebar', false);
-    $responseRoot->assertSee('wordcraft-sidebar', false);
-    $responseRoot->assertSee('ribbon-bar', false);
-
+test('black-box: document editor view loads successfully at /editor route', function () {
     $responseEditor = $this->get('/editor');
     $responseEditor->assertStatus(200);
+    $responseEditor->assertSee('VelScribe', false);
+    $responseEditor->assertSee('Wordcraft', false);
     $responseEditor->assertSee('document-editor', false);
+    $responseEditor->assertSee('document-page-canvas', false);
+    $responseEditor->assertSee('outline-sidebar', false);
+    $responseEditor->assertSee('wordcraft-sidebar', false);
+    $responseEditor->assertSee('ribbon-bar', false);
 });
 
 test('black-box: document editor view renders all ribbon tabs and interactive tools', function () {
-    $response = $this->get('/');
+    $response = $this->get('/editor');
     $response->assertStatus(200);
 
     // Ribbon tabs

@@ -5,11 +5,13 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Document Workspace Routes
+| Document Workspace & Landing Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/', [DocumentController::class, 'index'])->name('editor.home');
+Route::get('/', [DocumentController::class, 'landing'])->name('landing');
+Route::get('/landing', [DocumentController::class, 'landing'])->name('landing.page');
 Route::get('/editor', [DocumentController::class, 'index'])->name('editor.index');
+Route::get('/editor/workspace', [DocumentController::class, 'index'])->name('editor.home');
 
 /*
 |--------------------------------------------------------------------------

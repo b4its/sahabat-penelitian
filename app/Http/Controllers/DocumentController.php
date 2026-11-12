@@ -36,6 +36,14 @@ class DocumentController extends Controller
     ) {}
 
     /**
+     * Display the modern interactive landing page for "Sahabat Penelitian".
+     */
+    public function landing(): View
+    {
+        return view('landing');
+    }
+
+    /**
      * Display the document modification editor view.
      */
     public function index(): View
