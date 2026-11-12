@@ -79,9 +79,9 @@ export class DocxImporter {
         for (const node of childNodes) {
             if (node.nodeType !== Node.ELEMENT_NODE) continue;
 
-            const nodeName = node.nodeName.toLowerCase();
+            const nodeLocal = (node.localName || node.nodeName || '').toLowerCase().replace(/^(w|mc|m):/, '');
 
-            if (nodeName === 'w:p') {
+            if (nodeLocal === 'p') {
                 const pResult = await this.parseParagraph(node, zip, rels, numberingMap, stylesMap, themeColors);
 
                 if (pResult.pageBreakBefore) {
@@ -107,31 +107,39 @@ export class DocxImporter {
                     flushList();
                     blocks.push(this.renderPageBreak());
                 }
-            } else if (nodeName === 'w:tbl') {
+            } else if (nodeLocal === 'tbl') {
                 flushList();
                 const tblHtml = await this.parseTable(node, zip, rels, numberingMap, stylesMap, themeColors);
                 if (tblHtml) {
                     blocks.push(tblHtml);
                 }
-            } else if (nodeName === 'w:sdt') {
+            } else if (nodeLocal === 'sdt') {
                 // Structured Document Tag - extract contents
-                const sdtContent = node.getElementsByTagName('w:sdtContent')[0] || node.getElementsByTagName('sdtContent')[0];
+                const sdtContent = node.getElementsByTagName('w:sdtContent')[0] || (typeof node.getElementsByTagNameNS === 'function' ? node.getElementsByTagNameNS('*', 'sdtContent')[0] : null) || node.getElementsByTagName('sdtContent')[0];
                 if (sdtContent) {
                     const sdtChildren = Array.from(sdtContent.childNodes);
                     for (const sc of sdtChildren) {
                         if (sc.nodeType !== Node.ELEMENT_NODE) continue;
-                        const scName = sc.nodeName.toLowerCase();
-                        if (scName === 'w:p') {
+                        const scLocal = (sc.localName || sc.nodeName || '').toLowerCase().replace(/^(w|mc|m):/, '');
+                        if (scLocal === 'p') {
                             const pResult = await this.parseParagraph(sc, zip, rels, numberingMap, stylesMap, themeColors);
                             flushList();
                             if (pResult.html) blocks.push(pResult.html);
-                        } else if (scName === 'w:tbl') {
+                        } else if (scLocal === 'tbl') {
                             flushList();
                             const tblHtml = await this.parseTable(sc, zip, rels, numberingMap, stylesMap, themeColors);
                             if (tblHtml) blocks.push(tblHtml);
+                        } else if (scLocal === 'drawing' || scLocal === 'pict' || scLocal === 'alternatecontent') {
+                            flushList();
+                            const imgHtml = await this.parseImage(sc, zip, rels);
+                            if (imgHtml) blocks.push(`<p class="text-center my-4">${imgHtml}</p>`);
                         }
                     }
                 }
+            } else if (nodeLocal === 'drawing' || nodeLocal === 'pict' || nodeLocal === 'alternatecontent') {
+                flushList();
+                const imgHtml = await this.parseImage(node, zip, rels);
+                if (imgHtml) blocks.push(`<p class="text-center my-4">${imgHtml}</p>`);
             }
         }
 
@@ -387,12 +395,20 @@ export class DocxImporter {
             const xml = await relFile.async('string');
             const parser = new DOMParser();
             const dom = parser.parseFromString(xml, 'application/xml');
-            const relNodes = Array.from(dom.getElementsByTagName('Relationship'));
+            let relNodes = Array.from(dom.getElementsByTagName('Relationship'));
+            if (relNodes.length === 0 && typeof dom.getElementsByTagNameNS === 'function') {
+                relNodes = Array.from(dom.getElementsByTagNameNS('*', 'Relationship'));
+            }
+            if (relNodes.length === 0) {
+                relNodes = Array.from(dom.getElementsByTagName('relationship'));
+            }
             for (const r of relNodes) {
-                const id = r.getAttribute('Id');
-                const type = r.getAttribute('Type');
-                const target = r.getAttribute('Target');
-                rels[id] = { type, target };
+                const id = r.getAttribute('Id') || r.getAttribute('id');
+                const type = r.getAttribute('Type') || r.getAttribute('type');
+                const target = r.getAttribute('Target') || r.getAttribute('target');
+                if (id) {
+                    rels[id] = { type, target };
+                }
             }
         }
         return rels;
@@ -1182,36 +1198,59 @@ export class DocxImporter {
             colgroupHtml += '  </colgroup>\n';
         }
 
-        // 2. Borders from <w:tblBorders>
-        const formatBorder = (el, defaultColor = '#1f2937') => {
+        // 2. Borders from <w:tblBorders> and Table Style
+        let tblStyle = '';
+        const tblStyleEl = tbl.getElementsByTagName('w:tblStyle')[0] || (typeof tbl.getElementsByTagNameNS === 'function' ? tbl.getElementsByTagNameNS('*', 'tblStyle')[0] : null);
+        if (tblStyleEl) {
+            tblStyle = (tblStyleEl.getAttribute('w:val') || tblStyleEl.getAttribute('val') || '').trim();
+        }
+
+        const formatBorder = (el, defaultColor = '#9ca3af') => {
             if (!el) return 'none';
-            const v = (el.getAttribute('w:val') || '').toLowerCase();
+            const v = (el.getAttribute('w:val') || el.getAttribute('val') || '').toLowerCase();
             if (!v || v === 'none' || v === 'nil') return 'none';
-            const sz = parseInt(el.getAttribute('w:sz') || '4', 10);
-            const pt = Math.max(0.5, (sz / 8)).toFixed(2);
+            const sz = parseInt(el.getAttribute('w:sz') || el.getAttribute('sz') || '4', 10);
+            const pt = Math.max(0.75, (sz / 8)).toFixed(2);
             let style = 'solid';
             if (v.includes('dash')) style = 'dashed';
             else if (v.includes('dot')) style = 'dotted';
             else if (v.includes('double')) style = 'double';
-            const color = el.getAttribute('w:color');
-            const hex = (!color || color === 'auto') ? defaultColor : `#${color.replace(/^#/, '')}`;
+            let color = el.getAttribute('w:color') || el.getAttribute('color');
+            if (!color || color === 'auto' || ['cccccc', 'd1d5db', 'e0e0e0', 'e5e7eb'].includes(color.toLowerCase().replace(/^#/, ''))) {
+                color = '9ca3af';
+            }
+            const hex = `#${color.replace(/^#/, '')}`;
             return `${pt}pt ${style} ${hex}`;
         };
 
-        const tblBorders = tbl.getElementsByTagName('w:tblBorders')[0];
+        const tblBorders = tbl.getElementsByTagName('w:tblBorders')[0] || (typeof tbl.getElementsByTagNameNS === 'function' ? tbl.getElementsByTagNameNS('*', 'tblBorders')[0] : null);
+        const hasExplicitBorders = Boolean(tblBorders);
         let bTop = 'none', bBottom = 'none', bLeft = 'none', bRight = 'none', bInsideH = 'none', bInsideV = 'none';
         if (tblBorders) {
-            bTop = formatBorder(tblBorders.getElementsByTagName('w:top')[0]);
-            bBottom = formatBorder(tblBorders.getElementsByTagName('w:bottom')[0]);
-            bLeft = formatBorder(tblBorders.getElementsByTagName('w:left')[0]);
-            bRight = formatBorder(tblBorders.getElementsByTagName('w:right')[0]);
-            bInsideH = formatBorder(tblBorders.getElementsByTagName('w:insideH')[0], '#d1d5db');
-            bInsideV = formatBorder(tblBorders.getElementsByTagName('w:insideV')[0], '#d1d5db');
+            bTop = formatBorder(tblBorders.getElementsByTagName('w:top')[0] || tblBorders.getElementsByTagNameNS?.('*', 'top')?.[0]);
+            bBottom = formatBorder(tblBorders.getElementsByTagName('w:bottom')[0] || tblBorders.getElementsByTagNameNS?.('*', 'bottom')?.[0]);
+            bLeft = formatBorder(tblBorders.getElementsByTagName('w:left')[0] || tblBorders.getElementsByTagNameNS?.('*', 'left')?.[0]);
+            bRight = formatBorder(tblBorders.getElementsByTagName('w:right')[0] || tblBorders.getElementsByTagNameNS?.('*', 'right')?.[0]);
+            bInsideH = formatBorder(tblBorders.getElementsByTagName('w:insideH')[0] || tblBorders.getElementsByTagNameNS?.('*', 'insideH')?.[0], '#9ca3af');
+            bInsideV = formatBorder(tblBorders.getElementsByTagName('w:insideV')[0] || tblBorders.getElementsByTagNameNS?.('*', 'insideV')?.[0], '#9ca3af');
         }
 
-        const isAcademicTable = (bTop !== 'none' && bBottom !== 'none' && bLeft === 'none' && bRight === 'none');
-        const isStandardGrid = (bTop !== 'none' && bBottom !== 'none' && bLeft !== 'none' && bRight !== 'none');
-        const isBorderless = (bTop === 'none' && bBottom === 'none' && bLeft === 'none' && bRight === 'none' && bInsideH === 'none' && bInsideV === 'none');
+        const styleLower = tblStyle.toLowerCase();
+        const isExplicitBorderlessStyle = ['none', 'tableclear', 'borderless'].includes(styleLower);
+        const isExplicitBorderlessTag = hasExplicitBorders && bTop === 'none' && bBottom === 'none' && bLeft === 'none' && bRight === 'none' && bInsideH === 'none' && bInsideV === 'none';
+        const isBorderless = isExplicitBorderlessStyle || isExplicitBorderlessTag;
+
+        if (!hasExplicitBorders && !isBorderless) {
+            bTop = '0.75pt solid #9ca3af';
+            bBottom = '0.75pt solid #9ca3af';
+            bLeft = '0.75pt solid #9ca3af';
+            bRight = '0.75pt solid #9ca3af';
+            bInsideH = '0.75pt solid #9ca3af';
+            bInsideV = '0.75pt solid #9ca3af';
+        }
+
+        const isAcademicTable = !isBorderless && (bTop !== 'none' && bBottom !== 'none' && bLeft === 'none' && bRight === 'none');
+        const isStandardGrid = !isBorderless && !isAcademicTable && (bTop !== 'none' || bInsideH !== 'none' || bInsideV !== 'none');
 
         const headRows = [];
         const bodyRows = [];
@@ -1310,16 +1349,43 @@ export class DocxImporter {
                         styles.push(`border-bottom: ${bInsideH};`);
                     }
                     styles.push('border-left: none; border-right: none;');
+                } else if (isStandardGrid) {
+                    styles.push(`border: ${bTop};`);
+                } else if (isBorderless) {
+                    styles.push('border: none;');
                 }
 
                 currentColIdx += colSpan;
 
-                // Parse cell paragraphs
+                // Parse cell contents: paragraphs and direct drawings/tables
                 const cellBlocks = [];
-                const tcParas = Array.from(tc.getElementsByTagName('w:p'));
-                for (const tcp of tcParas) {
-                    const pRes = await this.parseParagraph(tcp, zip, rels, numberingMap, stylesMap, themeColors);
-                    if (pRes.html) cellBlocks.push(pRes.html);
+                const tcChildren = Array.from(tc.childNodes);
+                let hasProcessedChildren = false;
+
+                for (const child of tcChildren) {
+                    if (child.nodeType !== Node.ELEMENT_NODE) continue;
+                    const childLocal = (child.localName || child.nodeName || '').toLowerCase().replace(/^(w|mc|m):/, '');
+                    if (childLocal === 'p') {
+                        hasProcessedChildren = true;
+                        const pRes = await this.parseParagraph(child, zip, rels, numberingMap, stylesMap, themeColors);
+                        if (pRes.html) cellBlocks.push(pRes.html);
+                    } else if (childLocal === 'drawing' || childLocal === 'pict' || childLocal === 'alternatecontent') {
+                        hasProcessedChildren = true;
+                        const imgHtml = await this.parseImage(child, zip, rels);
+                        if (imgHtml) cellBlocks.push(`<p class="text-center my-2">${imgHtml}</p>`);
+                    } else if (childLocal === 'tbl') {
+                        hasProcessedChildren = true;
+                        const tblRes = await this.parseTable(child, zip, rels, numberingMap, stylesMap, themeColors);
+                        if (tblRes) cellBlocks.push(tblRes);
+                    }
+                }
+
+                if (!hasProcessedChildren) {
+                    const tcParas = Array.from(tc.getElementsByTagName('w:p'));
+                    for (const tcp of tcParas) {
+                        const pRes = await this.parseParagraph(tcp, zip, rels, numberingMap, stylesMap, themeColors);
+                        if (pRes.html) cellBlocks.push(pRes.html);
+                    }
                 }
 
                 const cellContent = cellBlocks.length > 0 ? cellBlocks.join('') : '&nbsp;';

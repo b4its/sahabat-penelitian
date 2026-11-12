@@ -1363,3 +1363,103 @@ XML;
 
     @unlink($zipFile);
 });
+
+test('white-box: DocxImporter preserves standard TableGrid borders when w:tblBorders is omitted and enhances faint border contrast', function () {
+    $zipFile = tempnam(sys_get_temp_dir(), 'docx_tblgrid_test_');
+    $zip = new \ZipArchive;
+    $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:tbl>
+            <w:tblPr>
+                <w:tblStyle w:val="TableGrid"/>
+            </w:tblPr>
+            <w:tblGrid>
+                <w:gridCol w:w="5000"/>
+                <w:gridCol w:w="5000"/>
+            </w:tblGrid>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Header A</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Header B</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Data A</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Data B</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $importer = new DocxImporter;
+    $uploadedFile = new UploadedFile($zipFile, 'test_table_grid.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+    $parsed = $importer->parseWithMetadata($uploadedFile);
+
+    expect($parsed['html'])->toContain('<table')
+        ->and($parsed['html'])->not->toContain('border-none')
+        ->and($parsed['html'])->toContain('border-gray-300')
+        ->and($parsed['html'])->toContain('border: 0.75pt solid #9ca3af;');
+
+    @unlink($zipFile);
+});
+
+test('white-box: DocxImporter extracts direct drawing elements inside table cells and sdtContent', function () {
+    $zipFile = tempnam(sys_get_temp_dir(), 'docx_tc_img_test_');
+    $zip = new \ZipArchive;
+    $zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    $fakePng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+    $zip->addFromString('word/media/cell_image.png', $fakePng);
+
+    $relsXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rIdCell" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/cell_image.png"/>
+</Relationships>
+XML;
+    $zip->addFromString('word/_rels/document.xml.rels', $relsXml);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+    <w:body>
+        <w:tbl>
+            <w:tr>
+                <w:tc>
+                    <w:drawing>
+                        <wp:inline>
+                            <wp:extent cx="1000000" cy="1000000"/>
+                            <a:graphic>
+                                <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                    <a:blip r:embed="rIdCell"/>
+                                </a:graphicData>
+                            </a:graphic>
+                        </wp:inline>
+                    </w:drawing>
+                </w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $importer = new DocxImporter;
+    $uploadedFile = new UploadedFile($zipFile, 'test_tc_img.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+    $parsed = $importer->parseWithMetadata($uploadedFile);
+
+    expect($parsed['html'])->toContain('<table')
+        ->and($parsed['html'])->toContain('<img')
+        ->and($parsed['html'])->toContain('data:image/png;base64,');
+
+    @unlink($zipFile);
+});

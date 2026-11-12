@@ -163,7 +163,9 @@ class DocxImporter
                 continue;
             }
 
-            if ($node->nodeName === 'w:p') {
+            $nodeLocal = strtolower(preg_replace('/^(w|mc|m):/', '', $node->nodeName));
+
+            if ($nodeLocal === 'p') {
                 $pResult = $this->parseParagraph($node, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
 
                 if (! empty($pResult['page_break_before'])) {
@@ -190,13 +192,13 @@ class DocxImporter
                     $flushList();
                     $blocks[] = $this->renderPageBreak();
                 }
-            } elseif ($node->nodeName === 'w:tbl') {
+            } elseif ($nodeLocal === 'tbl') {
                 $flushList();
                 $tblHtml = $this->parseTable($node, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
                 if (! empty($tblHtml)) {
                     $blocks[] = $tblHtml;
                 }
-            } elseif ($node->nodeName === 'w:sdt') {
+            } elseif ($nodeLocal === 'sdt') {
                 // Structured Document Tag - extract contents
                 $sdtContent = $xpath->query('.//w:sdtContent', $node)->item(0);
                 if ($sdtContent) {
@@ -204,20 +206,33 @@ class DocxImporter
                         if ($sdtChild->nodeType !== XML_ELEMENT_NODE) {
                             continue;
                         }
-                        if ($sdtChild->nodeName === 'w:p') {
+                        $scLocal = strtolower(preg_replace('/^(w|mc|m):/', '', $sdtChild->nodeName));
+                        if ($scLocal === 'p') {
                             $pResult = $this->parseParagraph($sdtChild, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
                             $flushList();
                             if (! empty($pResult['html'])) {
                                 $blocks[] = $pResult['html'];
                             }
-                        } elseif ($sdtChild->nodeName === 'w:tbl') {
+                        } elseif ($scLocal === 'tbl') {
                             $flushList();
                             $tblHtml = $this->parseTable($sdtChild, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
                             if (! empty($tblHtml)) {
                                 $blocks[] = $tblHtml;
                             }
+                        } elseif (in_array($scLocal, ['drawing', 'pict', 'alternatecontent'])) {
+                            $flushList();
+                            $imgHtml = $this->parseImage($sdtChild, $xpath, $zip, $rels);
+                            if (! empty($imgHtml)) {
+                                $blocks[] = "<p class=\"text-center my-4\">{$imgHtml}</p>";
+                            }
                         }
                     }
+                }
+            } elseif (in_array($nodeLocal, ['drawing', 'pict', 'alternatecontent'])) {
+                $flushList();
+                $imgHtml = $this->parseImage($node, $xpath, $zip, $rels);
+                if (! empty($imgHtml)) {
+                    $blocks[] = "<p class=\"text-center my-4\">{$imgHtml}</p>";
                 }
             }
         }
@@ -476,14 +491,24 @@ class DocxImporter
         if ($xml !== false) {
             $dom = new DOMDocument;
             @$dom->loadXML($xml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
-            foreach ($dom->getElementsByTagName('Relationship') as $rel) {
-                $id = $rel->getAttribute('Id');
-                $type = $rel->getAttribute('Type');
-                $target = $rel->getAttribute('Target');
-                $rels[$id] = [
-                    'type' => $type,
-                    'target' => $target,
-                ];
+            $relNodes = $dom->getElementsByTagName('Relationship');
+            if ($relNodes->length === 0) {
+                $relNodes = $dom->getElementsByTagName('relationship');
+            }
+            if ($relNodes->length === 0) {
+                $xpath = new DOMXPath($dom);
+                $relNodes = $xpath->query('//*[local-name()="Relationship" or local-name()="relationship"]');
+            }
+            foreach ($relNodes as $rel) {
+                $id = $rel->getAttribute('Id') ?: $rel->getAttribute('id');
+                $type = $rel->getAttribute('Type') ?: $rel->getAttribute('type');
+                $target = $rel->getAttribute('Target') ?: $rel->getAttribute('target');
+                if ($id) {
+                    $rels[$id] = [
+                        'type' => $type,
+                        'target' => $target,
+                    ];
+                }
             }
         }
 
@@ -1469,7 +1494,7 @@ class DocxImporter
                 return 'none';
             }
             $sz = (int) ($el->getAttribute('w:sz') ?: '4');
-            $pt = number_format(max(0.5, $sz / 8), 2, '.', '');
+            $pt = number_format(max(0.75, $sz / 8), 2, '.', '');
             $style = 'solid';
             if (str_contains($v, 'dash')) {
                 $style = 'dashed';
@@ -1479,12 +1504,19 @@ class DocxImporter
                 $style = 'double';
             }
             $color = $el->getAttribute('w:color');
-            $hex = (empty($color) || $color === 'auto') ? $defaultColor : '#'.ltrim($color, '#');
+            if (empty($color) || $color === 'auto' || in_array(strtolower(ltrim($color, '#')), ['cccccc', 'd1d5db', 'e0e0e0', 'e5e7eb'])) {
+                $color = '9ca3af';
+            }
+            $hex = '#'.ltrim($color, '#');
 
             return "{$pt}pt {$style} {$hex}";
         };
 
+        $tblStyleEl = $xpath->query('./w:tblPr/w:tblStyle', $tbl)->item(0);
+        $tblStyle = $tblStyleEl instanceof DOMElement ? ($tblStyleEl->getAttribute('w:val') ?: $tblStyleEl->getAttribute('val')) : '';
+
         $tblBorders = $xpath->query('./w:tblPr/w:tblBorders', $tbl)->item(0);
+        $hasExplicitBorders = ($tblBorders instanceof DOMElement);
         $bTop = 'none';
         $bBottom = 'none';
         $bLeft = 'none';
@@ -1496,13 +1528,26 @@ class DocxImporter
             $bBottom = $formatBorder($xpath->query('./w:bottom', $tblBorders)->item(0));
             $bLeft = $formatBorder($xpath->query('./w:left', $tblBorders)->item(0));
             $bRight = $formatBorder($xpath->query('./w:right', $tblBorders)->item(0));
-            $bInsideH = $formatBorder($xpath->query('./w:insideH', $tblBorders)->item(0), '#d1d5db');
-            $bInsideV = $formatBorder($xpath->query('./w:insideV', $tblBorders)->item(0), '#d1d5db');
+            $bInsideH = $formatBorder($xpath->query('./w:insideH', $tblBorders)->item(0), '#9ca3af');
+            $bInsideV = $formatBorder($xpath->query('./w:insideV', $tblBorders)->item(0), '#9ca3af');
         }
 
-        $isAcademicTable = ($bTop !== 'none' && $bBottom !== 'none' && $bLeft === 'none' && $bRight === 'none');
-        $isStandardGrid = ($bTop !== 'none' && $bBottom !== 'none' && $bLeft !== 'none' && $bRight !== 'none');
-        $isBorderless = ($bTop === 'none' && $bBottom === 'none' && $bLeft === 'none' && $bRight === 'none' && $bInsideH === 'none' && $bInsideV === 'none');
+        $styleLower = strtolower((string) $tblStyle);
+        $isExplicitBorderlessStyle = in_array($styleLower, ['none', 'tableclear', 'borderless']);
+        $isExplicitBorderlessTag = $hasExplicitBorders && $bTop === 'none' && $bBottom === 'none' && $bLeft === 'none' && $bRight === 'none' && $bInsideH === 'none' && $bInsideV === 'none';
+        $isBorderless = $isExplicitBorderlessStyle || $isExplicitBorderlessTag;
+
+        if (! $hasExplicitBorders && ! $isBorderless) {
+            $bTop = '0.75pt solid #9ca3af';
+            $bBottom = '0.75pt solid #9ca3af';
+            $bLeft = '0.75pt solid #9ca3af';
+            $bRight = '0.75pt solid #9ca3af';
+            $bInsideH = '0.75pt solid #9ca3af';
+            $bInsideV = '0.75pt solid #9ca3af';
+        }
+
+        $isAcademicTable = (! $isBorderless && $bTop !== 'none' && $bBottom !== 'none' && $bLeft === 'none' && $bRight === 'none');
+        $isStandardGrid = (! $isBorderless && ! $isAcademicTable && ($bTop !== 'none' || $bInsideH !== 'none' || $bInsideV !== 'none'));
 
         $headRows = [];
         $bodyRows = [];
@@ -1617,17 +1662,52 @@ class DocxImporter
                         $styles[] = "border-bottom: {$bInsideH};";
                     }
                     $styles[] = 'border-left: none; border-right: none;';
+                } elseif ($isStandardGrid) {
+                    $styles[] = "border: {$bTop};";
+                } elseif ($isBorderless) {
+                    $styles[] = 'border: none;';
                 }
 
                 $currentColIdx += $colSpan;
 
-                // Parse cell contents (<w:p>)
+                // Parse cell contents: paragraphs and direct drawings/tables
                 $cellBlocks = [];
-                $tcParas = $xpath->query('./w:p', $tc);
-                foreach ($tcParas as $tcp) {
-                    $pRes = $this->parseParagraph($tcp, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
-                    if (! empty($pRes['html'])) {
-                        $cellBlocks[] = $pRes['html'];
+                $cellChildren = $xpath->query('./*', $tc);
+                $hasProcessedChildren = false;
+
+                foreach ($cellChildren as $child) {
+                    if (! $child instanceof DOMElement) {
+                        continue;
+                    }
+                    $childLocal = strtolower(preg_replace('/^(w|mc|m):/', '', $child->nodeName));
+                    if ($childLocal === 'p') {
+                        $hasProcessedChildren = true;
+                        $pRes = $this->parseParagraph($child, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
+                        if (! empty($pRes['html'])) {
+                            $cellBlocks[] = $pRes['html'];
+                        }
+                    } elseif (in_array($childLocal, ['drawing', 'pict', 'alternatecontent'])) {
+                        $hasProcessedChildren = true;
+                        $imgHtml = $this->parseImage($child, $xpath, $zip, $rels);
+                        if (! empty($imgHtml)) {
+                            $cellBlocks[] = "<p class=\"text-center my-2\">{$imgHtml}</p>";
+                        }
+                    } elseif ($childLocal === 'tbl') {
+                        $hasProcessedChildren = true;
+                        $tblRes = $this->parseTable($child, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
+                        if (! empty($tblRes)) {
+                            $cellBlocks[] = $tblRes;
+                        }
+                    }
+                }
+
+                if (! $hasProcessedChildren) {
+                    $tcParas = $xpath->query('./w:p', $tc);
+                    foreach ($tcParas as $tcp) {
+                        $pRes = $this->parseParagraph($tcp, $xpath, $zip, $rels, $numberingMap, $stylesMap, $themeColors);
+                        if (! empty($pRes['html'])) {
+                            $cellBlocks[] = $pRes['html'];
+                        }
                     }
                 }
 

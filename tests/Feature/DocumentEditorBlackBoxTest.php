@@ -1817,3 +1817,60 @@ XML;
 
     @unlink($zipPath);
 });
+
+test('black-box: uploading docx with TableGrid default style preserves visible grid borders and prevents border-none stripping', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'bb_tblgrid_test_').'.docx';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $documentXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>BAB 2 TINJAUAN PUSTAKA</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Tabel 2.1 Kajian Penelitian Terdahulu</w:t></w:r></w:p>
+        <w:tbl>
+            <w:tblPr>
+                <w:tblStyle w:val="TableGrid"/>
+            </w:tblPr>
+            <w:tblGrid>
+                <w:gridCol w:w="4000"/>
+                <w:gridCol w:w="6000"/>
+            </w:tblGrid>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Peneliti &amp; Tahun</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Fokus Penelitian</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Chen et al. (2024)</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Klasifikasi Mutu Air</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>
+XML;
+    $zip->addFromString('word/document.xml', $documentXml);
+    $zip->close();
+
+    $response = $this->postJson('/api/documents/import', [
+        'file' => new UploadedFile($zipPath, 'skripsi_table_grid.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true),
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('success', true);
+
+    $html = $response->json('content_html');
+    expect($html)->toContain('<table')
+        ->and($html)->not->toContain('border-none')
+        ->and($html)->toContain('border-gray-300')
+        ->and($html)->toContain('Peneliti &amp; Tahun')
+        ->and($html)->toContain('Chen et al. (2024)');
+
+    // Verify client-side docx-importer.js contains TableGrid border resolution and contrast boost
+    $sourceImporterJs = file_get_contents(resource_path('js/editor/docx-importer.js'));
+    expect($sourceImporterJs)->toContain('const isStandardGrid = !isBorderless')
+        ->and($sourceImporterJs)->toContain("bTop = '0.75pt solid #9ca3af'")
+        ->and($sourceImporterJs)->toContain("color = '9ca3af'");
+
+    @unlink($zipPath);
+});
