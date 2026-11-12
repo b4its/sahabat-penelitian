@@ -572,7 +572,7 @@ class CitationService
                 $entriesHtml .= "</div>\n";
             } else {
                 // APA / Harvard / MLA / Chicago standard: 0.5 in (1.27 cm) hanging indent
-                $entriesHtml .= "<p class=\"citation-entry bibliography-entry pl-8 -indent-8 text-sm leading-relaxed my-2.5 text-gray-900\" data-source-id=\"{$sourceId}\">{$entryText}</p>\n";
+                $entriesHtml .= "<p class=\"citation-entry bibliography-entry indent-hanging pl-8 -indent-8 text-sm leading-relaxed my-2.5 text-gray-900\" data-source-id=\"{$sourceId}\">{$entryText}</p>\n";
             }
         }
 

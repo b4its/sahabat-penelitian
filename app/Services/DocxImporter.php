@@ -135,12 +135,11 @@ class DocxImporter
 
             $entryName = $stat['name'];
 
-            // Zip slip / path traversal check
+            // Zip slip / path traversal check: isolate and reject malicious entries without extraction
             if (str_contains($entryName, '..') || str_starts_with($entryName, '/')) {
-                $this->securityAlerts[] = "Potensi path traversal ditolak: {$entryName}";
-                $zip->close();
+                $this->securityAlerts[] = "Potensi path traversal diisolasi dan ditolak: {$entryName}";
 
-                return $this->fallbackRawContent($raw);
+                continue;
             }
 
             // Zip bomb check
@@ -156,6 +155,7 @@ class DocxImporter
             if (str_contains(strtolower($entryName), 'vbaproject') || str_ends_with(strtolower($entryName), '.bin') || str_contains(strtolower($entryName), 'vba')) {
                 $this->hasMacros = true;
                 $this->unsupportedParts[] = "Macro quarantined: {$entryName}";
+                $this->securityAlerts[] = "Makro VBA atau berkas biner terdeteksi dan diisolasi: {$entryName}";
             }
         }
 

@@ -282,6 +282,7 @@ HTML;
         $request->validate([
             'headings' => ['nullable', 'array'],
             'content_html' => ['nullable', 'string'],
+            'html' => ['nullable', 'string'],
             'heading' => ['nullable', 'string', 'max:100'],
             'style' => ['nullable', 'string', 'in:template,classic,modern,formal,simple'],
             'leader' => ['nullable', 'string', 'in:dots,dashes,line,none'],
@@ -292,7 +293,7 @@ HTML;
         ]);
 
         $headings = $request->input('headings');
-        $contentHtml = $request->input('content_html', '');
+        $contentHtml = $request->input('content_html') ?? $request->input('html') ?? '';
         $maxLevels = (int) $request->input('levels', 3);
 
         if (empty($headings) && ! empty($contentHtml)) {
@@ -782,9 +783,20 @@ HTML;
             'operation' => ['required', 'array'],
             'operation.type' => ['required', 'string'],
             'actor' => ['nullable', 'string', 'max:100'],
+            'user_email' => ['nullable', 'string', 'email'],
         ]);
 
         $doc = Document::where('uuid', $uuid)->firstOrFail();
+
+        if ($request->filled('user_email')) {
+            $userEmail = $request->input('user_email');
+            if ($userEmail !== $doc->owner_email && ! $this->collaborationService->checkPermission($doc, $userEmail, 'editor')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak. Anda tidak memiliki izin untuk mengedit dokumen ini.',
+                ], 403);
+            }
+        }
 
         $result = $this->collaborationService->applyServerOperation(
             $doc,
@@ -864,9 +876,17 @@ HTML;
      */
     public function speechSegments(Request $request): JsonResponse
     {
-        $request->validate(['html' => ['required', 'string']]);
+        $request->validate([
+            'html' => ['nullable', 'string'],
+            'content' => ['nullable', 'string'],
+        ]);
 
-        $result = $this->proofingService->segmentForSpeech($request->input('html'));
+        $html = $request->input('html') ?? $request->input('content') ?? '';
+        if ($html === '') {
+            return response()->json(['success' => false, 'message' => 'Konten naskah wajib diberikan.'], 422);
+        }
+
+        $result = $this->proofingService->segmentForSpeech($html);
 
         return response()->json($result);
     }
@@ -877,18 +897,40 @@ HTML;
     public function previewMailMerge(Request $request): JsonResponse
     {
         $request->validate([
-            'template' => ['required', 'string'],
-            'record' => ['required', 'array'],
+            'template' => ['nullable', 'string'],
+            'template_html' => ['nullable', 'string'],
+            'record' => ['nullable', 'array'],
+            'csv' => ['nullable', 'string'],
+            'record_index' => ['nullable', 'integer'],
         ]);
 
-        $merged = $this->mailMergeService->mergeSingle(
-            $request->input('template'),
-            $request->input('record')
-        );
+        $template = $request->input('template') ?? $request->input('template_html') ?? '';
+        $record = $request->input('record');
+        $recordIndex = (int) $request->input('record_index', 0);
+        $totalRecords = 1;
+
+        if (empty($record) && $request->filled('csv')) {
+            $records = $this->mailMergeService->parseCsv($request->input('csv'));
+            $totalRecords = count($records);
+            $record = $records[$recordIndex] ?? [];
+        }
+
+        if (empty($template) || empty($record)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter template dan data record/csv wajib diberikan.',
+            ], 422);
+        }
+
+        $merged = $this->mailMergeService->mergeSingle($template, $record);
 
         return response()->json([
             'success' => true,
+            'status' => 'success',
             'merged' => $merged,
+            'merged_html' => $merged,
+            'record_index' => $recordIndex,
+            'total_records' => $totalRecords,
         ]);
     }
 
@@ -898,20 +940,21 @@ HTML;
     public function batchMailMerge(Request $request): JsonResponse
     {
         $request->validate([
-            'template' => ['required', 'string'],
+            'template' => ['nullable', 'string'],
+            'template_html' => ['nullable', 'string'],
             'records' => ['nullable', 'array'],
             'csv' => ['nullable', 'string'],
             'max_batch' => ['nullable', 'integer', 'max:1000'],
         ]);
 
-        $template = $request->input('template');
+        $template = $request->input('template') ?? $request->input('template_html') ?? '';
         $records = $request->input('records');
 
         if (empty($records) && $request->filled('csv')) {
             $records = $this->mailMergeService->parseCsv($request->input('csv'));
         }
 
-        if (empty($records)) {
+        if (empty($template) || empty($records)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak ada data penerima yang ditemukan.',
@@ -920,8 +963,12 @@ HTML;
 
         $maxBatch = (int) $request->input('max_batch', 500);
         $result = $this->mailMergeService->mergeBatch($template, $records, $maxBatch);
+        $documents = array_column($result['results'], 'content');
 
-        return response()->json($result);
+        return response()->json(array_merge([
+            'status' => 'success',
+            'documents' => $documents,
+        ], $result));
     }
 
     /**
@@ -954,6 +1001,7 @@ HTML;
 
         return response()->json([
             'success' => true,
+            'status' => 'success',
             'restricted_mode' => $doc->restricted_mode,
             'is_protected' => ! empty($doc->password_hash),
         ]);
@@ -974,6 +1022,7 @@ HTML;
         return response()->json([
             'success' => $valid,
             'valid' => $valid,
+            'verified' => $valid,
         ], $valid ? 200 : 403);
     }
 }

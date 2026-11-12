@@ -160,6 +160,7 @@ class CollaborationService
         $current[$userId] = [
             'id' => $userId,
             'name' => $userName,
+            'user_name' => $userName,
             'cursor' => $cursor,
             'lastSeen' => now()->timestamp,
         ];
