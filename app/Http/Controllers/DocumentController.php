@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Document;
 use App\Services\AiService;
 use App\Services\CitationService;
+use App\Services\CollaborationService;
 use App\Services\DocumentModelService;
 use App\Services\DocumentReviewService;
 use App\Services\DocumentService;
@@ -24,6 +26,7 @@ class DocumentController extends Controller
         protected DocumentModelService $documentModelService = new DocumentModelService,
         protected DocumentTransactionService $documentTransactionService = new DocumentTransactionService,
         protected DocumentReviewService $documentReviewService = new DocumentReviewService,
+        protected CollaborationService $collaborationService = new CollaborationService,
     ) {}
 
     /**
@@ -646,6 +649,193 @@ HTML;
             'success' => true,
             'count' => count($comments),
             'comments' => $comments,
+        ]);
+    }
+
+    /**
+     * Create a new server-persisted document.
+     */
+    public function createServerDocument(Request $request): JsonResponse
+    {
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'content_html' => ['nullable', 'string'],
+        ]);
+
+        $content = $request->input('content_html', '<p>Dokumen baru.</p>');
+        $model = $this->documentModelService->htmlToModel($content, $request->input('title'));
+
+        $doc = Document::create([
+            'title' => $request->input('title'),
+            'content_html' => $content,
+            'model_json' => $model,
+            'current_version' => 1,
+        ]);
+
+        // Create initial version snapshot
+        $this->collaborationService->createVersionSnapshot($doc, 'System', 'Inisialisasi dokumen baru');
+
+        return response()->json([
+            'success' => true,
+            'document' => $doc->load('versions'),
+        ], 201);
+    }
+
+    /**
+     * Get server document by UUID.
+     */
+    public function getServerDocument(string $uuid): JsonResponse
+    {
+        $doc = Document::where('uuid', $uuid)->with('versions')->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'document' => $doc,
+        ]);
+    }
+
+    /**
+     * List all version snapshots for a document.
+     */
+    public function listVersions(string $uuid): JsonResponse
+    {
+        $doc = Document::where('uuid', $uuid)->firstOrFail();
+        $versions = $doc->versions()->orderByDesc('version_number')->get();
+
+        return response()->json([
+            'success' => true,
+            'count' => $versions->count(),
+            'versions' => $versions,
+        ]);
+    }
+
+    /**
+     * Create a manual version snapshot.
+     */
+    public function createVersion(Request $request, string $uuid): JsonResponse
+    {
+        $request->validate([
+            'author' => ['nullable', 'string', 'max:100'],
+            'summary' => ['nullable', 'string', 'max:255'],
+            'content_html' => ['nullable', 'string'],
+        ]);
+
+        $doc = Document::where('uuid', $uuid)->firstOrFail();
+
+        if ($request->filled('content_html')) {
+            $content = $request->input('content_html');
+            $doc->update([
+                'content_html' => $content,
+                'model_json' => $this->documentModelService->htmlToModel($content, $doc->title),
+            ]);
+        }
+
+        $version = $this->collaborationService->createVersionSnapshot(
+            $doc,
+            $request->input('author', 'User'),
+            $request->input('summary')
+        );
+
+        return response()->json([
+            'success' => true,
+            'version' => $version,
+        ], 201);
+    }
+
+    /**
+     * Restore document to an older version.
+     */
+    public function restoreVersion(Request $request, string $uuid, int $versionNumber): JsonResponse
+    {
+        $request->validate([
+            'author' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $doc = Document::where('uuid', $uuid)->firstOrFail();
+        $restored = $this->collaborationService->restoreVersion(
+            $doc,
+            $versionNumber,
+            $request->input('author', 'User')
+        );
+
+        return response()->json([
+            'success' => true,
+            'restored_version' => $restored,
+            'document' => $doc->fresh(),
+        ]);
+    }
+
+    /**
+     * Submit collaborative operational transaction to document.
+     */
+    public function applyCollaborativeOperation(Request $request, string $uuid): JsonResponse
+    {
+        $request->validate([
+            'operation' => ['required', 'array'],
+            'operation.type' => ['required', 'string'],
+            'actor' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $doc = Document::where('uuid', $uuid)->firstOrFail();
+
+        $result = $this->collaborationService->applyServerOperation(
+            $doc,
+            $request->input('operation'),
+            $request->input('actor', 'User')
+        );
+
+        return response()->json($result);
+    }
+
+    /**
+     * Send heartbeat and receive active presence.
+     */
+    public function heartbeatPresence(Request $request, string $uuid): JsonResponse
+    {
+        $request->validate([
+            'user_id' => ['required', 'string'],
+            'user_name' => ['required', 'string'],
+            'cursor' => ['nullable', 'array'],
+        ]);
+
+        $active = $this->collaborationService->heartbeatPresence(
+            $uuid,
+            $request->input('user_id'),
+            $request->input('user_name'),
+            $request->input('cursor', [])
+        );
+
+        return response()->json([
+            'success' => true,
+            'active_users' => $active,
+        ]);
+    }
+
+    /**
+     * Get active presence list.
+     */
+    public function getPresence(string $uuid): JsonResponse
+    {
+        $active = $this->collaborationService->getActivePresence($uuid);
+
+        return response()->json([
+            'success' => true,
+            'active_users' => $active,
+        ]);
+    }
+
+    /**
+     * Get audit log events for document.
+     */
+    public function getAuditEvents(string $uuid): JsonResponse
+    {
+        $doc = Document::where('uuid', $uuid)->firstOrFail();
+        $events = $doc->auditEvents()->orderByDesc('created_at')->get();
+
+        return response()->json([
+            'success' => true,
+            'count' => $events->count(),
+            'events' => $events,
         ]);
     }
 }

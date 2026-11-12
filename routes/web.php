@@ -39,4 +39,15 @@ Route::prefix('api/documents')->name('documents.')->group(function () {
     Route::post('/review/reject-all', [DocumentController::class, 'rejectAllRevisions'])->name('review.reject-all');
     Route::post('/review/compare', [DocumentController::class, 'compareDocuments'])->name('review.compare');
     Route::post('/review/comments', [DocumentController::class, 'listComments'])->name('review.comments');
+
+    // Server Collaboration & Versions (W09 & W10)
+    Route::post('/server/create', [DocumentController::class, 'createServerDocument'])->name('server.create');
+    Route::get('/server/{uuid}', [DocumentController::class, 'getServerDocument'])->name('server.show');
+    Route::get('/server/{uuid}/versions', [DocumentController::class, 'listVersions'])->name('server.versions');
+    Route::post('/server/{uuid}/versions', [DocumentController::class, 'createVersion'])->name('server.versions.create');
+    Route::post('/server/{uuid}/versions/{version}/restore', [DocumentController::class, 'restoreVersion'])->name('server.versions.restore');
+    Route::post('/server/{uuid}/operations', [DocumentController::class, 'applyCollaborativeOperation'])->name('server.operations');
+    Route::post('/server/{uuid}/presence', [DocumentController::class, 'heartbeatPresence'])->name('server.presence.heartbeat');
+    Route::get('/server/{uuid}/presence', [DocumentController::class, 'getPresence'])->name('server.presence.get');
+    Route::get('/server/{uuid}/audit', [DocumentController::class, 'getAuditEvents'])->name('server.audit');
 });
