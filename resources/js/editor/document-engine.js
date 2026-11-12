@@ -264,6 +264,25 @@ export class DocumentEngine {
                 }
             });
 
+            targetContainer.addEventListener('pointerdown', (e) => {
+                const frame = e.target.closest('.wordcraft-image-frame[data-image-mode="floating"]');
+                if (!frame || !e.target.closest('img')) return;
+                e.preventDefault();
+                this.activeImage = frame.querySelector('img');
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const left = parseFloat(frame.style.left) || 0;
+                const top = parseFloat(frame.style.top) || 0;
+                const move = (event) => this.positionImage(frame, left + event.clientX - startX, top + event.clientY - startY);
+                const end = () => {
+                    window.removeEventListener('pointermove', move);
+                    window.removeEventListener('pointerup', end);
+                    this.handleInput();
+                };
+                window.addEventListener('pointermove', move);
+                window.addEventListener('pointerup', end, { once: true });
+            });
+
             targetContainer.addEventListener('dblclick', (e) => {
                 const eq = e.target.closest('.latex-equation');
                 if (eq) {
@@ -725,6 +744,7 @@ export class DocumentEngine {
                             finalizeCurrentPage();
 
                             const p2 = el.cloneNode(false);
+                            p2.removeAttribute('id');
                             p2.innerHTML = part2;
                             currentBlocks.push(p2);
                             currentWeight += estimateElementWeight(p2);
@@ -744,6 +764,7 @@ export class DocumentEngine {
                             finalizeCurrentPage();
 
                             const p2 = el.cloneNode(true);
+                            p2.removeAttribute('id');
                             p2.innerHTML = part2;
                             currentBlocks.push(p2);
                             currentWeight += estimateElementWeight(p2);
@@ -3882,14 +3903,18 @@ export class DocumentEngine {
      * ------------------------------------------------------------- */
 
     showImageToolbar(img, event) {
-        let toolbar = document.getElementById('floating-image-toolbar');
+        const toolbar = document.getElementById('floating-image-toolbar');
         if (!toolbar) return;
 
         const rect = img.getBoundingClientRect();
-        toolbar.style.top = `${Math.max(10, rect.top - 45)}px`;
-        toolbar.style.left = `${Math.max(10, rect.left)}px`;
+        const frame = img.closest('.wordcraft-image-frame');
+        toolbar.querySelector('#image-layout-mode').value = frame?.dataset.imageMode || 'inline';
+        toolbar.querySelector('#image-offset-x').value = frame?.dataset.imageMode === 'floating' ? Math.round(parseFloat(frame.style.left) || 0) : '';
+        toolbar.querySelector('#image-offset-y').value = frame?.dataset.imageMode === 'floating' ? Math.round(parseFloat(frame.style.top) || 0) : '';
         toolbar.classList.remove('hidden');
         toolbar.classList.add('flex');
+        toolbar.style.top = `${Math.max(10, rect.top - toolbar.offsetHeight - 8)}px`;
+        toolbar.style.left = `${Math.max(10, Math.min(window.innerWidth - toolbar.offsetWidth - 10, rect.left))}px`;
     }
 
     hideImageToolbar() {
@@ -3902,24 +3927,70 @@ export class DocumentEngine {
 
     setImageWidth(percentage) {
         if (!this.activeImage) return;
-        this.activeImage.style.width = percentage;
+        const body = this.activeImage.closest('.page-sheet-body');
+        const value = parseInt(percentage, 10);
+        if (!body || !Number.isFinite(value) || value < 1 || value > 100) return;
+        this.activeImage.style.width = `${Math.round(body.clientWidth * value / 100)}px`;
         this.handleInput();
     }
 
+    getImageFrame(img = this.activeImage) {
+        if (!img) return null;
+        let frame = img.closest('.wordcraft-image-frame');
+        if (!frame) {
+            frame = document.createElement('span');
+            frame.className = 'wordcraft-image-frame';
+            frame.dataset.imageMode = 'inline';
+            frame.dataset.imageAlign = 'center';
+            img.parentNode.insertBefore(frame, img);
+            frame.appendChild(img);
+        }
+        return frame;
+    }
+
     setImageAlignment(align) {
-        if (!this.activeImage) return;
-        const figure = this.activeImage.closest('figure') || this.activeImage.parentElement;
-        if (align === 'center') {
-            this.activeImage.className = 'mx-auto block my-4 max-w-full rounded';
-            if (figure) figure.className = 'text-center my-4';
-        } else if (align === 'right') {
-            this.activeImage.className = 'ml-auto block my-4 max-w-full rounded';
-            if (figure) figure.className = 'text-right my-4';
-        } else {
-            this.activeImage.className = 'mr-auto block my-4 max-w-full rounded';
-            if (figure) figure.className = 'text-left my-4';
+        if (!['left', 'center', 'right'].includes(align)) return;
+        const frame = this.getImageFrame();
+        if (!frame) return;
+        frame.dataset.imageAlign = align;
+        if (frame.dataset.imageMode === 'wrap-left' || frame.dataset.imageMode === 'wrap-right' || frame.dataset.imageMode === 'floating') {
+            frame.dataset.imageMode = align === 'center' ? 'inline' : `wrap-${align}`;
+            frame.style.left = '';
+            frame.style.top = '';
         }
         this.handleInput();
+    }
+
+    setImageLayout(mode) {
+        if (!['inline', 'wrap-left', 'wrap-right', 'top-bottom', 'floating'].includes(mode)) return;
+        const frame = this.getImageFrame();
+        if (!frame) return;
+        const body = frame.closest('.page-sheet-body');
+        if (!body) return;
+        const rect = frame.getBoundingClientRect();
+        const bodyRect = body.getBoundingClientRect();
+        frame.dataset.imageMode = mode;
+        if (mode === 'floating') {
+            this.positionImage(frame, rect.left - bodyRect.left, rect.top - bodyRect.top);
+        } else {
+            frame.style.left = '';
+            frame.style.top = '';
+            if (mode.startsWith('wrap-')) frame.dataset.imageAlign = mode.slice(5);
+        }
+        this.handleInput();
+    }
+
+    positionImage(frame, x, y) {
+        if (!frame || frame.dataset.imageMode !== 'floating' || !Number.isFinite(x) || !Number.isFinite(y)) return;
+        const body = frame.closest('.page-sheet-body');
+        if (!body) return;
+        frame.style.left = `${Math.round(Math.max(0, Math.min(x, body.clientWidth - frame.offsetWidth)))}px`;
+        frame.style.top = `${Math.round(Math.max(0, Math.min(y, body.clientHeight - frame.offsetHeight)))}px`;
+        const toolbar = document.getElementById('floating-image-toolbar');
+        if (toolbar && !toolbar.classList.contains('hidden')) {
+            toolbar.querySelector('#image-offset-x').value = parseFloat(frame.style.left);
+            toolbar.querySelector('#image-offset-y').value = parseFloat(frame.style.top);
+        }
     }
 
     /* -------------------------------------------------------------
@@ -4792,7 +4863,12 @@ ${entriesHtml}    </div>
         img.alt = alt;
         img.className = 'mx-auto block max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-gray-700';
 
-        figure.appendChild(img);
+        const frame = document.createElement('span');
+        frame.className = 'wordcraft-image-frame';
+        frame.dataset.imageMode = 'inline';
+        frame.dataset.imageAlign = 'center';
+        frame.appendChild(img);
+        figure.appendChild(frame);
         if (alt) {
             const figcaption = document.createElement('figcaption');
             figcaption.className = 'text-xs text-gray-500 mt-2 italic font-serif';

@@ -538,6 +538,30 @@
             display: block;
         }
 
+        .page-sheet-body { position: relative; }
+
+        /* The frame moves the picture, never the caption or surrounding paragraphs. */
+        .page-sheet-body .wordcraft-image-frame {
+            display: block;
+            width: fit-content;
+            max-width: 100%;
+            margin: 8pt 0;
+        }
+        .page-sheet-body .wordcraft-image-frame img { margin: 0 !important; max-width: 100%; height: auto; display: block; }
+        .page-sheet-body .wordcraft-image-frame[data-image-align="center"] { margin-left: auto; margin-right: auto; }
+        .page-sheet-body .wordcraft-image-frame[data-image-align="right"] { margin-left: auto; margin-right: 0; }
+        .page-sheet-body .wordcraft-image-frame[data-image-mode="wrap-left"] { float: left; margin: 0 12pt 8pt 0; }
+        .page-sheet-body .wordcraft-image-frame[data-image-mode="wrap-right"] { float: right; margin: 0 0 8pt 12pt; }
+        .page-sheet-body .wordcraft-image-frame[data-image-mode="top-bottom"] { clear: both; }
+        .page-sheet-body .wordcraft-image-frame[data-image-mode="floating"] {
+            position: absolute;
+            z-index: 5;
+            margin: 0;
+            cursor: grab;
+            touch-action: none;
+        }
+        .page-sheet-body .wordcraft-image-frame[data-image-mode="floating"]:active { cursor: grabbing; }
+
         #document-editor figure figcaption,
         .page-sheet-body figure figcaption {
             font-size: 10pt;
@@ -1822,14 +1846,26 @@
             </div>
 
             <!-- Floating Image Context Toolbar -->
-            <div id="floating-image-toolbar" class="hidden fixed bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-2xl z-40 items-center gap-2 text-xs border border-gray-700 no-print">
+            <div id="floating-image-toolbar" class="hidden fixed bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-2xl z-40 items-center gap-2 text-xs border border-gray-700 no-print flex-wrap max-w-[min(92vw,580px)]">
                 <span class="text-gray-400 font-semibold mr-1">Gambar:</span>
                 <button data-img-align="left" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">Kiri</button>
-                <button data-img-align="center" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-indigo-600 text-[11px]">Tengah</button>
+                <button data-img-align="center" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">Tengah</button>
                 <button data-img-align="right" class="px-2 py-0.5 hover:bg-gray-800 rounded bg-gray-800 text-[11px]">Kanan</button>
                 <span class="w-px h-3 bg-gray-700"></span>
                 <button data-img-size="50%" class="px-2 py-0.5 hover:bg-gray-800 rounded text-[11px]">50%</button>
                 <button data-img-size="100%" class="px-2 py-0.5 hover:bg-gray-800 rounded text-[11px]">100%</button>
+                <label class="sr-only" for="image-layout-mode">Mode tata letak gambar</label>
+                <select id="image-layout-mode" class="bg-gray-800 text-white rounded px-1 py-0.5 text-[11px]" title="Atur alur teks dan posisi gambar">
+                    <option value="inline">Tanpa pembungkusan</option>
+                    <option value="wrap-left">Teks di kanan gambar</option>
+                    <option value="wrap-right">Teks di kiri gambar</option>
+                    <option value="top-bottom">Teks atas &amp; bawah</option>
+                    <option value="floating">Posisi bebas (geser)</option>
+                </select>
+                <label class="text-gray-300 text-[11px]" for="image-offset-x">X</label>
+                <input id="image-offset-x" type="number" min="0" step="1" class="w-14 bg-gray-800 rounded px-1 text-[11px]" title="Posisi horizontal dalam piksel (mode bebas)">
+                <label class="text-gray-300 text-[11px]" for="image-offset-y">Y</label>
+                <input id="image-offset-y" type="number" min="0" step="1" class="w-14 bg-gray-800 rounded px-1 text-[11px]" title="Posisi vertikal dalam piksel (mode bebas)">
             </div>
 
             <!-- Local File Auto-Adaptation Banner -->

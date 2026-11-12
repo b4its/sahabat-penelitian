@@ -1380,6 +1380,17 @@ export class UiController {
             imageToolbar.querySelector('[data-img-align="right"]')?.addEventListener('click', () => this.engine.setImageAlignment('right'));
             imageToolbar.querySelector('[data-img-size="50%"]')?.addEventListener('click', () => this.engine.setImageWidth('50%'));
             imageToolbar.querySelector('[data-img-size="100%"]')?.addEventListener('click', () => this.engine.setImageWidth('100%'));
+            imageToolbar.querySelector('#image-layout-mode')?.addEventListener('change', (event) => this.engine.setImageLayout(event.target.value));
+            for (const axis of ['x', 'y']) {
+                imageToolbar.querySelector(`#image-offset-${axis}`)?.addEventListener('change', () => {
+                    const frame = this.engine.activeImage?.closest('.wordcraft-image-frame');
+                    if (!frame || frame.dataset.imageMode !== 'floating') return;
+                    const x = Number(imageToolbar.querySelector('#image-offset-x').value);
+                    const y = Number(imageToolbar.querySelector('#image-offset-y').value);
+                    this.engine.positionImage(frame, x, y);
+                    this.engine.handleInput();
+                });
+            }
         }
     }
 

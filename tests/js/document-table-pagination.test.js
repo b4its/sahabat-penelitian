@@ -47,3 +47,9 @@ test('table footers remain footers when a table is too complex to split', () => 
     const table = new JSDOM(pages[0].contentHtml).window.document.querySelector('table');
     assert.equal(table.tFoot.textContent, 'Jumlah');
 });
+
+test('paragraphs split across pages retain only one copy of their anchor id', () => {
+    const pages = paginate(`<p>Pengantar</p><p id="paragraph-anchor">${'Kalimat cukup panjang untuk dilanjutkan. '.repeat(95)}</p>`);
+    assert.ok(pages.length > 1);
+    assert.equal(pages.reduce((count, page) => count + (page.contentHtml.match(/id="paragraph-anchor"/g) || []).length, 0), 1);
+});
