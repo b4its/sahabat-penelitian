@@ -2385,11 +2385,11 @@
                 <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
             </div>
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <button data-export-format="docx" class="p-4 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 rounded-xl flex items-start gap-3 bg-gray-50/50 dark:bg-gray-800/40 hover:bg-indigo-50/30 transition text-left">
+                <button data-export-format="doc" class="p-4 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 rounded-xl flex items-start gap-3 bg-gray-50/50 dark:bg-gray-800/40 hover:bg-indigo-50/30 transition text-left">
                     <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">W</div>
                     <div>
-                        <div class="font-bold text-gray-800 dark:text-gray-200">Microsoft Word (.doc/.docx)</div>
-                        <div class="text-[11px] text-gray-500 mt-0.5">Kompatibel penuh dengan MS Word, LibreOffice, dan Google Docs.</div>
+                        <div class="font-bold text-gray-800 dark:text-gray-200">HTML untuk Word (.doc)</div>
+                        <div class="text-[11px] text-gray-500 mt-0.5">Berkas HTML dengan ekstensi .doc, bukan DOCX asli. Format dan komentar mungkin berubah; Word dapat menampilkan peringatan format.</div>
                     </div>
                 </button>
 

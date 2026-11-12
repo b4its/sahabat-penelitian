@@ -334,6 +334,24 @@ test('black-box: user can export document in multiple formats', function () {
     expect($decoded)->toHaveKeys(['title', 'content', 'stats', 'exported_at']);
 });
 
+test('black-box: Word export is identified as HTML rather than a real docx', function () {
+    $this->get('/editor')
+        ->assertOk()
+        ->assertSee('data-export-format="doc"', false)
+        ->assertSee('Berkas HTML dengan ekstensi .doc, bukan DOCX asli.');
+
+    $response = $this->postJson('/api/documents/export', [
+        'title' => 'Tes Word',
+        'content' => '<p>Teks dokumen</p>',
+        'format' => 'doc',
+    ]);
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Disposition'))->toContain('.doc"')
+        ->and($response->headers->get('Content-Type'))->toContain('application/msword')
+        ->and($response->getContent())->toContain('<html', 'Teks dokumen');
+});
+
 test('black-box: export validates input and rejects unsupported format', function () {
     $response = $this->postJson('/api/documents/export', [
         'title' => 'Dokumen',

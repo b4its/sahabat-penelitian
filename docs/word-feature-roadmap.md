@@ -7,7 +7,7 @@ Audit 12 November 2026. Referensi: [perbandingan Word desktop/web](https://suppo
 | Penulisan dan tata letak | Format teks dan paragraf, tab stop, halaman, margin, header/footer, tabel, gambar, heading, outline, undo/redo | Uji fidelity tata letak dan gaya dokumen besar lintas browser |
 | Referensi | Daftar isi, sitasi dan daftar pustaka | Catatan kaki/akhir, indeks, cross-reference, kompatibilitas field DOCX |
 | Review | **Komentar lokal tertaut teks**: tambah, lihat, selesaikan, buka kembali, hapus; tersimpan sebagai anotasi HTML dalam draf | Pelacakan perubahan (termasuk penghapusan dan format), terima/tolak per revisi, perbandingan dokumen, threading, penulis, @mention |
-| Berkas | Impor DOCX/format lokal lain, ekspor DOCX/PDF/HTML/Markdown/TXT | Round-trip DOCX lengkap (komentar/revisi/field), template, perlindungan dokumen |
+| Berkas | Impor DOCX/format lokal lain, ekspor HTML untuk Word berekstensi .doc, PDF/HTML/Markdown/TXT | Ekspor DOCX Open XML asli dan round-trip (komentar/revisi/field), template, perlindungan dokumen |
 | Kolaborasi | Penyimpanan draf lokal | Akun, izin berbagi, sinkronisasi, penyuntingan bersama real-time, riwayat versi server |
 | Fitur khusus desktop | Tidak tersedia | Mail merge, add-in, VBA/makro, integrasi Microsoft 365; memerlukan arsitektur dan model keamanan tersendiri |
 
