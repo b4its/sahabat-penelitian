@@ -4,6 +4,101 @@
 @section('breadcrumb', 'Manajemen Dokumen')
 
 @section('content')
+<style>
+    /* Selected Document Row in Table - Light Mode */
+    tr.doc-row-selected {
+        background-color: #eff6ff !important;
+        border-left: 4px solid #2563eb !important;
+    }
+    tr.doc-row-selected td {
+        color: #0f172a !important;
+    }
+    tr.doc-row-selected td a {
+        color: #1d4ed8 !important;
+    }
+    tr.doc-row-selected td .doc-uuid,
+    tr.doc-row-selected td .doc-date {
+        color: #475569 !important;
+    }
+
+    /* Selected Document Row in Table - Dark Mode (Rich Deep Navy Blue with High Contrast Pure White Text) */
+    html.dark tr.doc-row-selected,
+    .dark tr.doc-row-selected {
+        background-color: rgba(30, 58, 138, 0.45) !important;
+        border-left: 4px solid #38bdf8 !important;
+    }
+    html.dark tr.doc-row-selected:hover,
+    .dark tr.doc-row-selected:hover {
+        background-color: rgba(30, 58, 138, 0.6) !important;
+    }
+    html.dark tr.doc-row-selected td,
+    .dark tr.doc-row-selected td {
+        color: #f1f5f9 !important;
+    }
+    html.dark tr.doc-row-selected td a,
+    .dark tr.doc-row-selected td a {
+        color: #ffffff !important;
+    }
+    html.dark tr.doc-row-selected td a:hover,
+    .dark tr.doc-row-selected td a:hover {
+        color: #38bdf8 !important;
+    }
+    html.dark tr.doc-row-selected td .doc-uuid,
+    .dark tr.doc-row-selected td .doc-uuid,
+    html.dark tr.doc-row-selected td .doc-date,
+    .dark tr.doc-row-selected td .doc-date {
+        color: #cbd5e1 !important;
+    }
+
+    /* Bulk Actions Bar in Dark Mode */
+    html.dark #bulk-actions-bar,
+    .dark #bulk-actions-bar {
+        background: linear-gradient(135deg, #0b152d 0%, #0f1c3f 50%, #111e48 100%) !important;
+        border: 2px solid #2563eb !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(37, 99, 235, 0.25) !important;
+        color: #ffffff !important;
+    }
+    html.dark #bulk-actions-bar span,
+    .dark #bulk-actions-bar span {
+        color: #ffffff !important;
+    }
+    html.dark #bulk-actions-bar #bulk-selected-count,
+    .dark #bulk-actions-bar #bulk-selected-count {
+        color: #38bdf8 !important;
+    }
+    html.dark #bulk-actions-bar #btn-clear-selection,
+    .dark #bulk-actions-bar #btn-clear-selection {
+        color: #93c5fd !important;
+    }
+    html.dark #bulk-actions-bar #btn-clear-selection:hover,
+    .dark #bulk-actions-bar #btn-clear-selection:hover {
+        color: #ffffff !important;
+    }
+
+    /* Bulk Action Buttons */
+    html.dark #btn-bulk-clone,
+    .dark #btn-bulk-clone {
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+        border: 1px solid #3b82f6 !important;
+    }
+    html.dark #btn-bulk-clone:hover,
+    .dark #btn-bulk-clone:hover {
+        background-color: #1d4ed8 !important;
+    }
+    #btn-bulk-destroy,
+    html.dark #btn-bulk-destroy,
+    .dark #btn-bulk-destroy {
+        background-color: #e11d48 !important;
+        color: #ffffff !important;
+        border: 1px solid #f43f5e !important;
+    }
+    #btn-bulk-destroy:hover,
+    html.dark #btn-bulk-destroy:hover,
+    .dark #btn-bulk-destroy:hover {
+        background-color: #be123c !important;
+    }
+</style>
 <div class="space-y-6">
 
     <!-- ========================================================================= -->
@@ -88,22 +183,22 @@
     <!-- ========================================================================= -->
     <div
         id="bulk-actions-bar"
-        class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/70 to-blue-50 dark:from-slate-800 dark:via-blue-950/50 dark:to-slate-800 border-2 border-blue-200 dark:border-blue-800/80 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-200"
+        class="hidden p-3.5 sm:p-4 rounded-2xl bg-blue-50/90 dark:bg-slate-900 border-2 border-blue-200 dark:border-blue-600 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-200"
     >
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
-                <span id="bulk-selected-badge" class="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                <span id="bulk-selected-badge" class="w-7 h-7 rounded-lg bg-blue-600 dark:bg-blue-500 text-white font-extrabold flex items-center justify-center text-xs shadow-xs">
                     0
                 </span>
-                <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
-                    <span id="bulk-selected-count">0</span> naskah dipilih
+                <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
+                    <span id="bulk-selected-count" class="text-blue-600 dark:text-sky-400 font-extrabold">0</span> naskah dipilih
                 </span>
             </div>
-            <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+            <span class="text-slate-300 dark:text-slate-600 hidden sm:inline">•</span>
             <button
                 type="button"
                 id="btn-clear-selection"
-                class="text-xs font-semibold text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 underline cursor-pointer transition-colors"
+                class="text-xs font-semibold text-slate-600 hover:text-blue-600 dark:text-sky-300 dark:hover:text-sky-100 underline cursor-pointer transition-colors"
             >
                 Batalkan Pilihan
             </button>
@@ -115,10 +210,10 @@
             <button
                 type="button"
                 id="btn-bulk-clone"
-                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-200 bg-white dark:bg-blue-900/60 hover:bg-blue-50 dark:hover:bg-blue-800/80 border border-blue-200 dark:border-blue-700/60 shadow-xs flex items-center justify-center gap-2 transition cursor-pointer hover:shadow"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 border border-blue-500 dark:border-blue-400 shadow-sm flex items-center justify-center gap-2 transition cursor-pointer hover:shadow"
                 title="Duplikat seluruh naskah yang dipilih"
             >
-                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
                 <span>Duplikat Terpilih</span>
@@ -128,7 +223,7 @@
             <button
                 type="button"
                 id="btn-bulk-destroy"
-                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 border border-rose-500 shadow-md shadow-rose-600/25 flex items-center justify-center gap-2 transition cursor-pointer hover:shadow-lg"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500 border border-rose-500 dark:border-rose-400 shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition cursor-pointer hover:shadow-lg"
                 title="Hapus naskah terpilih dari sistem"
             >
                 <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -202,7 +297,7 @@
                                             >
                                                 {{ $doc->title }}
                                             </a>
-                                            <span class="font-mono text-[10px] text-slate-400 dark:text-slate-500">
+                                            <span class="doc-uuid font-mono text-[10px] text-slate-400 dark:text-slate-400">
                                                 UUID: {{ $doc->uuid }}
                                             </span>
                                         </div>
@@ -239,7 +334,7 @@
                                 </td>
 
                                 <!-- Updated At -->
-                                <td class="px-4 py-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                                <td class="doc-date px-4 py-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
                                     {{ $doc->updated_at?->diffForHumans() ?? 'Baru saja' }}
                                 </td>
 
@@ -249,7 +344,7 @@
                                         <!-- Edit in Wordcraft -->
                                         <a
                                             href="{{ url('/editor?doc='.$doc->uuid) }}"
-                                            class="p-2 rounded-lg text-blue-600 hover:text-white hover:bg-blue-600 transition-colors"
+                                            class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-600 transition-colors"
                                             title="Buka dan sunting di Wordcraft Studio"
                                             aria-label="Sunting naskah {{ $doc->title }}"
                                         >
@@ -263,7 +358,7 @@
                                             @csrf
                                             <button
                                                 type="submit"
-                                                class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                                class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                                 title="Duplikasi Naskah Ini"
                                                 aria-label="Duplikasi naskah {{ $doc->title }}"
                                             >
@@ -277,7 +372,7 @@
                                         <button
                                             type="button"
                                             onclick="openSingleDeleteModal('{{ $doc->uuid }}', @js($doc->title))"
-                                            class="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                            class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                             title="Hapus Naskah"
                                             aria-label="Hapus naskah {{ $doc->title }}"
                                         >
@@ -463,9 +558,9 @@
                     const row = document.getElementById(`doc-row-${cb.value}`);
                     if (row) {
                         if (cb.checked) {
-                            row.classList.add('bg-blue-50/70', 'dark:bg-blue-950/40');
+                            row.classList.add('doc-row-selected');
                         } else {
-                            row.classList.remove('bg-blue-50/70', 'dark:bg-blue-950/40');
+                            row.classList.remove('doc-row-selected');
                         }
                     }
                 });
@@ -573,7 +668,7 @@
                     if (previewEl) {
                         previewEl.innerHTML = '';
                         const ul = document.createElement('ul');
-                        ul.className = 'list-disc list-inside space-y-1 text-slate-800 dark:text-slate-200';
+                        ul.className = 'list-disc list-inside space-y-1 text-slate-900 dark:text-slate-100 font-medium';
                         selected.forEach(cb => {
                             const li = document.createElement('li');
                             li.textContent = cb.getAttribute('data-title') || cb.value;
@@ -652,7 +747,7 @@
             if (subtitleEl) subtitleEl.textContent = 'Naskah berikut akan dihapus secara permanen dari basis data.';
             if (labelEl) labelEl.textContent = 'Judul Naskah:';
             if (previewEl) {
-                previewEl.innerHTML = `<span class="font-bold text-rose-800 dark:text-rose-200">${title}</span><br><span class="font-mono text-[10px] text-slate-500">UUID: ${uuid}</span>`;
+                previewEl.innerHTML = `<span class="font-bold text-rose-900 dark:text-rose-100 text-sm">${title}</span><br><span class="font-mono text-[11px] text-slate-600 dark:text-slate-300 mt-1 block">UUID: ${uuid}</span>`;
             }
             if (confirmBtnText) confirmBtnText.textContent = 'Ya, Hapus Naskah Ini';
 

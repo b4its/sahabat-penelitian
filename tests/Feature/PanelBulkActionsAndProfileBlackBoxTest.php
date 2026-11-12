@@ -13,19 +13,20 @@ class PanelBulkActionsAndProfileBlackBoxTest extends TestCase
      */
     public function test_black_box_multiple_choice_ui_renders_on_documents_view(): void
     {
+        $searchKey = 'BatchML'.uniqid();
         $doc1 = Document::create([
             'uuid' => (string) Str::uuid(),
-            'title' => 'Riset Pembelajaran Mesin Multi-Label '.uniqid(),
+            'title' => "Riset Pembelajaran Mesin Multi-Label {$searchKey}",
             'content_html' => '<p>Konten naskah 1.</p>',
         ]);
 
         $doc2 = Document::create([
             'uuid' => (string) Str::uuid(),
-            'title' => 'Studi Analisis Sentimen Pilkada '.uniqid(),
+            'title' => "Studi Analisis Sentimen Pilkada {$searchKey}",
             'content_html' => '<p>Konten naskah 2.</p>',
         ]);
 
-        $response = $this->get('/panel/documents');
+        $response = $this->get('/panel/documents?q='.$searchKey);
         $response->assertStatus(200);
 
         // 1. Checkbox "Select All" in table header

@@ -95,3 +95,102 @@
         color: #4b5563 !important;
     }
 }
+
+/* ========================================================================= */
+/* PANEL DOCUMENT MANAGEMENT: MULTIPLE CHOICE & BULK ACTIONS CONTRAST STYLES */
+/* ========================================================================= */
+
+/* Selected Row in Light Mode */
+tr.doc-row-selected {
+    background-color: #eff6ff !important;
+    border-left: 4px solid #2563eb !important;
+}
+tr.doc-row-selected td {
+    color: #0f172a !important;
+}
+tr.doc-row-selected td a {
+    color: #1d4ed8 !important;
+}
+tr.doc-row-selected td .doc-uuid,
+tr.doc-row-selected td .doc-date {
+    color: #475569 !important;
+}
+
+/* Selected Row in Dark Mode - Deep Navy Blue with High Contrast Pure White Text */
+html.dark tr.doc-row-selected,
+.dark tr.doc-row-selected {
+    background-color: rgba(30, 58, 138, 0.45) !important;
+    border-left: 4px solid #38bdf8 !important;
+}
+html.dark tr.doc-row-selected:hover,
+.dark tr.doc-row-selected:hover {
+    background-color: rgba(30, 58, 138, 0.6) !important;
+}
+html.dark tr.doc-row-selected td,
+.dark tr.doc-row-selected td {
+    color: #f1f5f9 !important;
+}
+html.dark tr.doc-row-selected td a,
+.dark tr.doc-row-selected td a {
+    color: #ffffff !important;
+}
+html.dark tr.doc-row-selected td a:hover,
+.dark tr.doc-row-selected td a:hover {
+    color: #38bdf8 !important;
+}
+html.dark tr.doc-row-selected td .doc-uuid,
+.dark tr.doc-row-selected td .doc-uuid,
+html.dark tr.doc-row-selected td .doc-date,
+.dark tr.doc-row-selected td .doc-date {
+    color: #cbd5e1 !important;
+}
+
+/* Bulk Actions Bar in Dark Mode - Deep Midnight Gradient with High Contrast */
+html.dark #bulk-actions-bar,
+.dark #bulk-actions-bar {
+    background: linear-gradient(135deg, #0b152d 0%, #0f1c3f 50%, #111e48 100%) !important;
+    border: 2px solid #2563eb !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(37, 99, 235, 0.25) !important;
+    color: #ffffff !important;
+}
+html.dark #bulk-actions-bar span,
+.dark #bulk-actions-bar span {
+    color: #ffffff !important;
+}
+html.dark #bulk-actions-bar #bulk-selected-count,
+.dark #bulk-actions-bar #bulk-selected-count {
+    color: #38bdf8 !important;
+    font-weight: 800 !important;
+}
+html.dark #bulk-actions-bar #btn-clear-selection,
+.dark #bulk-actions-bar #btn-clear-selection {
+    color: #93c5fd !important;
+}
+html.dark #bulk-actions-bar #btn-clear-selection:hover,
+.dark #bulk-actions-bar #btn-clear-selection:hover {
+    color: #ffffff !important;
+}
+
+/* Bulk Action Buttons */
+html.dark #btn-bulk-clone,
+.dark #btn-bulk-clone {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #3b82f6 !important;
+}
+html.dark #btn-bulk-clone:hover,
+.dark #btn-bulk-clone:hover {
+    background-color: #1d4ed8 !important;
+}
+#btn-bulk-destroy,
+html.dark #btn-bulk-destroy,
+.dark #btn-bulk-destroy {
+    background-color: #e11d48 !important;
+    color: #ffffff !important;
+    border: 1px solid #f43f5e !important;
+}
+#btn-bulk-destroy:hover,
+html.dark #btn-bulk-destroy:hover,
+.dark #btn-bulk-destroy:hover {
+    background-color: #be123c !important;
+}

@@ -96,11 +96,14 @@ class PanelDashboardFeatureTest extends TestCase
      */
     public function test_panel_dashboard_renders_metrics_and_recent_documents(): void
     {
-        Document::create([
+        $doc = new Document([
             'title' => 'Riset Bioinformatika Terapan 2026',
             'content_html' => '<p>Konten riset genetika.</p>',
             'restricted_mode' => 'none',
         ]);
+        $doc->created_at = now()->addHour();
+        $doc->updated_at = now()->addHour();
+        $doc->save();
 
         $response = $this->get('/panel/dashboard');
         $response->assertStatus(200);
