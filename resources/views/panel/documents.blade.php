@@ -26,7 +26,7 @@
             <button
                 type="button"
                 onclick="openCreateDocumentModal()"
-                class="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+                class="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer"
             >
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -84,7 +84,64 @@
 
 
     <!-- ========================================================================= -->
-    <!-- 3. DOCUMENTS TABLE VIEW                                                   -->
+    <!-- 3. MULTIPLE CHOICE BULK ACTION BAR                                        -->
+    <!-- ========================================================================= -->
+    <div
+        id="bulk-actions-bar"
+        class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/70 to-blue-50 dark:from-slate-800 dark:via-blue-950/50 dark:to-slate-800 border-2 border-blue-200 dark:border-blue-800/80 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-200"
+    >
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span id="bulk-selected-badge" class="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                    0
+                </span>
+                <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
+                    <span id="bulk-selected-count">0</span> naskah dipilih
+                </span>
+            </div>
+            <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+            <button
+                type="button"
+                id="btn-clear-selection"
+                class="text-xs font-semibold text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 underline cursor-pointer transition-colors"
+            >
+                Batalkan Pilihan
+            </button>
+        </div>
+
+        <!-- Two Bulk Options: Duplikat & Hapus -->
+        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <!-- Option 1: Duplikat (Bulk Clone) -->
+            <button
+                type="button"
+                id="btn-bulk-clone"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-200 bg-white dark:bg-blue-900/60 hover:bg-blue-50 dark:hover:bg-blue-800/80 border border-blue-200 dark:border-blue-700/60 shadow-xs flex items-center justify-center gap-2 transition cursor-pointer hover:shadow"
+                title="Duplikat seluruh naskah yang dipilih"
+            >
+                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span>Duplikat Terpilih</span>
+            </button>
+
+            <!-- Option 2: Hapus (Bulk Delete with Red/Rose Elements) -->
+            <button
+                type="button"
+                id="btn-bulk-destroy"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 border border-rose-500 shadow-md shadow-rose-600/25 flex items-center justify-center gap-2 transition cursor-pointer hover:shadow-lg"
+                title="Hapus naskah terpilih dari sistem"
+            >
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Hapus Terpilih</span>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 4. DOCUMENTS TABLE VIEW                                                   -->
     <!-- ========================================================================= -->
     <div class="bg-white dark:bg-slate-900 rounded-3xl border border-blue-100 dark:border-blue-900/40 shadow-xs overflow-hidden">
         @if ($documents->count() > 0)
@@ -92,7 +149,17 @@
                 <table class="w-full text-left border-collapse min-w-[640px]">
                     <thead>
                         <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            <th class="px-6 py-4">Judul Naskah Penelitian</th>
+                            <!-- Multiple Choice Header Checkbox -->
+                            <th class="w-12 px-4 py-4 text-center">
+                                <label for="select-all-documents" class="sr-only">Pilih Semua Dokumen</label>
+                                <input
+                                    type="checkbox"
+                                    id="select-all-documents"
+                                    class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 dark:bg-slate-800 cursor-pointer"
+                                    title="Pilih semua naskah pada halaman ini"
+                                />
+                            </th>
+                            <th class="px-5 py-4">Judul Naskah Penelitian</th>
                             <th class="px-4 py-4">Versi</th>
                             <th class="px-4 py-4">Mode Akses</th>
                             <th class="px-4 py-4">Terakhir Diperbarui</th>
@@ -101,9 +168,26 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                         @foreach ($documents as $doc)
-                            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group">
+                            <tr
+                                id="doc-row-{{ $doc->uuid }}"
+                                class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group"
+                            >
+                                <!-- Multiple Choice Row Checkbox -->
+                                <td class="w-12 px-4 py-4 text-center">
+                                    <label for="checkbox-doc-{{ $doc->uuid }}" class="sr-only">Pilih naskah {{ $doc->title }}</label>
+                                    <input
+                                        type="checkbox"
+                                        id="checkbox-doc-{{ $doc->uuid }}"
+                                        name="selected_uuids[]"
+                                        value="{{ $doc->uuid }}"
+                                        data-title="{{ $doc->title }}"
+                                        class="doc-checkbox w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 dark:bg-slate-800 cursor-pointer"
+                                        aria-label="Pilih naskah {{ $doc->title }}"
+                                    />
+                                </td>
+
                                 <!-- Title & UUID -->
-                                <td class="px-6 py-4">
+                                <td class="px-5 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -167,19 +251,21 @@
                                             href="{{ url('/editor?doc='.$doc->uuid) }}"
                                             class="p-2 rounded-lg text-blue-600 hover:text-white hover:bg-blue-600 transition-colors"
                                             title="Buka dan sunting di Wordcraft Studio"
+                                            aria-label="Sunting naskah {{ $doc->title }}"
                                         >
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                             </svg>
                                         </a>
 
-                                        <!-- Duplicate Document -->
+                                        <!-- Duplicate Document (Single) -->
                                         <form action="{{ route('panel.documents.clone', $doc->uuid) }}" method="POST" class="inline">
                                             @csrf
                                             <button
                                                 type="submit"
-                                                class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors"
+                                                class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                                 title="Duplikasi Naskah Ini"
+                                                aria-label="Duplikasi naskah {{ $doc->title }}"
                                             >
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -187,20 +273,18 @@
                                             </button>
                                         </form>
 
-                                        <!-- Delete Document -->
-                                        <form action="{{ route('panel.documents.destroy', $doc->uuid) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus naskah {{ addslashes($doc->title) }}?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button
-                                                type="submit"
-                                                class="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
-                                                title="Hapus Naskah"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <!-- Delete Document (Custom Themed Modal, No Default JS Confirm!) -->
+                                        <button
+                                            type="button"
+                                            onclick="openSingleDeleteModal('{{ $doc->uuid }}', @js($doc->title))"
+                                            class="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                            title="Hapus Naskah"
+                                            aria-label="Hapus naskah {{ $doc->title }}"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -249,4 +333,339 @@
     </div>
 
 </div>
+
+<!-- ========================================================================= -->
+<!-- 5. HIDDEN FORM HANDLERS FOR BULK & SINGLE OPERATIONS                     -->
+<!-- ========================================================================= -->
+
+<!-- Bulk Clone Form -->
+<form id="form-bulk-clone" action="{{ route('panel.documents.bulk-clone') }}" method="POST" class="hidden">
+    @csrf
+    <div id="bulk-clone-inputs-container"></div>
+</form>
+
+<!-- Bulk Destroy Form -->
+<form id="form-bulk-destroy" action="{{ route('panel.documents.bulk-destroy') }}" method="POST" class="hidden">
+    @csrf
+    <div id="bulk-destroy-inputs-container"></div>
+</form>
+
+<!-- Single Destroy Form -->
+<form id="form-single-destroy" action="" method="POST" class="hidden">
+    @csrf
+    @method('DELETE')
+</form>
+
+
+<!-- ========================================================================= -->
+<!-- 6. CUSTOM MODAL: KONFIRMASI HAPUS NASKAH (CUSTOM ALERT BERTEMA & UNSUR MERAH) -->
+<!-- ========================================================================= -->
+<div
+    id="modal-custom-delete-alert"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-opacity overflow-y-auto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="custom-delete-title"
+>
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border-2 border-rose-300 dark:border-rose-900/70 shadow-2xl space-y-5 my-auto animate-in zoom-in-95">
+        
+        <!-- Red Danger Icon Badge & Heading -->
+        <div class="text-center space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 border-2 border-rose-200 dark:border-rose-800/60 flex items-center justify-center mx-auto shadow-md shadow-rose-500/10">
+                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <div>
+                <h3 id="custom-delete-title" class="text-lg font-extrabold text-slate-900 dark:text-white">
+                    Konfirmasi Hapus Naskah
+                </h3>
+                <p id="custom-delete-subtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Pastikan Anda benar-benar ingin menghapus data naskah penelitian ini.
+                </p>
+            </div>
+        </div>
+
+        <!-- Target Details Card (Distinctive Red Palette) -->
+        <div class="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-1.5">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span id="custom-delete-target-label">Target Penghapusan:</span>
+            </div>
+            <div id="custom-delete-preview-content" class="text-xs font-semibold text-rose-950 dark:text-rose-100 break-words max-h-36 overflow-y-auto pr-1">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Warning Callout Box -->
+        <div class="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 text-[11px] text-amber-800 dark:text-amber-300">
+            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Tindakan ini permanen. Seluruh snapshot riwayat versi dan perubahan pada berkas ini akan dihapus dari sistem.</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+                type="button"
+                onclick="closeCustomDeleteAlert()"
+                class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+                Batal
+            </button>
+            <button
+                type="button"
+                id="btn-confirm-delete-action"
+                class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 border border-rose-500 shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center gap-1.5"
+            >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span id="btn-confirm-delete-text">Ya, Hapus Sekarang</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ========================================================================= -->
+<!-- 7. CLIENT LOGIC: MULTIPLE CHOICE SELECTION & CUSTOM ALERT CONTROLLER      -->
+<!-- ========================================================================= -->
+<script>
+    (function () {
+        // State variables
+        let pendingDeleteMode = null; // 'single' or 'bulk'
+        let pendingSingleUuid = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const selectAllCheckbox = document.getElementById('select-all-documents');
+            const rowCheckboxes = Array.from(document.querySelectorAll('.doc-checkbox'));
+            const bulkBar = document.getElementById('bulk-actions-bar');
+            const countLabel = document.getElementById('bulk-selected-count');
+            const badgeLabel = document.getElementById('bulk-selected-badge');
+            const clearBtn = document.getElementById('btn-clear-selection');
+            const bulkCloneBtn = document.getElementById('btn-bulk-clone');
+            const bulkDestroyBtn = document.getElementById('btn-bulk-destroy');
+            const confirmDeleteBtn = document.getElementById('btn-confirm-delete-action');
+
+            function getSelectedCheckboxes() {
+                return rowCheckboxes.filter(cb => cb.checked);
+            }
+
+            function updateSelectionUI() {
+                const selected = getSelectedCheckboxes();
+                const total = rowCheckboxes.length;
+                const count = selected.length;
+
+                // Update row visual styling
+                rowCheckboxes.forEach(cb => {
+                    const row = document.getElementById(`doc-row-${cb.value}`);
+                    if (row) {
+                        if (cb.checked) {
+                            row.classList.add('bg-blue-50/70', 'dark:bg-blue-950/40');
+                        } else {
+                            row.classList.remove('bg-blue-50/70', 'dark:bg-blue-950/40');
+                        }
+                    }
+                });
+
+                // Update select-all checkbox state
+                if (selectAllCheckbox) {
+                    if (total === 0) {
+                        selectAllCheckbox.checked = false;
+                        selectAllCheckbox.indeterminate = false;
+                    } else if (count === total) {
+                        selectAllCheckbox.checked = true;
+                        selectAllCheckbox.indeterminate = false;
+                    } else if (count > 0) {
+                        selectAllCheckbox.checked = false;
+                        selectAllCheckbox.indeterminate = true;
+                    } else {
+                        selectAllCheckbox.checked = false;
+                        selectAllCheckbox.indeterminate = false;
+                    }
+                }
+
+                // Update bulk actions bar
+                if (bulkBar && countLabel && badgeLabel) {
+                    if (count > 0) {
+                        bulkBar.classList.remove('hidden');
+                        countLabel.textContent = count;
+                        badgeLabel.textContent = count;
+                    } else {
+                        bulkBar.classList.add('hidden');
+                        countLabel.textContent = '0';
+                        badgeLabel.textContent = '0';
+                    }
+                }
+            }
+
+            // Header Select All Handler
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', () => {
+                    const targetState = selectAllCheckbox.checked;
+                    rowCheckboxes.forEach(cb => {
+                        cb.checked = targetState;
+                    });
+                    updateSelectionUI();
+                });
+            }
+
+            // Individual Row Checkbox Handler
+            rowCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    updateSelectionUI();
+                });
+            });
+
+            // Clear Selection Handler
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    rowCheckboxes.forEach(cb => {
+                        cb.checked = false;
+                    });
+                    updateSelectionUI();
+                });
+            }
+
+            // Bulk Clone Action Handler
+            if (bulkCloneBtn) {
+                bulkCloneBtn.addEventListener('click', () => {
+                    const selected = getSelectedCheckboxes();
+                    if (selected.length === 0) return;
+
+                    const container = document.getElementById('bulk-clone-inputs-container');
+                    if (!container) return;
+                    container.innerHTML = '';
+
+                    selected.forEach(cb => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'uuids[]';
+                        input.value = cb.value;
+                        container.appendChild(input);
+                    });
+
+                    document.getElementById('form-bulk-clone').submit();
+                });
+            }
+
+            // Bulk Destroy Action Handler (Opens Custom Alert Modal)
+            if (bulkDestroyBtn) {
+                bulkDestroyBtn.addEventListener('click', () => {
+                    const selected = getSelectedCheckboxes();
+                    if (selected.length === 0) return;
+
+                    pendingDeleteMode = 'bulk';
+                    pendingSingleUuid = null;
+
+                    const titleEl = document.getElementById('custom-delete-title');
+                    const subtitleEl = document.getElementById('custom-delete-subtitle');
+                    const labelEl = document.getElementById('custom-delete-target-label');
+                    const previewEl = document.getElementById('custom-delete-preview-content');
+                    const confirmBtnText = document.getElementById('btn-confirm-delete-text');
+
+                    if (titleEl) titleEl.textContent = `Hapus ${selected.length} Naskah Terpilih`;
+                    if (subtitleEl) subtitleEl.textContent = `Anda akan menghapus ${selected.length} naskah penelitian sekaligus.`;
+                    if (labelEl) labelEl.textContent = `Daftar ${selected.length} Naskah yang Akan Dihapus:`;
+
+                    if (previewEl) {
+                        previewEl.innerHTML = '';
+                        const ul = document.createElement('ul');
+                        ul.className = 'list-disc list-inside space-y-1 text-slate-800 dark:text-slate-200';
+                        selected.forEach(cb => {
+                            const li = document.createElement('li');
+                            li.textContent = cb.getAttribute('data-title') || cb.value;
+                            ul.appendChild(li);
+                        });
+                        previewEl.appendChild(ul);
+                    }
+
+                    if (confirmBtnText) confirmBtnText.textContent = `Ya, Hapus (${selected.length}) Naskah`;
+
+                    const modal = document.getElementById('modal-custom-delete-alert');
+                    if (modal) modal.classList.remove('hidden');
+                });
+            }
+
+            // Confirm Delete Action in Custom Alert Modal
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.addEventListener('click', () => {
+                    if (pendingDeleteMode === 'bulk') {
+                        const selected = getSelectedCheckboxes();
+                        if (selected.length === 0) return;
+
+                        const container = document.getElementById('bulk-destroy-inputs-container');
+                        if (!container) return;
+                        container.innerHTML = '';
+
+                        selected.forEach(cb => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'uuids[]';
+                            input.value = cb.value;
+                            container.appendChild(input);
+                        });
+
+                        document.getElementById('form-bulk-destroy').submit();
+                    } else if (pendingDeleteMode === 'single' && pendingSingleUuid) {
+                        const singleForm = document.getElementById('form-single-destroy');
+                        if (singleForm) {
+                            singleForm.action = `/panel/documents/${pendingSingleUuid}`;
+                            singleForm.submit();
+                        }
+                    }
+                });
+            }
+
+            // Close Custom Delete Alert on Backdrop Click
+            const deleteModal = document.getElementById('modal-custom-delete-alert');
+            if (deleteModal) {
+                deleteModal.addEventListener('click', (e) => {
+                    if (e.target === deleteModal) {
+                        closeCustomDeleteAlert();
+                    }
+                });
+            }
+
+            // Close Custom Delete Alert on Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeCustomDeleteAlert();
+                }
+            });
+        });
+
+        // Global functions for single deletion and modal close
+        window.openSingleDeleteModal = function (uuid, title) {
+            pendingDeleteMode = 'single';
+            pendingSingleUuid = uuid;
+
+            const titleEl = document.getElementById('custom-delete-title');
+            const subtitleEl = document.getElementById('custom-delete-subtitle');
+            const labelEl = document.getElementById('custom-delete-target-label');
+            const previewEl = document.getElementById('custom-delete-preview-content');
+            const confirmBtnText = document.getElementById('btn-confirm-delete-text');
+
+            if (titleEl) titleEl.textContent = 'Konfirmasi Hapus Naskah';
+            if (subtitleEl) subtitleEl.textContent = 'Naskah berikut akan dihapus secara permanen dari basis data.';
+            if (labelEl) labelEl.textContent = 'Judul Naskah:';
+            if (previewEl) {
+                previewEl.innerHTML = `<span class="font-bold text-rose-800 dark:text-rose-200">${title}</span><br><span class="font-mono text-[10px] text-slate-500">UUID: ${uuid}</span>`;
+            }
+            if (confirmBtnText) confirmBtnText.textContent = 'Ya, Hapus Naskah Ini';
+
+            const modal = document.getElementById('modal-custom-delete-alert');
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        window.closeCustomDeleteAlert = function () {
+            pendingDeleteMode = null;
+            pendingSingleUuid = null;
+            const modal = document.getElementById('modal-custom-delete-alert');
+            if (modal) modal.classList.add('hidden');
+        };
+    })();
+</script>
 @endsection
