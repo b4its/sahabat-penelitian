@@ -494,6 +494,61 @@ export class DocumentEngine {
         let currentChapter = '';
         const MAX_PAGE_WEIGHT = 780; // Printable A4 body height budget in px (approx 220mm at 96dpi)
 
+        // Keep imported grid tables within the printable width, and distribute long
+        // tables across sheets by row rather than letting one block escape the page.
+        const paginateTable = (table) => {
+            const rows = Array.from(table.rows);
+            const columnCount = Math.max(0, ...rows.map(row => Array.from(row.cells)
+                .reduce((count, cell) => count + (cell.colSpan || 1), 0)));
+            if (columnCount > 8) table.classList.add('wordcraft-wide-table');
+
+            // A rowspan cannot be split without changing the meaning of the grid.
+            if (rows.length < 2 || table.querySelector('[rowspan]') || table.tFoot) return false;
+
+            const headerRows = Array.from(table.tHead?.rows || []);
+            const dataRows = rows.filter(row => !headerRows.includes(row));
+            if (!dataRows.length) return false;
+
+            const rowWeight = (row) => {
+                const longestCell = Math.max(0, ...Array.from(row.cells)
+                    .map(cell => (cell.textContent || '').trim().length));
+                const charsPerLine = columnCount > 8 ? 9 : Math.max(12, Math.floor(80 / Math.max(columnCount, 1)));
+                return 22 + Math.ceil(longestCell / charsPerLine) * (columnCount > 8 ? 11 : 16);
+            };
+            const headerWeight = headerRows.reduce((sum, row) => sum + rowWeight(row), 20);
+            let part = null;
+            let partWeight = 0;
+
+            for (const row of dataRows) {
+                const weight = rowWeight(row);
+                if (part && partWeight + weight > MAX_PAGE_WEIGHT && part.tBodies[0].rows.length) {
+                    currentBlocks.push(part);
+                    finalizeCurrentPage();
+                    part = null;
+                }
+                if (!part && currentBlocks.length && currentWeight + headerWeight + weight > MAX_PAGE_WEIGHT) {
+                    finalizeCurrentPage();
+                }
+                if (!part) {
+                    part = table.cloneNode(false);
+                    // Copy the column grid and repeat the heading on each sheet.
+                    if (table.querySelector(':scope > colgroup')) {
+                        part.appendChild(table.querySelector(':scope > colgroup').cloneNode(true));
+                    }
+                    if (table.tHead) part.appendChild(table.tHead.cloneNode(true));
+                    part.appendChild(document.createElement('tbody'));
+                    partWeight = headerWeight;
+                }
+                part.tBodies[0].appendChild(row.cloneNode(true));
+                partWeight += weight;
+            }
+            if (part) {
+                currentBlocks.push(part);
+                currentWeight += partWeight;
+            }
+            return true;
+        };
+
         const isLikelyCoverPage = (blocks) => {
             let totalWords = 0;
             let hasCoverKeyword = false;
@@ -647,6 +702,8 @@ export class DocumentEngine {
                     currentChapter = subText;
                 }
             }
+
+            if (tag === 'TABLE' && paginateTable(el)) continue;
 
             // 3. Regular Element (p, table, image, list, etc.)
             const weight = estimateElementWeight(el);

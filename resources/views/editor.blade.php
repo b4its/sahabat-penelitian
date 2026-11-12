@@ -243,6 +243,7 @@
         .page-sheet-body {
             outline: none;
             min-height: 200mm;
+            min-width: 0;
             font-family: 'Times New Roman', 'Liberation Serif', 'Nimbus Roman', 'DejaVu Serif', serif;
             font-size: 12pt;
             line-height: 1.5;
@@ -421,8 +422,42 @@
         .page-sheet-body table {
             border-collapse: collapse;
             width: 100%;
+            max-width: 100%;
+            table-layout: fixed;
             margin: 12pt 0;
             font-size: 10.5pt;
+        }
+
+        /* Imported Word grid widths are proportions, not permission to exceed the paper. */
+        .page-sheet-body table th,
+        .page-sheet-body table td {
+            overflow-wrap: anywhere;
+            word-break: normal;
+            min-width: 0;
+        }
+
+        .page-sheet-body table img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #document-editor table.wordcraft-wide-table,
+        .page-sheet-body table.wordcraft-wide-table {
+            font-size: 8pt;
+        }
+
+        #document-editor table.wordcraft-wide-table th,
+        #document-editor table.wordcraft-wide-table td,
+        .page-sheet-body table.wordcraft-wide-table th,
+        .page-sheet-body table.wordcraft-wide-table td {
+            padding: 2pt;
+            font-size: inherit;
+        }
+
+        #document-editor table.wordcraft-wide-table p,
+        .page-sheet-body table.wordcraft-wide-table p {
+            margin: 0;
+            line-height: 1.2;
         }
 
         #document-editor th, #document-editor td,
