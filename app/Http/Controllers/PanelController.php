@@ -174,13 +174,205 @@ class PanelController extends Controller
     /**
      * Delete a document from the system.
      */
-    public function destroyDocument(Request $request, string $uuid): RedirectResponse
+    public function destroyDocument(Request $request, string $uuid): RedirectResponse|JsonResponse
     {
         $doc = Document::where('uuid', $uuid)->firstOrFail();
         $title = $doc->title;
+        $doc->versions()->delete();
         $doc->delete();
 
+        AuditEvent::create([
+            'document_id' => null,
+            'event_type' => 'document_deleted',
+            'actor' => session('panel_user_name', 'Dr. Peneliti'),
+            'details' => ['title' => $title, 'single' => true],
+            'ip_address' => $request->ip(),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Dokumen {$title} telah berhasil dihapus.",
+            ]);
+        }
+
         return redirect()->route('panel.documents')->with('success', "Dokumen {$title} telah berhasil dihapus.");
+    }
+
+    /**
+     * Bulk clone multiple selected documents.
+     */
+    public function bulkCloneDocuments(Request $request): RedirectResponse|JsonResponse
+    {
+        $request->validate([
+            'uuids' => ['required', 'array', 'min:1'],
+            'uuids.*' => ['required', 'string'],
+        ]);
+
+        $uuids = $request->input('uuids', []);
+        $documents = Document::whereIn('uuid', $uuids)->get();
+
+        if ($documents->isEmpty()) {
+            return back()->with('error', 'Tidak ada naskah valid yang dipilih untuk diduplikasi.');
+        }
+
+        $clonedCount = 0;
+        foreach ($documents as $sourceDoc) {
+            $cloned = Document::create([
+                'uuid' => (string) Str::uuid(),
+                'title' => "(Salinan) {$sourceDoc->title}",
+                'content_html' => $sourceDoc->content_html,
+                'model_json' => $sourceDoc->model_json,
+                'restricted_mode' => $sourceDoc->restricted_mode,
+                'current_version' => 1,
+            ]);
+
+            DocumentVersion::create([
+                'document_id' => $cloned->id,
+                'version_number' => 1,
+                'title' => $cloned->title,
+                'content_html' => $sourceDoc->content_html ?? '<p>Konten salinan dokumen.</p>',
+                'author' => session('panel_user_name', 'Dr. Peneliti'),
+                'change_summary' => "Duplikasi massal dari berkas {$sourceDoc->title}",
+            ]);
+
+            AuditEvent::create([
+                'document_id' => $cloned->id,
+                'event_type' => 'document_cloned',
+                'actor' => session('panel_user_name', 'Dr. Peneliti'),
+                'details' => ['source_uuid' => $sourceDoc->uuid, 'bulk' => true],
+                'ip_address' => $request->ip(),
+            ]);
+
+            $clonedCount++;
+        }
+
+        $msg = "{$clonedCount} naskah penelitian berhasil diduplikasi.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'count' => $clonedCount,
+            ]);
+        }
+
+        return redirect()->route('panel.documents')->with('success', $msg);
+    }
+
+    /**
+     * Bulk delete multiple selected documents.
+     */
+    public function bulkDestroyDocuments(Request $request): RedirectResponse|JsonResponse
+    {
+        $request->validate([
+            'uuids' => ['required', 'array', 'min:1'],
+            'uuids.*' => ['required', 'string'],
+        ]);
+
+        $uuids = $request->input('uuids', []);
+        $documents = Document::whereIn('uuid', $uuids)->get();
+
+        if ($documents->isEmpty()) {
+            return back()->with('error', 'Tidak ada naskah valid yang dipilih untuk dihapus.');
+        }
+
+        $deletedCount = 0;
+        foreach ($documents as $doc) {
+            $title = $doc->title;
+            $doc->versions()->delete();
+            $doc->delete();
+
+            AuditEvent::create([
+                'document_id' => null,
+                'event_type' => 'document_deleted',
+                'actor' => session('panel_user_name', 'Dr. Peneliti'),
+                'details' => ['title' => $title, 'bulk' => true],
+                'ip_address' => $request->ip(),
+            ]);
+
+            $deletedCount++;
+        }
+
+        $msg = "{$deletedCount} naskah penelitian berhasil dihapus.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'count' => $deletedCount,
+            ]);
+        }
+
+        return redirect()->route('panel.documents')->with('success', $msg);
+    }
+
+    /**
+     * Update researcher profile data stored in session.
+     */
+    public function updateProfile(Request $request): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'role' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'affiliation' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        session([
+            'panel_user_name' => trim($validated['name']),
+            'panel_user_role' => trim($validated['role'] ?? 'Penulis Utama'),
+            'panel_user_email' => trim($validated['email'] ?? 'dr.peneliti@sahabatpenelitian.id'),
+            'panel_user_affiliation' => trim($validated['affiliation'] ?? 'Pusat Riset Komputasi & Bahasa'),
+        ]);
+
+        AuditEvent::create([
+            'document_id' => null,
+            'event_type' => 'profile_updated',
+            'actor' => session('panel_user_name'),
+            'details' => ['role' => session('panel_user_role'), 'email' => session('panel_user_email')],
+            'ip_address' => $request->ip(),
+        ]);
+
+        $msg = 'Profil peneliti berhasil diperbarui.';
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'user' => [
+                    'name' => session('panel_user_name'),
+                    'role' => session('panel_user_role'),
+                    'email' => session('panel_user_email'),
+                    'affiliation' => session('panel_user_affiliation'),
+                ],
+            ]);
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    /**
+     * Logout from the panel session.
+     */
+    public function logout(Request $request): RedirectResponse
+    {
+        AuditEvent::create([
+            'document_id' => null,
+            'event_type' => 'user_logged_out',
+            'actor' => session('panel_user_name', 'Dr. Peneliti'),
+            'details' => ['action' => 'logout'],
+            'ip_address' => $request->ip(),
+        ]);
+
+        $request->session()->forget([
+            'panel_user_name',
+            'panel_user_role',
+            'panel_user_email',
+            'panel_user_affiliation',
+        ]);
+
+        return redirect('/')->with('success', 'Anda telah berhasil keluar dari Panel Riset.');
     }
 
     /**

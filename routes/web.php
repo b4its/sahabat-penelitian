@@ -26,6 +26,10 @@ Route::prefix('panel')->name('panel.')->group(function () {
     Route::post('/documents', [PanelController::class, 'storeDocument'])->name('documents.store');
     Route::post('/documents/{uuid}/clone', [PanelController::class, 'cloneDocument'])->name('documents.clone');
     Route::delete('/documents/{uuid}', [PanelController::class, 'destroyDocument'])->name('documents.destroy');
+    Route::post('/documents/bulk-clone', [PanelController::class, 'bulkCloneDocuments'])->name('documents.bulk-clone');
+    Route::post('/documents/bulk-destroy', [PanelController::class, 'bulkDestroyDocuments'])->name('documents.bulk-destroy');
+    Route::post('/profile', [PanelController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/logout', [PanelController::class, 'logout'])->name('logout');
 });
 
 /*
