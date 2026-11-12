@@ -127,7 +127,7 @@ class DocxImporter
 
         // 4. Parse Main Document XML
         $dom = new DOMDocument;
-        @$dom->loadXML($docXml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+        @$dom->loadXML($docXml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('w', self::W_NS);
         $xpath->registerNamespace('r', self::R_NS);
@@ -254,7 +254,7 @@ class DocxImporter
     {
         $extractCleanText = function (string $xml): string {
             $dom = new DOMDocument;
-            @$dom->loadXML($xml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+            @$dom->loadXML($xml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
             $xpath = new DOMXPath($dom);
             $xpath->registerNamespace('w', self::W_NS);
             $texts = [];
@@ -490,7 +490,7 @@ class DocxImporter
         $xml = $zip->getFromName('word/_rels/document.xml.rels');
         if ($xml !== false) {
             $dom = new DOMDocument;
-            @$dom->loadXML($xml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+            @$dom->loadXML($xml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
             $relNodes = $dom->getElementsByTagName('Relationship');
             if ($relNodes->length === 0) {
                 $relNodes = $dom->getElementsByTagName('relationship');
@@ -527,7 +527,7 @@ class DocxImporter
         }
 
         $dom = new DOMDocument;
-        @$dom->loadXML($xml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+        @$dom->loadXML($xml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('w', self::W_NS);
 
@@ -578,7 +578,7 @@ class DocxImporter
         $themeXml = $zip->getFromName('word/theme/theme1.xml');
         if ($themeXml !== false) {
             $dom = new DOMDocument;
-            @$dom->loadXML($themeXml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+            @$dom->loadXML($themeXml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
             $xpath = new DOMXPath($dom);
             $xpath->registerNamespace('a', 'http://schemas.openxmlformats.org/drawingml/2006/main');
 
@@ -859,7 +859,7 @@ class DocxImporter
         }
 
         $dom = new DOMDocument;
-        @$dom->loadXML($xml, LIBXML_NOENT | LIBXML_NOWARNING | LIBXML_NOERROR);
+        @$dom->loadXML($xml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('w', self::W_NS);
 
