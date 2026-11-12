@@ -184,9 +184,12 @@ XML;
 
         if ($tag === 'p') {
             $alignXml = $this->getAlignXml($node);
-            $runsXml = $this->convertInlineNodesToRuns($node);
+            $isRtl = $node->getAttribute('dir') === 'rtl' || str_contains($node->getAttribute('style'), 'direction: rtl');
+            $bidiXml = $isRtl ? '<w:bidi/>' : '';
+            $runsXml = $this->convertInlineNodesToRuns($node, $isRtl ? ['rtl' => true] : []);
+            $pPr = ($alignXml !== '' || $bidiXml !== '') ? "<w:pPr>{$alignXml}{$bidiXml}</w:pPr>" : '';
 
-            return "<w:p>{$alignXml}{$runsXml}</w:p>";
+            return "<w:p>{$pPr}{$runsXml}</w:p>";
         }
 
         if ($tag === 'blockquote') {
@@ -233,6 +236,9 @@ XML;
             }
             if (str_contains($class, 'column-break')) {
                 return '<w:p><w:r><w:br w:type="column"/></w:r></w:p>';
+            }
+            if (str_contains($class, 'section-break')) {
+                return '<w:p><w:pPr><w:sectPr><w:type w:val="nextPage"/></w:sectPr></w:pPr></w:p>';
             }
 
             // Recurse children
@@ -334,6 +340,9 @@ XML;
         if (! empty($fmt['strike'])) {
             $props .= '<w:strike/>';
         }
+        if (! empty($fmt['rtl'])) {
+            $props .= '<w:rtl/>';
+        }
         if (! empty($fmt['sub'])) {
             $props .= '<w:vertAlign w:val="subscript"/>';
         }
@@ -356,17 +365,29 @@ XML;
     {
         $rowsXml = '';
         $trList = $node->getElementsByTagName('tr');
+        $isFirstRow = true;
 
         foreach ($trList as $tr) {
             $cellsXml = '';
+            $trPr = '<w:trPr>';
+            $hasHeaderCell = false;
+
             foreach ($tr->childNodes as $tc) {
                 if ($tc instanceof DOMElement && in_array(strtolower($tc->tagName), ['td', 'th'])) {
-                    $isHeader = strtolower($tc->tagName) === 'th';
+                    $isHeader = strtolower($tc->tagName) === 'th' || $isFirstRow;
+                    if (strtolower($tc->tagName) === 'th') {
+                        $hasHeaderCell = true;
+                    }
+
                     $colSpan = (int) ($tc->getAttribute('colspan') ?: 1);
+                    $rowSpan = (int) ($tc->getAttribute('rowspan') ?: 1);
 
                     $tcPr = '<w:tcPr>';
                     if ($colSpan > 1) {
                         $tcPr .= "<w:gridSpan w:val=\"{$colSpan}\"/>";
+                    }
+                    if ($rowSpan > 1) {
+                        $tcPr .= '<w:vMerge w:val="restart"/>';
                     }
                     if ($isHeader) {
                         $tcPr .= '<w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>';
@@ -380,7 +401,14 @@ XML;
                     $cellsXml .= "<w:tc>{$tcPr}<w:p>{$runsXml}</w:p></w:tc>";
                 }
             }
-            $rowsXml .= "<w:tr>{$cellsXml}</w:tr>";
+
+            if ($hasHeaderCell || $isFirstRow) {
+                $trPr .= '<w:tblHeader/>';
+            }
+            $trPr .= '</w:trPr>';
+
+            $rowsXml .= "<w:tr>{$trPr}{$cellsXml}</w:tr>";
+            $isFirstRow = false;
         }
 
         return <<<XML
@@ -388,6 +416,7 @@ XML;
   <w:tblPr>
     <w:tblStyle w:val="TableGrid"/>
     <w:tblW w:w="5000" w:type="pct"/>
+    <w:jc w:val="center"/>
     <w:tblBorders>
       <w:top w:val="single" w:sz="4" w:space="0" w:color="D1D5DB"/>
       <w:left w:val="single" w:sz="4" w:space="0" w:color="D1D5DB"/>
