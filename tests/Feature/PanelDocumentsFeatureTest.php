@@ -56,29 +56,32 @@ class PanelDocumentsFeatureTest extends TestCase
      */
     public function test_documents_filter_by_status(): void
     {
+        $titleOpen = 'Naskah Publik Terbuka '.uniqid();
+        $titleProtected = 'Naskah Terkunci Rahasia '.uniqid();
+
         Document::create([
             'uuid' => (string) Str::uuid(),
-            'title' => 'Naskah Publik Terbuka',
+            'title' => $titleOpen,
             'content_html' => '<p>Publik.</p>',
             'restricted_mode' => 'none',
         ]);
 
         Document::create([
             'uuid' => (string) Str::uuid(),
-            'title' => 'Naskah Terkunci Rahasia',
+            'title' => $titleProtected,
             'content_html' => '<p>Rahasia.</p>',
             'restricted_mode' => 'read_only',
         ]);
 
-        $responseProtected = $this->get('/panel/documents?status=protected');
+        $responseProtected = $this->get('/panel/documents?status=protected&q='.urlencode($titleProtected));
         $responseProtected->assertStatus(200);
-        $responseProtected->assertSee('Naskah Terkunci Rahasia', false);
-        $responseProtected->assertDontSee('Naskah Publik Terbuka', false);
+        $responseProtected->assertSee($titleProtected, false);
+        $responseProtected->assertDontSee($titleOpen, false);
 
-        $responseOpen = $this->get('/panel/documents?status=open');
+        $responseOpen = $this->get('/panel/documents?status=open&q='.urlencode($titleOpen));
         $responseOpen->assertStatus(200);
-        $responseOpen->assertSee('Naskah Publik Terbuka', false);
-        $responseOpen->assertDontSee('Naskah Terkunci Rahasia', false);
+        $responseOpen->assertSee($titleOpen, false);
+        $responseOpen->assertDontSee($titleProtected, false);
     }
 
     /**
@@ -171,5 +174,56 @@ class PanelDocumentsFeatureTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Dokumen Khusus Dari Panel.docx', false);
         $response->assertSee('Paragraf unik yang harus dimuat ke canvas editor.', false);
+    }
+
+    /**
+     * Test documents list applies pagination with 5 items per page when data exceeds 5.
+     */
+    public function test_documents_pagination_activates_when_count_exceeds_five(): void
+    {
+        // Seed 8 distinct documents
+        for ($i = 1; $i <= 8; $i++) {
+            Document::create([
+                'uuid' => (string) Str::uuid(),
+                'title' => "Naskah Penelitian Batch Serial Ke-{$i}",
+                'content_html' => "<p>Isi naskah serial {$i}.</p>",
+            ]);
+        }
+
+        // 1. First Page (Should display 5 items and pagination bar)
+        $responsePage1 = $this->get('/panel/documents');
+        $responsePage1->assertStatus(200);
+
+        // Pagination summary text
+        $responsePage1->assertSee('Menampilkan', false);
+        $responsePage1->assertSee('1', false);
+        $responsePage1->assertSee('5', false);
+        $responsePage1->assertSee('page=2', false);
+
+        // 2. Second Page
+        $responsePage2 = $this->get('/panel/documents?page=2');
+        $responsePage2->assertStatus(200);
+        $responsePage2->assertSee('Menampilkan', false);
+        $responsePage2->assertSee('6', false);
+    }
+
+    /**
+     * Test documents pagination maintains search query string across pages.
+     */
+    public function test_documents_pagination_preserves_search_query_parameters(): void
+    {
+        // Seed 7 documents matching "Kecerdasan Buatan"
+        for ($i = 1; $i <= 7; $i++) {
+            Document::create([
+                'uuid' => (string) Str::uuid(),
+                'title' => "Kecerdasan Buatan Terapan Volume {$i}",
+                'content_html' => "<p>Isi AI volume {$i}.</p>",
+            ]);
+        }
+
+        $response = $this->get('/panel/documents?q=Kecerdasan&page=1');
+        $response->assertStatus(200);
+        $response->assertSee('q=Kecerdasan', false);
+        $response->assertSee('page=2', false);
     }
 }

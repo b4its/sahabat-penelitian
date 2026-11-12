@@ -14,7 +14,7 @@
             <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                 <span>Manajemen Dokumen &amp; Naskah</span>
                 <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
-                    {{ $documents->count() }} Naskah
+                    {{ $documents->total() }} Naskah
                 </span>
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -207,6 +207,18 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+                <div class="text-slate-500 dark:text-slate-400 font-medium">
+                    Menampilkan <span class="font-bold text-slate-800 dark:text-slate-200">{{ $documents->firstItem() ?? 0 }}</span> sampai <span class="font-bold text-slate-800 dark:text-slate-200">{{ $documents->lastItem() ?? 0 }}</span> dari <span class="font-bold text-slate-800 dark:text-slate-200">{{ $documents->total() }}</span> naskah
+                </div>
+                @if ($documents->hasPages())
+                    <div class="pagination-container">
+                        {{ $documents->links() }}
+                    </div>
+                @endif
             </div>
         @else
             <div class="text-center py-16 px-4 space-y-3">

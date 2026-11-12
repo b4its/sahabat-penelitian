@@ -111,4 +111,27 @@ class PanelDashboardFeatureTest extends TestCase
         $response->assertSee('Integritas Format', false);
         $response->assertSee('Riset Bioinformatika Terapan 2026', false);
     }
+
+    /**
+     * Test panel dashboard paginates recent documents when total exceeds 5.
+     */
+    public function test_panel_dashboard_paginates_recent_documents_when_count_exceeds_five(): void
+    {
+        for ($i = 1; $i <= 7; $i++) {
+            Document::create([
+                'title' => "Draf Laporan Publikasi Seri {$i}",
+                'content_html' => "<p>Isi laporan {$i}.</p>",
+                'restricted_mode' => 'none',
+            ]);
+        }
+
+        $responsePage1 = $this->get('/panel/dashboard');
+        $responsePage1->assertStatus(200);
+        $responsePage1->assertSee('recent_page=2', false);
+        $responsePage1->assertSee('Halaman', false);
+
+        $responsePage2 = $this->get('/panel/dashboard?recent_page=2');
+        $responsePage2->assertStatus(200);
+        $responsePage2->assertSee('Halaman', false);
+    }
 }

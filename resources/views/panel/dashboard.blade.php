@@ -186,6 +186,17 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @if ($recentDocuments->hasPages())
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                            <span class="text-slate-500 dark:text-slate-400">
+                                Halaman <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->currentPage() }}</span> dari <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->lastPage() }}</span>
+                            </span>
+                            <div>
+                                {{ $recentDocuments->links() }}
+                            </div>
+                        </div>
+                    @endif
                 @else
                     <div class="text-center py-12 space-y-3">
                         <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 mx-auto flex items-center justify-center">
@@ -306,6 +317,17 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @if ($recentDocuments->hasPages())
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                            <span class="text-slate-500 dark:text-slate-400">
+                                Halaman <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->currentPage() }}</span> dari <span class="font-bold text-slate-800 dark:text-slate-200">{{ $recentDocuments->lastPage() }}</span>
+                            </span>
+                            <div>
+                                {{ $recentDocuments->links() }}
+                            </div>
+                        </div>
+                    @endif
                 @else
                     <p class="text-xs text-slate-500 dark:text-slate-400 text-center py-4">Belum ada aktivitas mutasi yang tercatat.</p>
                 @endif

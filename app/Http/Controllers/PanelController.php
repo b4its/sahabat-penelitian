@@ -27,7 +27,7 @@ class PanelController extends Controller
             ->orWhereNotNull('password_hash')
             ->count();
 
-        $recentDocuments = Document::latest()->take(5)->get();
+        $recentDocuments = Document::latest()->paginate(5, ['*'], 'recent_page')->withQueryString();
         $recentAudits = AuditEvent::latest()->take(6)->get();
 
         return view('panel.dashboard', [
@@ -56,13 +56,15 @@ class PanelController extends Controller
         if ($request->filled('status')) {
             $status = $request->input('status');
             if ($status === 'protected') {
-                $query->where('restricted_mode', '!=', 'none')->orWhereNotNull('password_hash');
+                $query->where(function ($q) {
+                    $q->where('restricted_mode', '!=', 'none')->orWhereNotNull('password_hash');
+                });
             } elseif ($status === 'open') {
                 $query->where('restricted_mode', 'none')->whereNull('password_hash');
             }
         }
 
-        $documents = $query->latest()->get();
+        $documents = $query->latest()->paginate(5)->withQueryString();
 
         return view('panel.documents', [
             'documents' => $documents,
