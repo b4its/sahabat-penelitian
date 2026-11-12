@@ -32,4 +32,11 @@ Route::prefix('api/documents')->name('documents.')->group(function () {
     Route::post('/transactions/invert', [DocumentController::class, 'invertTransaction'])->name('transactions.invert');
     Route::post('/search-replace', [DocumentController::class, 'searchReplace'])->name('search-replace');
     Route::post('/accessibility-audit', [DocumentController::class, 'accessibilityAudit'])->name('accessibility-audit');
+    Route::post('/review/revisions', [DocumentController::class, 'listRevisions'])->name('review.revisions');
+    Route::post('/review/accept', [DocumentController::class, 'acceptRevision'])->name('review.accept');
+    Route::post('/review/reject', [DocumentController::class, 'rejectRevision'])->name('review.reject');
+    Route::post('/review/accept-all', [DocumentController::class, 'acceptAllRevisions'])->name('review.accept-all');
+    Route::post('/review/reject-all', [DocumentController::class, 'rejectAllRevisions'])->name('review.reject-all');
+    Route::post('/review/compare', [DocumentController::class, 'compareDocuments'])->name('review.compare');
+    Route::post('/review/comments', [DocumentController::class, 'listComments'])->name('review.comments');
 });

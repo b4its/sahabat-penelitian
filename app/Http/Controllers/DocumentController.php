@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AiService;
 use App\Services\CitationService;
 use App\Services\DocumentModelService;
+use App\Services\DocumentReviewService;
 use App\Services\DocumentService;
 use App\Services\DocumentTransactionService;
 use App\Services\TocService;
@@ -22,6 +23,7 @@ class DocumentController extends Controller
         protected TocService $tocService,
         protected DocumentModelService $documentModelService = new DocumentModelService,
         protected DocumentTransactionService $documentTransactionService = new DocumentTransactionService,
+        protected DocumentReviewService $documentReviewService = new DocumentReviewService,
     ) {}
 
     /**
@@ -519,5 +521,131 @@ HTML;
         $audit = $this->documentTransactionService->auditAccessibility($model);
 
         return response()->json(array_merge(['success' => true], $audit));
+    }
+
+    /**
+     * List all tracked revisions in document HTML.
+     */
+    public function listRevisions(Request $request): JsonResponse
+    {
+        $request->validate(['html' => ['required', 'string']]);
+
+        $revisions = $this->documentReviewService->extractRevisions($request->input('html'));
+
+        return response()->json([
+            'success' => true,
+            'count' => count($revisions),
+            'revisions' => $revisions,
+        ]);
+    }
+
+    /**
+     * Accept a single tracked change.
+     */
+    public function acceptRevision(Request $request): JsonResponse
+    {
+        $request->validate([
+            'html' => ['required', 'string'],
+            'revision_id' => ['required', 'string'],
+        ]);
+
+        $html = $this->documentReviewService->acceptRevision(
+            $request->input('html'),
+            $request->input('revision_id')
+        );
+
+        return response()->json([
+            'success' => true,
+            'revision_id' => $request->input('revision_id'),
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * Reject a single tracked change.
+     */
+    public function rejectRevision(Request $request): JsonResponse
+    {
+        $request->validate([
+            'html' => ['required', 'string'],
+            'revision_id' => ['required', 'string'],
+        ]);
+
+        $html = $this->documentReviewService->rejectRevision(
+            $request->input('html'),
+            $request->input('revision_id')
+        );
+
+        return response()->json([
+            'success' => true,
+            'revision_id' => $request->input('revision_id'),
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * Accept all tracked changes in document HTML.
+     */
+    public function acceptAllRevisions(Request $request): JsonResponse
+    {
+        $request->validate(['html' => ['required', 'string']]);
+
+        $html = $this->documentReviewService->acceptAllRevisions($request->input('html'));
+
+        return response()->json([
+            'success' => true,
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * Reject all tracked changes in document HTML.
+     */
+    public function rejectAllRevisions(Request $request): JsonResponse
+    {
+        $request->validate(['html' => ['required', 'string']]);
+
+        $html = $this->documentReviewService->rejectAllRevisions($request->input('html'));
+
+        return response()->json([
+            'success' => true,
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * Compare two documents and generate a semantic blackline diff.
+     */
+    public function compareDocuments(Request $request): JsonResponse
+    {
+        $request->validate([
+            'original_html' => ['required', 'string'],
+            'modified_html' => ['required', 'string'],
+            'author' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $result = $this->documentReviewService->compareDocuments(
+            $request->input('original_html'),
+            $request->input('modified_html'),
+            $request->input('author', 'Reviewer')
+        );
+
+        return response()->json($result);
+    }
+
+    /**
+     * Extract anchored comments from document HTML.
+     */
+    public function listComments(Request $request): JsonResponse
+    {
+        $request->validate(['html' => ['required', 'string']]);
+
+        $comments = $this->documentReviewService->extractComments($request->input('html'));
+
+        return response()->json([
+            'success' => true,
+            'count' => count($comments),
+            'comments' => $comments,
+        ]);
     }
 }

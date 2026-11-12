@@ -240,6 +240,9 @@ XML;
             if (str_contains($class, 'section-break')) {
                 return '<w:p><w:pPr><w:sectPr><w:type w:val="nextPage"/></w:sectPr></w:pPr></w:p>';
             }
+            if (str_contains($class, 'table-of-contents') || str_contains($class, 'toc-container')) {
+                return '<w:p><w:fldSimple w:instr="TOC \o &quot;1-3&quot; \h \z \u"><w:r><w:t>DAFTAR ISI</w:t></w:r></w:fldSimple></w:p>';
+            }
 
             // Recurse children
             $res = '';
@@ -276,6 +279,23 @@ XML;
 
                 if ($tag === 'img') {
                     $runsXml .= $this->convertImageToInlineXml($child);
+
+                    continue;
+                }
+
+                if ($child->hasAttribute('data-revision-id') || $tag === 'ins' || $tag === 'del') {
+                    $revType = $child->getAttribute('data-revision-type') ?: ($tag === 'del' ? 'delete' : 'insert');
+                    $revAuthor = htmlspecialchars($child->getAttribute('data-author') ?: 'Reviewer', ENT_XML1, 'UTF-8');
+                    $revDate = htmlspecialchars($child->getAttribute('data-date') ?: now()->toIso8601String(), ENT_XML1, 'UTF-8');
+                    $revId = preg_replace('/\D/', '', $child->getAttribute('data-revision-id')) ?: rand(10, 9999);
+                    $innerRuns = $this->convertInlineNodesToRuns($child, $formatting);
+
+                    if ($revType === 'insert') {
+                        $runsXml .= "<w:ins w:id=\"{$revId}\" w:author=\"{$revAuthor}\" w:date=\"{$revDate}\">{$innerRuns}</w:ins>";
+                    } else {
+                        $delText = htmlspecialchars($child->textContent, ENT_XML1, 'UTF-8');
+                        $runsXml .= "<w:del w:id=\"{$revId}\" w:author=\"{$revAuthor}\" w:date=\"{$revDate}\"><w:r><w:delText xml:space=\"preserve\">{$delText}</w:delText></w:r></w:del>";
+                    }
 
                     continue;
                 }
