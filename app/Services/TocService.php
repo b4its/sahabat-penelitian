@@ -220,15 +220,15 @@ HTML;
     <!-- Microsoft Word TOC Field Action Bar -->
     <div class="toc-toolbar absolute -top-4 right-0 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2.5 py-1 rounded-md shadow-md flex items-center gap-2 text-[11px] opacity-0 group-hover:opacity-100 transition duration-150 z-20 no-print select-none" contenteditable="false">
         <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
-            <span>🔄 Perbarui Tabel...</span>
+            <span><i class="fa-solid fa-arrows-rotate mr-1"></i> Perbarui Tabel...</span>
         </button>
         <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
         <button type="button" class="btn-toc-customize hover:text-indigo-400 dark:hover:text-indigo-600 flex items-center gap-1 cursor-pointer" title="Kustomisasi Format Daftar Isi">
-            <span>⚙️ Format</span>
+            <span><i class="fa-solid fa-gear mr-1"></i> Format</span>
         </button>
         <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
         <button type="button" class="btn-toc-delete hover:text-red-400 text-red-300 dark:text-red-600 cursor-pointer" title="Hapus Daftar Isi dari Dokumen">
-            <span>🗑️ Hapus</span>
+            <span><i class="fa-solid fa-trash mr-1"></i> Hapus</span>
         </button>
     </div>
 

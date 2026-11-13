@@ -1258,7 +1258,7 @@ class DocumentService
                     'layout_options' => $layoutOptions,
                     'stats' => $stats,
                     'exported_at' => now()->toIso8601String(),
-                    'app' => 'VelScribe Wordcraft Studio',
+                    'app' => 'Sahabat Penelitian Xishie Studio',
                 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
                 return [

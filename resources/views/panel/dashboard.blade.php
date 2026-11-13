@@ -16,7 +16,7 @@
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="space-y-2 max-w-2xl">
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 text-white backdrop-blur-md">
-                    🎓 Ruang Kerja Akademik Terpadu
+                    <i class="fa-solid fa-graduation-cap"></i> Ruang Kerja Akademik Terpadu
                 </span>
                 <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
                     Selamat Datang di Panel Sahabat Penelitian
@@ -175,7 +175,7 @@
                                     <a
                                         href="{{ url('/editor?doc='.$doc->uuid) }}"
                                         class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-all flex items-center gap-1.5"
-                                        title="Buka dan sunting naskah ini di Wordcraft Editor"
+                                        title="Buka dan sunting naskah ini di Xishie Studio Editor"
                                     >
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -258,10 +258,10 @@
                     >
                         <div class="flex items-center gap-3">
                             <span class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-                                W
+                                <i class="fa-solid fa-pen-nib"></i>
                             </span>
                             <div>
-                                <h4 class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">Wordcraft Studio</h4>
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">Xishie Studio</h4>
                                 <p class="text-[10px] text-slate-500 dark:text-slate-400">Editor layout kertas A4 presisi</p>
                             </div>
                         </div>

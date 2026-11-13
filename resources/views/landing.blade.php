@@ -8,6 +8,9 @@
 
     @fonts
 
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <!-- Theme Initialization Script to prevent FOUC -->
     <script>
         if (localStorage.getItem('sahabat_theme') === 'dark' || (!('sahabat_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -254,7 +257,7 @@
             <!-- Badge Pill -->
             <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-blue-300/80 dark:border-blue-700/60 bg-blue-50/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-medium mb-8 backdrop-blur-md shadow-xs animate-float-slow">
                 <span class="flex h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
-                <span>✨ Standar Naskah Jurnal SINTA & Scopus Terintegrasi</span>
+                <span><i class="fa-solid fa-wand-magic-sparkles mr-1 text-amber-500"></i> Standar Naskah Jurnal SINTA & Scopus Terintegrasi</span>
             </div>
 
             <!-- Headline -->
@@ -324,7 +327,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center max-w-3xl mx-auto mb-12">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 mb-3">
-                        ⚡ Simulator Naskah Langsung
+                        <i class="fa-solid fa-bolt mr-1 text-amber-500"></i> Simulator Naskah Langsung
                     </span>
                     <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                         Eksplorasi Kehebatan Studio Naskah Secara Langsung
@@ -344,7 +347,7 @@
                             <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
                             <span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
                             <span class="ml-2 text-xs font-semibold text-slate-600 dark:text-slate-400 font-mono">
-                                VelScribe Wordcraft Studio — Naskah_Publikasi_2026.docx
+                                Sahabat Penelitian — Xishie Studio — Naskah_Publikasi_2026.docx
                             </span>
                         </div>
 
@@ -444,7 +447,7 @@
         <section id="features" class="py-20 md:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-950/80 mb-3">
-                    🚀 Kapabilitas Komprehensif
+                    <i class="fa-solid fa-rocket mr-1 text-blue-500"></i> Kapabilitas Komprehensif
                 </span>
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                     Enam Pilar Keunggulan Sahabat Penelitian
@@ -580,7 +583,7 @@
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center max-w-2xl mx-auto mb-12">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 mb-3">
-                        📊 Kalkulator Akademik Interaktif
+                        <i class="fa-solid fa-chart-column mr-1 text-emerald-500"></i> Kalkulator Akademik Interaktif
                     </span>
                     <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                         Cek Skor Kesiapan Publikasi Naskah Anda
@@ -664,7 +667,7 @@
                             </p>
 
                             <a href="{{ url('/editor') }}" class="w-full py-2.5 px-4 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/30 transition-all flex items-center justify-center gap-1.5">
-                                <span>Lengkapi di Wordcraft Studio</span>
+                                <span>Lengkapi di Xishie Studio</span>
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                             </a>
                         </div>
@@ -681,7 +684,7 @@
         <section id="workflow" class="py-20 md:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-950/80 mb-3">
-                    🗺️ Metodologi Efisien
+                    <i class="fa-solid fa-map-location-dot mr-1 text-indigo-500"></i> Metodologi Efisien
                 </span>
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                     Alur Riset Terpadu dari Ide Menuju Publikasi
@@ -757,7 +760,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center max-w-2xl mx-auto mb-16">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 mb-3">
-                        💬 Pengalaman Akademisi
+                        <i class="fa-solid fa-comments mr-1 text-cyan-500"></i> Pengalaman Akademisi
                     </span>
                     <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                         Dipercaya Oleh Peneliti dan Dosen di Seluruh Nusantara
@@ -769,7 +772,7 @@
                     <div class="glass-card rounded-3xl p-7 border border-blue-200 dark:border-blue-800/80 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
                         <div>
                             <div class="flex items-center gap-1 text-amber-400 mb-4">
-                                ★★★★★
+                                <span class="inline-flex gap-0.5 text-amber-400 text-xs"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></span>
                             </div>
                             <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic mb-6">
                                 "Sebelumnya saya selalu khawatir format tabel dan margin berubah ketika mahasiswa bimbingan mengirim draf. Dengan Sahabat Penelitian, berkas DOCX yang diekspor 100% identik di Microsoft Word desktop. Fitur Track Changes-nya sangat memudahkan bimbingan jarak jauh."
@@ -790,7 +793,7 @@
                     <div class="glass-card rounded-3xl p-7 border border-blue-200 dark:border-blue-800/80 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
                         <div>
                             <div class="flex items-center gap-1 text-amber-400 mb-4">
-                                ★★★★★
+                                <span class="inline-flex gap-0.5 text-amber-400 text-xs"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></span>
                             </div>
                             <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic mb-6">
                                 "Lookup DOI otomatis dari CrossRef menghemat waktu riset kami hingga 70%. Saya tidak perlu lagi merapikan spasi dan tanda koma satu per satu pada daftar pustaka format APA. Ini standar baru platform penulisan akademik di Indonesia."
@@ -811,7 +814,7 @@
                     <div class="glass-card rounded-3xl p-7 border border-blue-200 dark:border-blue-800/80 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
                         <div>
                             <div class="flex items-center gap-1 text-amber-400 mb-4">
-                                ★★★★★
+                                <span class="inline-flex gap-0.5 text-amber-400 text-xs"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></span>
                             </div>
                             <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic mb-6">
                                 "Menyelesaikan tesis 250 halaman tanpa crash sama sekali. Navigasi outline judul cepat dan generator daftar isinya sangat akurat. Yang terpenting, data penelitian saya tidak pernah bocor ke server pihak ketiga."
@@ -838,7 +841,7 @@
         <section id="faq" class="py-20 md:py-28 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-950/80 mb-3">
-                    ❓ Pertanyaan Umum
+                    <i class="fa-solid fa-circle-question mr-1 text-blue-500"></i> Pertanyaan Umum
                 </span>
                 <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                     Hal yang Sering Ditanyakan Peneliti
@@ -939,7 +942,7 @@
 
                 <div class="relative z-10 max-w-3xl mx-auto">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 text-white backdrop-blur-md mb-6">
-                        🎓 Siap Memulai Riset Anda Hari Ini?
+                        <i class="fa-solid fa-graduation-cap mr-1 text-sky-200"></i> Siap Memulai Riset Anda Hari Ini?
                     </span>
                     <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
                         Wujudkan Naskah Ilmiah Berkualitas Tinggi dengan Sahabat Penelitian
@@ -953,7 +956,7 @@
                             href="{{ url('/editor') }}"
                             class="px-8 py-4 rounded-2xl font-bold text-base text-blue-900 bg-white hover:bg-blue-50 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5"
                         >
-                            <span>Buka Wordcraft Studio Sekarang</span>
+                            <span>Buka Xishie Studio Sekarang</span>
                             <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>

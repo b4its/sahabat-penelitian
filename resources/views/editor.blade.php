@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>VelScribe Wordcraft Studio — Word & Document Editor Cerdas</title>
+    <title>Sahabat Penelitian — Xishie Studio — Word & Document Editor Cerdas</title>
 
     <script>
         (function() {
@@ -22,6 +22,8 @@
     </script>
 
     @fonts
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Vite Assets -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -700,7 +702,7 @@
                 <div class="hidden sm:block">
                     <div class="font-bold text-sm tracking-tight flex items-center gap-1.5 text-gray-900 dark:text-white">
                         <span>Sahabat Penelitian</span>
-                        <span class="text-[10px] px-1.5 py-0.2 rounded font-mono bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">VelScribe Wordcraft</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded font-mono bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">Sahabat Penelitian - Xishie Studio</span>
                     </div>
                 </div>
             </a>
@@ -725,7 +727,7 @@
                     DOCX
                 </span>
                 <span id="document-protection-badge" class="hidden inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shrink-0">
-                    🔒 Terproteksi
+                    <i class="fa-solid fa-lock mr-1"></i> Terproteksi
                 </span>
                 <span id="document-save-status" class="hidden md:inline-flex text-xs text-gray-500 dark:text-gray-400 items-center gap-1 shrink-0">
                     <svg class="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
@@ -779,12 +781,12 @@
                     <!-- Visual Switch Track -->
                     <div class="relative w-12 h-6 rounded-full bg-amber-100 dark:bg-indigo-950/80 border border-amber-300 dark:border-indigo-800/80 transition-colors px-1 flex items-center justify-between pointer-events-none">
                         <!-- Sun Icon (Gold/Amber) -->
-                        <span id="theme-icon-sun" class="text-[11px] transition-opacity duration-200 text-amber-500 leading-none">☀️</span>
+                        <span id="theme-icon-sun" class="text-[11px] transition-opacity duration-200 text-amber-500 leading-none"><i class="fa-solid fa-sun"></i></span>
                         <!-- Moon Icon (Indigo/Blue) -->
-                        <span id="theme-icon-moon" class="text-[11px] transition-opacity duration-200 text-indigo-400 opacity-40 leading-none">🌙</span>
+                        <span id="theme-icon-moon" class="text-[11px] transition-opacity duration-200 text-indigo-400 opacity-40 leading-none"><i class="fa-solid fa-moon"></i></span>
                         <!-- Sliding Knob with Active State Glow -->
                         <span id="theme-toggle-knob" class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-md transform translate-x-0 transition-transform duration-300 ease-in-out border border-gray-200 dark:border-indigo-400 flex items-center justify-center">
-                            <span id="knob-icon" class="text-[10px] leading-none select-none">☀️</span>
+                            <span id="knob-icon" class="text-[10px] leading-none select-none"><i class="fa-solid fa-sun"></i></span>
                         </span>
                     </div>
                     <!-- Label Text -->
@@ -820,12 +822,12 @@
             <button
                 id="btn-toggle-ai"
                 class="px-3 py-1.5 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                title="Buka Asisten AI Wordcraft"
+                title="Buka Asisten AI Xishie Studio"
             >
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path>
                 </svg>
-                <span class="hidden md:inline">Wordcraft AI</span>
+                <span class="hidden md:inline">Xishie Studio AI</span>
             </button>
         </div>
     </header>
@@ -857,7 +859,7 @@
             </button>
             <button data-ribbon-tab="ai" class="ribbon-tab-btn px-3.5 py-1.5 font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1 transition cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path></svg>
-                Asisten AI Wordcraft
+                Asisten AI Xishie Studio
             </button>
         </div>
 
@@ -879,13 +881,13 @@
             <div class="flex items-center gap-1.5 pr-3 border-r border-indigo-200 dark:border-indigo-900">
                 <span class="text-gray-500 font-semibold">Pilih Template:</span>
                 <button data-load-sample="skripsi" class="px-2.5 py-1 rounded bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 font-medium transition">
-                    🎓 Skripsi (4-4-3-3 cm)
+                    <i class="fa-solid fa-graduation-cap mr-1 text-indigo-500"></i> Skripsi (4-4-3-3 cm)
                 </button>
                 <button data-load-sample="report" class="px-2.5 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 font-medium transition">
-                    📑 Laporan Riset
+                    <i class="fa-solid fa-file-lines mr-1 text-blue-500"></i> Laporan Riset
                 </button>
                 <button data-load-sample="wordcraft" class="px-2.5 py-1 rounded bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 font-medium transition">
-                    ✍️ Naskah Kreatif
+                    <i class="fa-solid fa-pen-nib mr-1 text-purple-500"></i> Naskah Kreatif
                 </button>
             </div>
 
@@ -908,13 +910,13 @@
             <!-- Alat Dokumen Server & Bisnis -->
             <div class="flex items-center gap-1.5 pl-3 border-l border-indigo-200 dark:border-indigo-900">
                 <button type="button" data-action="open-version-history-modal" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 rounded flex items-center gap-1 transition cursor-pointer" title="Riwayat Versi Server & Snapshot">
-                    <span>🕰️ Riwayat Versi</span>
+                    <span><i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat Versi</span>
                 </button>
                 <button type="button" data-action="open-protection-modal" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 rounded flex items-center gap-1 transition cursor-pointer" title="Proteksi Sandi Dokumen & Batasi Suntingan">
-                    <span>🔒 Proteksi Sandi</span>
+                    <span><i class="fa-solid fa-lock mr-1"></i> Proteksi Sandi</span>
                 </button>
                 <button type="button" data-action="open-mail-merge-modal" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 rounded flex items-center gap-1 transition cursor-pointer" title="Surat Masal & Cetak Amplop/Label CSV">
-                    <span>✉️ Surat Masal</span>
+                    <span><i class="fa-solid fa-envelope mr-1"></i> Surat Masal</span>
                 </button>
             </div>
         </div>
@@ -1011,16 +1013,16 @@
                         </button>
                         <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
                         <button type="button" data-action="add-space-before" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>➕ Tambah Spasi Sebelum Paragraf</span>
+                            <span><i class="fa-solid fa-plus mr-1"></i> Tambah Spasi Sebelum Paragraf</span>
                         </button>
                         <button type="button" data-action="remove-space-before" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-500">
-                            <span>➖ Hapus Spasi Sebelum Paragraf</span>
+                            <span><i class="fa-solid fa-minus mr-1"></i> Hapus Spasi Sebelum Paragraf</span>
                         </button>
                         <button type="button" data-action="add-space-after" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>➕ Tambah Spasi Sesudah Paragraf</span>
+                            <span><i class="fa-solid fa-plus mr-1"></i> Tambah Spasi Sesudah Paragraf</span>
                         </button>
                         <button type="button" data-action="remove-space-after" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-500">
-                            <span>➖ Hapus Spasi Sesudah Paragraf</span>
+                            <span><i class="fa-solid fa-minus mr-1"></i> Hapus Spasi Sesudah Paragraf</span>
                         </button>
                         <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
                         <button type="button" data-action="open-paragraph-modal" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 font-medium text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
@@ -1152,7 +1154,7 @@
                         </button>
                         <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
                         <button type="button" data-para-border="none" class="w-full px-3 py-1.5 text-left hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 flex items-center gap-2">
-                            <span>✕</span> Tanpa Batas (No Border)
+                            <span><i class="fa-solid fa-xmark mr-1"></i></span> Tanpa Batas (No Border)
                         </button>
                     </div>
                 </div>
@@ -1216,21 +1218,21 @@
 
             <!-- Halaman Sampul & Pemisah -->
             <button data-action="insert-cover-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <span>📘 Halaman Sampul</span>
+                <span><i class="fa-solid fa-book mr-1"></i> Halaman Sampul</span>
             </button>
 
             <button onclick="window.documentEngine.insertPageBreak()" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition">
-                <span>📄 Pemisah Halaman</span>
+                <span><i class="fa-solid fa-file mr-1"></i> Pemisah Halaman</span>
             </button>
 
             <!-- Insert Table of Contents -->
             <button id="btn-insert-toc" class="px-3 py-1.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-200 transition cursor-pointer">
-                <span>📑 Daftar Isi Otomatis</span>
+                <span><i class="fa-solid fa-file-lines mr-1"></i> Daftar Isi Otomatis</span>
             </button>
 
             <!-- Insert Bibliography (Daftar Pustaka) -->
             <button data-action="insert-bibliography-quick" class="px-3 py-1.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-200 transition cursor-pointer" title="Sisipkan Daftar Pustaka (Bibliography) Otomatis seperti Word">
-                <span>📚 Daftar Pustaka</span>
+                <span><i class="fa-solid fa-book-bookmark mr-1"></i> Daftar Pustaka</span>
             </button>
 
             <button data-action="insert-table-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
@@ -1258,7 +1260,7 @@
             </button>
 
             <button data-action="header-footer-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Konfigurasi running header, footer, dan nomor halaman">
-                <span>📋 Header & Footer</span>
+                <span><i class="fa-solid fa-clipboard mr-1"></i> Header &amp; Footer</span>
             </button>
 
             <button data-action="page-number-modal" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition" title="Format dan penomoran halaman">
@@ -1266,7 +1268,7 @@
             </button>
 
             <button onclick="window.documentEngine.insertCallout('info', 'Catatan Penelitian', 'Informasi terverifikasi untuk analisis bab selanjutnya.')" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
-                <span>💬 Callout Box</span>
+                <span><i class="fa-solid fa-comment-dots mr-1"></i> Callout Box</span>
             </button>
 
             <button onclick="window.documentEngine.insertHorizontalRule()" class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition">
@@ -1282,7 +1284,7 @@
                 </button>
                 <div id="drop-cap-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
                     <button type="button" data-drop-cap-preset="none" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                        <span>❌</span> Tidak Ada (None)
+                        <span><i class="fa-solid fa-ban mr-1"></i></span> Tidak Ada (None)
                     </button>
                     <button type="button" data-drop-cap-preset="dropped" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
                         <span class="font-serif font-black text-indigo-600">A</span> Turun di Naskah (Dropped)
@@ -1357,18 +1359,18 @@
                 <!-- Columns Dropdown -->
                 <div class="relative inline-block" id="columns-dropdown-wrapper">
                     <button id="btn-columns-dropdown" type="button" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Format Kolom Dokumen (Columns)">
-                        <span>🏛️ Kolom</span>
+                        <span><i class="fa-solid fa-table-columns mr-1"></i> Kolom</span>
                         <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="columns-dropdown-menu" class="hidden absolute left-0 mt-1 w-44 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
                         <button type="button" data-column-val="1" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 font-semibold">
-                            <span>📄</span> Satu Kolom (Standar)
+                            <span><i class="fa-solid fa-file mr-1"></i></span> Satu Kolom (Standar)
                         </button>
                         <button type="button" data-column-val="2" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📰</span> Dua Kolom (Jurnal)
+                            <span><i class="fa-solid fa-newspaper mr-1"></i></span> Dua Kolom (Jurnal)
                         </button>
                         <button type="button" data-column-val="3" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📑</span> Tiga Kolom (Buletin)
+                            <span><i class="fa-solid fa-file-lines mr-1"></i></span> Tiga Kolom (Buletin)
                         </button>
                         <button type="button" data-column-val="left" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
                             <span>◀️</span> Kiri (1/3 : 2/3)
@@ -1382,24 +1384,24 @@
                 <!-- Breaks Dropdown -->
                 <div class="relative inline-block" id="breaks-dropdown-wrapper">
                     <button id="btn-breaks-dropdown" type="button" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Pemisah Halaman dan Bagian (Breaks)">
-                        <span>✂️ Pemisah</span>
+                        <span><i class="fa-solid fa-scissors mr-1"></i> Pemisah</span>
                         <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="breaks-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
                         <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase">Pemisah Halaman</div>
                         <button type="button" data-break-type="page" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📄</span> Halaman Baru (Page Break)
+                            <span><i class="fa-solid fa-file mr-1"></i></span> Halaman Baru (Page Break)
                         </button>
                         <button type="button" data-break-type="column" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>🏛️</span> Kolom (Column Break)
+                            <span><i class="fa-solid fa-table-columns mr-1"></i></span> Kolom (Column Break)
                         </button>
                         <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
                         <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase">Pemisah Bagian (Section)</div>
                         <button type="button" data-break-type="section-next" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📑</span> Halaman Berikutnya
+                            <span><i class="fa-solid fa-file-lines mr-1"></i></span> Halaman Berikutnya
                         </button>
                         <button type="button" data-break-type="section-continuous" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📜</span> Berkelanjutan (Continuous)
+                            <span><i class="fa-solid fa-scroll mr-1"></i></span> Berkelanjutan (Continuous)
                         </button>
                     </div>
                 </div>
@@ -1407,7 +1409,7 @@
                 <!-- Hyphenation Dropdown -->
                 <div class="relative inline-block" id="hyphenation-dropdown-wrapper">
                     <button id="btn-hyphenation-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Pemenggalan Kata / Tanda Hubung (Hyphenation)">
-                        <span>🔤 Tanda Hubung</span>
+                        <span><i class="fa-solid fa-font mr-1"></i> Tanda Hubung</span>
                         <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="hyphenation-dropdown-menu" class="hidden absolute left-0 mt-1 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
@@ -1428,21 +1430,21 @@
                 <!-- Line Numbers Dropdown (Microsoft Word Standard) -->
                 <div class="relative inline-block" id="line-numbers-dropdown-wrapper">
                     <button id="btn-line-numbers-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Penomoran Baris Dokumen (Line Numbers)">
-                        <span>🔢 Baris</span>
+                        <span><i class="fa-solid fa-list-ol mr-1"></i> Baris</span>
                         <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="line-numbers-dropdown-menu" class="hidden absolute left-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
                         <button type="button" data-line-number-val="none" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 font-semibold">
-                            <span>❌</span> Tidak Ada (None)
+                            <span><i class="fa-solid fa-ban mr-1"></i></span> Tidak Ada (None)
                         </button>
                         <button type="button" data-line-number-val="continuous" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📜</span> Berkelanjutan (Continuous)
+                            <span><i class="fa-solid fa-scroll mr-1"></i></span> Berkelanjutan (Continuous)
                         </button>
                         <button type="button" data-line-number-val="page" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📄</span> Mulai Ulang Tiap Halaman
+                            <span><i class="fa-solid fa-file mr-1"></i></span> Mulai Ulang Tiap Halaman
                         </button>
                         <button type="button" data-line-number-val="suppress" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>🚫</span> Abaikan Paragraf Saat Ini
+                            <span><i class="fa-solid fa-ban mr-1"></i></span> Abaikan Paragraf Saat Ini
                         </button>
                         <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
                         <button type="button" data-action="open-line-numbers-modal" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium">
@@ -1454,22 +1456,22 @@
                 <!-- Watermark Dropdown (Microsoft Word Standard) -->
                 <div class="relative inline-block" id="watermark-dropdown-wrapper">
                     <button id="btn-watermark-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Cap Air Dokumen (Watermark)">
-                        <span>💧 Cap Air</span>
+                        <span><i class="fa-solid fa-droplet mr-1"></i> Cap Air</span>
                         <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="watermark-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 py-1 text-xs text-gray-800 dark:text-gray-200">
                         <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase">Standar Word</div>
                         <button type="button" data-watermark-preset="DRAF" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📝</span> DRAF (Draft)
+                            <span><i class="fa-solid fa-file-pen mr-1"></i></span> DRAF (Draft)
                         </button>
                         <button type="button" data-watermark-preset="RAHASIA" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2 font-semibold text-red-600">
-                            <span>🔒</span> RAHASIA (Confidential)
+                            <span><i class="fa-solid fa-lock mr-1"></i></span> RAHASIA (Confidential)
                         </button>
                         <button type="button" data-watermark-preset="JANGAN DISALIN" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>🚫</span> JANGAN DISALIN
+                            <span><i class="fa-solid fa-ban mr-1"></i></span> JANGAN DISALIN
                         </button>
                         <button type="button" data-watermark-preset="CONTOH" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                            <span>📋</span> CONTOH (Sample)
+                            <span><i class="fa-solid fa-clipboard mr-1"></i></span> CONTOH (Sample)
                         </button>
                         <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
                         <button type="button" data-action="open-watermark-modal" class="w-full px-3 py-1.5 text-left hover:bg-indigo-50 dark:hover:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium">
@@ -1484,7 +1486,7 @@
                 <!-- Page Color Dropdown (Microsoft Word Standard) -->
                 <div class="relative inline-block" id="page-color-dropdown-wrapper">
                     <button id="btn-page-color-dropdown" type="button" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Warna Latar Lembar Dokumen (Page Color)">
-                        <span>🎨 Warna</span>
+                        <span><i class="fa-solid fa-palette mr-1"></i> Warna</span>
                         <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="page-color-dropdown-menu" class="hidden absolute left-0 mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 p-2 text-xs text-gray-800 dark:text-gray-200 space-y-2">
@@ -1511,7 +1513,7 @@
 
                 <!-- Page Borders Button (Microsoft Word Standard) -->
                 <button type="button" id="btn-open-page-borders-modal" data-action="open-page-borders-modal" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 flex items-center gap-1 transition" title="Batas Halaman (Page Borders)">
-                    <span>🖼️ Batas</span>
+                    <span><i class="fa-solid fa-image mr-1"></i> Batas</span>
                 </button>
             </div>
 
@@ -1564,13 +1566,13 @@
             <!-- Group 3: Quick Templates & Headers -->
             <div class="flex items-center gap-2">
                 <button onclick="window.documentEngine.setMarginPreset('skripsi'); window.documentEngine.setFontFamily('\'Times New Roman\', serif'); window.documentEngine.setFontSize('12pt'); window.documentEngine.setLineSpacing('1.5'); window.uiController.showToast('Format Skripsi 4-4-3-3 cm diterapkan!');" class="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold hover:bg-indigo-100 transition">
-                    🎓 Terapkan Standar Skripsi
+                    <i class="fa-solid fa-graduation-cap mr-1"></i> Terapkan Standar Skripsi
                 </button>
                 <button data-action="header-footer-modal" class="px-2.5 py-1 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-medium hover:bg-gray-100 transition" title="Konfigurasi running header, footer, dan nomor halaman">
-                    📋 Header & Footer
+                    <i class="fa-solid fa-clipboard mr-1"></i> Header &amp; Footer
                 </button>
                 <button data-action="page-setup-modal" class="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-xs" title="Buka Kotak Dialog Penyetelan Halaman Word">
-                    📐 Penyetelan Halaman
+                    <i class="fa-solid fa-ruler-combined mr-1"></i> Penyetelan Halaman
                 </button>
             </div>
         </div>
@@ -1591,20 +1593,20 @@
                     <span>Lacak Perubahan</span>
                 </button>
                 <button type="button" id="btn-review-accept-all" class="px-2 py-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded font-medium hover:bg-emerald-100 transition cursor-pointer" title="Terima Seluruh Revisi Dokumen">
-                    ✓ Terima Semua
+                    <i class="fa-solid fa-check mr-1"></i> Terima Semua
                 </button>
                 <button type="button" id="btn-review-reject-all" class="px-2 py-1.5 bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 rounded font-medium hover:bg-rose-100 transition cursor-pointer" title="Tolak Seluruh Revisi Dokumen">
-                    ✕ Tolak Semua
+                    <i class="fa-solid fa-xmark mr-1"></i> Tolak Semua
                 </button>
                 <button type="button" id="btn-review-compare-modal" data-action="open-compare-modal" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded flex items-center gap-1 font-medium hover:bg-gray-100 transition cursor-pointer" title="Bandingkan Dokumen Asli dan Revisi (Blackline Diff)">
-                    <span>⚖️ Bandingkan...</span>
+                    <span><i class="fa-solid fa-scale-balanced mr-1"></i> Bandingkan...</span>
                 </button>
             </div>
 
             <!-- Audit Aksesibilitas -->
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button type="button" id="btn-review-accessibility" data-action="open-accessibility-modal" class="px-2.5 py-1.5 bg-blue-50 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 rounded font-medium hover:bg-blue-100 flex items-center gap-1 transition cursor-pointer" title="Periksa Aksesibilitas Dokumen: Heading Hierarki, ALT Gambar, Header Tabel">
-                    <span>♿ Cek Aksesibilitas</span>
+                    <span><i class="fa-solid fa-universal-access mr-1"></i> Cek Aksesibilitas</span>
                 </button>
             </div>
             <!-- Table of Contents Group (Microsoft Word References Standard) -->
@@ -1614,7 +1616,7 @@
                 <!-- 1. TOC Gallery Dropdown Button -->
                 <div class="relative inline-block" id="toc-dropdown-wrapper">
                     <button id="btn-toc-dropdown" type="button" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Galeri Format Daftar Isi Microsoft Word">
-                        <span>📑 Daftar Isi</span>
+                        <span><i class="fa-solid fa-file-lines mr-1"></i> Daftar Isi</span>
                         <svg class="w-3.5 h-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
 
@@ -1623,7 +1625,7 @@
                         <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tabel Otomatis Word</div>
 
                         <button type="button" data-toc-action="insert-auto1" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-start gap-2.5 transition cursor-pointer">
-                            <span class="text-base">📋</span>
+                            <span class="text-base"><i class="fa-solid fa-clipboard"></i></span>
                             <div>
                                 <div class="font-bold text-gray-900 dark:text-gray-100">Tabel Otomatis 1</div>
                                 <div class="text-[11px] text-gray-500 dark:text-gray-400">Judul "Konten", Level 1-3 dengan Titik-titik</div>
@@ -1631,7 +1633,7 @@
                         </button>
 
                         <button type="button" data-toc-action="insert-auto2" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-start gap-2.5 transition cursor-pointer">
-                            <span class="text-base">📑</span>
+                            <span class="text-base"><i class="fa-solid fa-file-lines"></i></span>
                             <div>
                                 <div class="font-bold text-gray-900 dark:text-gray-100">Tabel Otomatis 2 (Standar)</div>
                                 <div class="text-[11px] text-gray-500 dark:text-gray-400">Judul "Daftar Isi", Format Skripsi & Akademik</div>
@@ -1639,7 +1641,7 @@
                         </button>
 
                         <button type="button" data-toc-action="insert-manual" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-start gap-2.5 transition cursor-pointer">
-                            <span class="text-base">✍️</span>
+                            <span class="text-base"><i class="fa-solid fa-pen-nib"></i></span>
                             <div>
                                 <div class="font-bold text-gray-900 dark:text-gray-100">Tabel Manual</div>
                                 <div class="text-[11px] text-gray-500 dark:text-gray-400">Templat isian manual dengan placeholder</div>
@@ -1649,12 +1651,12 @@
                         <div class="my-1 border-t border-gray-100 dark:border-gray-800"></div>
 
                         <button type="button" data-action="open-custom-toc-modal" class="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 flex items-center gap-2 font-medium text-indigo-600 dark:text-indigo-400 transition cursor-pointer">
-                            <span>⚙️</span>
+                            <span><i class="fa-solid fa-gear"></i></span>
                             <span>Kustomisasi Daftar Isi...</span>
                         </button>
 
                         <button type="button" data-toc-action="remove-toc" class="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-medium text-red-600 dark:text-red-400 transition cursor-pointer">
-                            <span>🗑️</span>
+                            <span><i class="fa-solid fa-trash-can"></i></span>
                             <span>Hapus Daftar Isi</span>
                         </button>
                     </div>
@@ -1682,10 +1684,10 @@
             <!-- PUEBI & Tata Bahasa -->
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button id="btn-puebi-check" onclick="window.wordcraftAi.executeAction('grammar')" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded font-semibold flex items-center gap-1.5 hover:bg-emerald-100 transition cursor-pointer">
-                    <span>🛠️ Koreksi PUEBI</span>
+                    <span><i class="fa-solid fa-screwdriver-wrench mr-1"></i> Koreksi PUEBI</span>
                 </button>
                 <button id="btn-word-stats" data-action="open-stats-modal" class="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition cursor-pointer" title="Hitung Kata & Statistik">
-                    <span>📊 Statistik</span>
+                    <span><i class="fa-solid fa-chart-column mr-1"></i> Statistik</span>
                 </button>
                 <button id="btn-read-aloud" class="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1 hover:bg-gray-100 transition cursor-pointer" title="Bacakan Naskah Dokumen dengan Suara">
                     <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
@@ -1699,12 +1701,12 @@
 
                 <!-- 1. Insert In-text Citation -->
                 <button data-action="insert-citation-modal" class="px-2.5 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded font-semibold flex items-center gap-1.5 hover:bg-indigo-100 transition cursor-pointer shadow-2xs border border-indigo-200 dark:border-indigo-800" title="Sisipkan Kutipan Sumber di Posisi Kursor (Insert Citation)">
-                    <span>➕ Sisipkan Sitasi</span>
+                    <span><i class="fa-solid fa-plus mr-1"></i> Sisipkan Sitasi</span>
                 </button>
 
                 <!-- 2. Manage Sources -->
                 <button data-action="open-source-manager" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition cursor-pointer border border-gray-200 dark:border-gray-700 shadow-2xs" title="Buka Pengelola Sumber Pustaka (Manage Sources)">
-                    <span>📋 Kelola Sumber</span>
+                    <span><i class="fa-solid fa-clipboard mr-1"></i> Kelola Sumber</span>
                 </button>
 
                 <!-- 3. Citation Style Selector -->
@@ -1722,7 +1724,7 @@
 
                 <!-- 4. Insert Bibliography (Daftar Pustaka) -->
                 <button data-action="insert-bibliography-quick" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Sisipkan Daftar Pustaka Lengkap Sesuai Standar Word">
-                    <span>📚 Sisipkan Daftar Pustaka</span>
+                    <span><i class="fa-solid fa-book-bookmark mr-1"></i> Sisipkan Daftar Pustaka</span>
                 </button>
 
                 <!-- 5. Update Bibliography -->
@@ -1734,13 +1736,13 @@
                 <!-- 6. Academic Web Search Engine -->
                 <button data-action="open-academic-search" class="px-2.5 py-1.5 bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 rounded font-medium flex items-center gap-1.5 hover:bg-purple-100 transition cursor-pointer border border-purple-200 dark:border-purple-800 shadow-2xs" title="Cari Jurnal Ilmiah, Buku, dan Artikel Online (CrossRef, Google Scholar, DOI)">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <span>🔍 Mesin Pencari Pustaka</span>
+                    <span><i class="fa-solid fa-magnifying-glass mr-1"></i> Mesin Pencari Pustaka</span>
                 </button>
             </div>
 
             <!-- Mode Fokus Zen -->
             <button data-layout-mode="zen" class="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded font-medium flex items-center gap-1.5 hover:bg-gray-100 transition cursor-pointer">
-                <span>🧘 Mode Fokus</span>
+                <span><i class="fa-solid fa-expand mr-1"></i> Mode Fokus</span>
             </button>
         </div>
 
@@ -1774,52 +1776,52 @@
                 <!-- Segmented Theme Switch -->
                 <div class="inline-flex items-center rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 border border-gray-200 dark:border-gray-700">
                     <button id="segment-theme-light" data-theme-set="light" class="theme-segment-btn px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 cursor-pointer">
-                        <span>☀️</span>
+                        <span><i class="fa-solid fa-sun"></i></span>
                         <span>Terang</span>
                     </button>
                     <button id="segment-theme-dark" data-theme-set="dark" class="theme-segment-btn px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 cursor-pointer">
-                        <span>🌙</span>
+                        <span><i class="fa-solid fa-moon"></i></span>
                         <span>Gelap</span>
                     </button>
                     <button id="segment-theme-system" data-theme-set="system" class="theme-segment-btn px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 cursor-pointer">
-                        <span>💻</span>
+                        <span><i class="fa-solid fa-desktop"></i></span>
                         <span>Sistem</span>
                     </button>
                 </div>
                 <button id="btn-toggle-dark-sheet" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-xs flex items-center gap-1.5 cursor-pointer border border-gray-200 dark:border-gray-700 transition" title="Ganti Warna Lembar Kertas (Terang / Gelap)">
-                    <span id="sheet-theme-icon">📄</span>
+                    <span id="sheet-theme-icon"><i class="fa-solid fa-file"></i></span>
                     <span id="sheet-theme-label">Lembar Putih</span>
                 </button>
                 <button data-action="open-theme-modal" class="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer" title="Buka Pengaturan Tema & Visual Tampilan Lengkap">
-                    <span>🎨</span>
+                    <span><i class="fa-solid fa-palette"></i></span>
                 </button>
             </div>
 
             <button data-action="open-shortcuts-modal" class="px-2.5 py-1 text-gray-700 dark:text-gray-300 hover:bg-gray-100 rounded text-xs flex items-center gap-1">
-                <span>⌨️ Pintasan Keyboard (Ctrl+/)</span>
+                <span><i class="fa-solid fa-keyboard mr-1"></i> Pintasan Keyboard (Ctrl+/)</span>
             </button>
         </div>
 
-        <!-- Ribbon Panel 6: ASISTEN AI WORDCRAFT -->
+        <!-- Ribbon Panel 6: ASISTEN AI XISHIE STUDIO -->
         <div data-ribbon-panel="ai" class="hidden flex-wrap items-center px-4 py-2 gap-2 overflow-x-auto text-xs bg-purple-50/50 dark:bg-purple-950/20">
-            <span class="text-xs font-semibold text-purple-700 dark:text-purple-300">Aksi Cepat Wordcraft:</span>
+            <span class="text-xs font-semibold text-purple-700 dark:text-purple-300">Aksi Cepat Xishie Studio:</span>
             <button onclick="window.wordcraftAi.executeAction('continue')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
-                ⚡ Lanjutkan Tulisan
+                <i class="fa-solid fa-bolt mr-1"></i> Lanjutkan Tulisan
             </button>
             <button onclick="window.wordcraftAi.executeAction('elaborate')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
-                🔍 Elaborasi Gagasan
+                <i class="fa-solid fa-magnifying-glass mr-1"></i> Elaborasi Gagasan
             </button>
             <button onclick="window.wordcraftAi.executeAction('rewrite')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
-                ✍️ Parafrase Nada
+                <i class="fa-solid fa-pen-nib mr-1"></i> Parafrase Nada
             </button>
             <button onclick="window.wordcraftAi.executeAction('grammar')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
-                🛠️ Koreksi PUEBI
+                <i class="fa-solid fa-screwdriver-wrench mr-1"></i> Koreksi PUEBI
             </button>
             <button onclick="window.wordcraftAi.executeAction('summarize')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
-                📝 Ringkas Naskah
+                <i class="fa-solid fa-file-pen mr-1"></i> Ringkas Naskah
             </button>
             <button onclick="window.wordcraftAi.executeAction('brainstorm')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
-                💡 Brainstorm Ide
+                <i class="fa-solid fa-lightbulb mr-1"></i> Brainstorm Ide
             </button>
         </div>
     </div>
@@ -1905,7 +1907,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
                     <h3 class="text-xl font-bold mb-2">Lepaskan Berkas di Sini</h3>
-                    <p class="text-sm text-indigo-100">VelScribe akan otomatis mendeteksi format .docx, .md, .html, .txt, atau .json dan menyelaraskan margin serta hierarki bab.</p>
+                    <p class="text-sm text-indigo-100">Sahabat Penelitian akan otomatis mendeteksi format .docx, .md, .html, .txt, atau .json dan menyelaraskan margin serta hierarki bab.</p>
                 </div>
             </div>
 
@@ -1918,9 +1920,9 @@
                 <button data-align="center" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded" title="Rata Tengah">Tengah</button>
                 <button data-align="justify" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded" title="Justify">Justify</button>
                 <span class="w-px h-3.5 bg-gray-700 dark:bg-gray-300 mx-0.5"></span>
-                <button data-action="insert-link-modal" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded" title="Tautan">🔗</button>
-                <button id="bubble-ask-ai" class="px-2 py-0.5 bg-indigo-600 text-white rounded text-[11px] font-semibold flex items-center gap-1 hover:bg-indigo-500 transition" title="Tanya AI Wordcraft">
-                    <span>✨ Wordcraft AI</span>
+                <button data-action="insert-link-modal" class="p-1 hover:bg-gray-800 dark:hover:bg-gray-200 rounded" title="Tautan"><i class="fa-solid fa-link text-xs"></i></button>
+                <button id="bubble-ask-ai" class="px-2 py-0.5 bg-indigo-600 text-white rounded text-[11px] font-semibold flex items-center gap-1 hover:bg-indigo-500 transition" title="Tanya AI Xishie Studio">
+                    <span><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Xishie Studio AI</span>
                 </button>
             </div>
 
@@ -1964,7 +1966,7 @@
             <!-- Local File Auto-Adaptation Banner -->
             <div id="document-adaptation-banner" class="hidden w-full max-w-[210mm] mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/60 dark:to-purple-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs no-print transition">
                 <div class="flex items-start gap-3">
-                    <span class="text-xl">🪄</span>
+                    <span class="text-xl"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
                     <div>
                         <h4 id="adaptation-banner-title" class="font-bold text-indigo-900 dark:text-indigo-200 text-xs">Penyelarasan Format Otomatis:</h4>
                         <p id="adaptation-banner-desc" class="text-indigo-700 dark:text-indigo-300 text-[11px] mt-0.5">Dokumen lokal telah diimpor dan diselaraskan.</p>
@@ -1978,7 +1980,7 @@
                         Format Standar
                     </button>
                     <button id="banner-btn-close" class="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" title="Tutup pemberitahuan">
-                        ✕
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
             </div>
@@ -1986,7 +1988,7 @@
             <!-- Progressive Document Page Chunk Loader Indicator -->
             <div id="document-chunk-progress" class="hidden mx-6 sm:mx-14 mt-2 mb-2 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white/95 dark:bg-gray-800/95 shadow-md flex items-center justify-between gap-3 text-xs transition-all no-print z-20">
                 <div class="flex items-center gap-2.5 flex-1 min-w-0">
-                    <span class="inline-block animate-spin text-sm" role="status" aria-label="Loading">⏳</span>
+                    <span class="inline-block text-sm" role="status" aria-label="Loading"><i class="fa-solid fa-spinner fa-spin"></i></span>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
                             <span id="chunk-progress-label">Memuat lembar dokumen secara bertahap...</span>
@@ -2053,13 +2055,13 @@
                     <!-- Side Header & Footer Quick Edit Actions (Outside Document Canvas) -->
                     <div class="page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col items-center gap-1 pointer-events-auto">
                         <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Header: Belum diterapkan (Klik untuk mengatur)">
-                            <span class="text-xs">🏷️</span>
+                            <span class="text-xs"><i class="fa-solid fa-tag"></i></span>
                         </button>
                         <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] text-amber-500">Belum diterapkan</span></span>
                     </div>
                     <div class="page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex flex-col items-center gap-1">
                         <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="Footer: Belum diterapkan (Klik untuk mengatur)">
-                            <span class="text-xs">📋</span>
+                            <span class="text-xs"><i class="fa-solid fa-clipboard"></i></span>
                         </button>
                         <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] text-amber-500">Belum diterapkan</span></span>
                     </div>
@@ -2068,7 +2070,7 @@
 
         </section>
 
-        <!-- Right Wordcraft AI Studio Drawer (https://github.com/storytold/wordcraft inspired) -->
+        <!-- Right Xishie Studio AI Drawer (https://github.com/storytold/wordcraft inspired) -->
         <aside id="wordcraft-sidebar" class="w-80 md:w-96 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shrink-0 flex flex-col no-print z-10 shadow-lg transition-all duration-200">
             <!-- Studio Header -->
             <div class="p-3.5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
@@ -2076,7 +2078,7 @@
                     <span class="p-1 rounded bg-indigo-600 text-white">
                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
                     </span>
-                    <h2 class="font-bold text-xs uppercase tracking-wider text-gray-800 dark:text-gray-100">Wordcraft AI Studio</h2>
+                    <h2 class="font-bold text-xs uppercase tracking-wider text-gray-800 dark:text-gray-100">Xishie Studio AI</h2>
                 </div>
                 <button onclick="window.uiController.toggleWordcraftSidebar(false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -2088,22 +2090,22 @@
                 <div class="text-[11px] font-semibold text-gray-500 mb-2">PILIH AKSI KREATIF:</div>
                 <div class="grid grid-cols-2 gap-1.5 text-xs">
                     <button data-wordcraft-action="continue" class="px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-indigo-600 text-white font-medium text-left truncate flex items-center gap-1.5 transition">
-                        <span>⚡</span> Lanjutkan
+                        <span><i class="fa-solid fa-bolt mr-1"></i></span> Lanjutkan
                     </button>
                     <button data-wordcraft-action="elaborate" class="px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-left truncate flex items-center gap-1.5 transition">
-                        <span>🔍</span> Elaborasi
+                        <span><i class="fa-solid fa-magnifying-glass mr-1"></i></span> Elaborasi
                     </button>
                     <button data-wordcraft-action="rewrite" class="px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-left truncate flex items-center gap-1.5 transition">
-                        <span>✍️</span> Parafrase
+                        <span><i class="fa-solid fa-pen-nib mr-1"></i></span> Parafrase
                     </button>
                     <button data-wordcraft-action="grammar" class="px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-left truncate flex items-center gap-1.5 transition">
-                        <span>🛠️</span> Ejaan PUEBI
+                        <span><i class="fa-solid fa-screwdriver-wrench mr-1"></i></span> Ejaan PUEBI
                     </button>
                     <button data-wordcraft-action="summarize" class="px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-left truncate flex items-center gap-1.5 transition">
-                        <span>📝</span> Ringkas
+                        <span><i class="fa-solid fa-file-pen mr-1"></i></span> Ringkas
                     </button>
                     <button data-wordcraft-action="brainstorm" class="px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-left truncate flex items-center gap-1.5 transition">
-                        <span>💡</span> Ide Lanjutan
+                        <span><i class="fa-solid fa-lightbulb mr-1"></i></span> Ide Lanjutan
                     </button>
                 </div>
 
@@ -2140,7 +2142,7 @@
             <div id="wordcraft-loading-spinner" class="hidden p-6 text-center text-xs text-indigo-600">
                 <div class="inline-flex items-center gap-2 font-medium">
                     <svg class="animate-spin w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                    <span>Wordcraft sedang memproses ide...</span>
+                    <span>Xishie Studio sedang memproses ide...</span>
                 </div>
             </div>
 
@@ -2148,7 +2150,7 @@
             <div id="wordcraft-results-container" class="flex-1 overflow-y-auto p-3 space-y-3">
                 <div class="text-center py-8 text-xs text-gray-400">
                     <svg class="w-10 h-10 mx-auto mb-2 text-gray-300 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    Pilih salah satu tombol aksi di atas untuk memunculkan saran kreatif Wordcraft.
+                    Pilih salah satu tombol aksi di atas untuk memunculkan saran kreatif Xishie Studio.
                 </div>
             </div>
         </aside>
@@ -2158,7 +2160,7 @@
     <aside id="review-comments-panel" aria-label="Komentar dokumen" class="hidden fixed right-4 top-36 bottom-12 w-80 max-w-[calc(100vw-2rem)] z-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 overflow-y-auto no-print">
         <div class="flex items-center justify-between gap-3 mb-3">
             <h2 class="font-semibold text-gray-900 dark:text-gray-100">Komentar dokumen</h2>
-            <button type="button" id="btn-close-review-comments" aria-label="Tutup komentar" class="text-gray-500 hover:text-gray-900 dark:hover:text-gray-100">✕</button>
+            <button type="button" id="btn-close-review-comments" aria-label="Tutup komentar" class="text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <label for="review-comment-input" class="text-xs text-gray-600 dark:text-gray-300">Pilih teks dalam satu paragraf, lalu tambahkan komentar</label>
         <textarea id="review-comment-input" maxlength="2000" rows="3" class="mt-2 w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 text-sm" placeholder="Tulis komentar..."></textarea>
@@ -2181,11 +2183,11 @@
 
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
-                <button data-layout-mode="print" class="p-1 hover:text-indigo-600" title="Tata Letak Halaman">📄</button>
-                <button data-layout-mode="web" class="p-1 hover:text-indigo-600" title="Tampilan Aliran Web">🌐</button>
-                <button data-layout-mode="zen" class="p-1 hover:text-indigo-600" title="Mode Fokus (Zen)">🧘</button>
+                <button data-layout-mode="print" class="p-1 hover:text-indigo-600" title="Tata Letak Halaman"><i class="fa-solid fa-file"></i></button>
+                <button data-layout-mode="web" class="p-1 hover:text-indigo-600" title="Tampilan Aliran Web"><i class="fa-solid fa-globe"></i></button>
+                <button data-layout-mode="zen" class="p-1 hover:text-indigo-600" title="Mode Fokus (Zen)"><i class="fa-solid fa-compress"></i></button>
                 <button id="btn-status-theme-toggle" class="p-1 hover:text-indigo-600 ml-1 border-l border-gray-200 dark:border-gray-800 pl-2 cursor-pointer" title="Ganti Tema (Terang / Gelap)">
-                    <span id="status-theme-icon">☀️</span>
+                    <span id="status-theme-icon"><i class="fa-solid fa-sun"></i></span>
                 </button>
             </div>
 
@@ -2210,7 +2212,7 @@
                     <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                     Buka Dokumen dari File Lokal
                 </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6">
                 <label for="local-file-input" class="border-2 border-dashed border-indigo-200 dark:border-indigo-900/60 hover:border-indigo-500 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer bg-indigo-50/40 dark:bg-indigo-950/20 transition group">
@@ -2226,11 +2228,11 @@
                 <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
                     <div class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Atau Coba Contoh Naskah Terstruktur:</div>
                     <button data-load-sample="skripsi" class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 hover:bg-indigo-100 transition flex items-center justify-between border border-indigo-200 dark:border-indigo-800 cursor-pointer">
-                        <span>🎓 Naskah Skripsi / Penelitian (Format 4-4-3-3 cm, Sampul & Bab I)</span>
+                        <span><i class="fa-solid fa-graduation-cap mr-1 text-indigo-500"></i> Naskah Skripsi / Penelitian (Format 4-4-3-3 cm, Sampul & Bab I)</span>
                         <span>Muat →</span>
                     </button>
                     <button data-load-sample="report" class="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-gray-50 text-gray-800 dark:bg-gray-800 dark:text-gray-200 hover:bg-gray-100 transition flex items-center justify-between border border-gray-200 dark:border-gray-700 cursor-pointer">
-                        <span>📑 Laporan Riset & Tabel Matriks (Format Normal 2.54 cm)</span>
+                        <span><i class="fa-solid fa-file-lines mr-1 text-blue-500"></i> Laporan Riset & Tabel Matriks (Format Normal 2.54 cm)</span>
                         <span>Muat →</span>
                     </button>
                 </div>
@@ -2248,9 +2250,9 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                    🔍 Cari & Ganti Kata
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Cari &amp; Ganti Kata
                 </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4 text-xs">
                 <div>
@@ -2273,8 +2275,8 @@
     <div id="modal-stats" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h3 class="font-bold text-sm text-gray-900 dark:text-white">📊 Statistik Dokumen</h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white"><i class="fa-solid fa-chart-column mr-1.5 text-blue-500"></i> Statistik Dokumen</h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-3 text-xs">
                 <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
@@ -2316,8 +2318,8 @@
     <div id="modal-shortcuts" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h3 class="font-bold text-sm text-gray-900 dark:text-white">⌨️ Pintasan Keyboard</h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white"><i class="fa-solid fa-keyboard mr-1.5 text-indigo-500"></i> Pintasan Keyboard</h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-2 text-xs">
                 <div class="flex justify-between py-1 border-b border-gray-100 dark:border-gray-800">
@@ -2359,8 +2361,8 @@
     <div id="modal-insert-link" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h3 class="font-bold text-sm text-gray-900 dark:text-white">🔗 Sisipkan Tautan</h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white"><i class="fa-solid fa-link mr-1.5 text-blue-500"></i> Sisipkan Tautan</h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4 text-xs">
                 <div>
@@ -2383,8 +2385,8 @@
     <div id="modal-insert-table" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h3 class="font-bold text-sm text-gray-900 dark:text-white">📊 Sisipkan Tabel</h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white"><i class="fa-solid fa-table mr-1.5 text-emerald-500"></i> Sisipkan Tabel</h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 grid grid-cols-2 gap-4 text-xs">
                 <div>
@@ -2407,8 +2409,8 @@
     <div id="modal-insert-image" class="editor-modal hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h3 class="font-bold text-sm text-gray-900 dark:text-white">🖼️ Sisipkan Gambar</h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white"><i class="fa-solid fa-image mr-1.5 text-purple-500"></i> Sisipkan Gambar</h3>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4 text-xs">
                 <div>
@@ -2440,7 +2442,7 @@
                     <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Unduh & Ekspor Dokumen
                 </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <button data-export-format="docx" class="p-4 border border-indigo-200 dark:border-indigo-800 hover:border-indigo-500 rounded-xl flex items-start gap-3 bg-indigo-50/40 dark:bg-indigo-950/30 hover:bg-indigo-50/70 transition text-left">
@@ -2513,15 +2515,15 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>📄</span> Sisipkan Halaman Sampul (Cover Page)
+                    <span><i class="fa-solid fa-file mr-1"></i></span> Sisipkan Halaman Sampul (Cover Page)
                 </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <!-- Pilihan 1: Cover Skripsi / Akademik -->
                 <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-indigo-500 hover:shadow-md transition flex flex-col justify-between">
                     <div>
-                        <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl mb-3">🎓</div>
+                        <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl mb-3"><i class="fa-solid fa-graduation-cap text-lg"></i></div>
                         <h4 class="font-bold text-sm text-gray-900 dark:text-white">Sampul Akademik / Skripsi</h4>
                         <p class="text-gray-500 text-[11px] mt-1">Format baku skripsi, tesis, dan disertasi perguruan tinggi di Indonesia dengan placeholder instansi & NIM.</p>
                     </div>
@@ -2533,7 +2535,7 @@
                 <!-- Pilihan 2: Cover Laporan Bisnis / Perusahaan -->
                 <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-indigo-500 hover:shadow-md transition flex flex-col justify-between">
                     <div>
-                        <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl mb-3">🏢</div>
+                        <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl mb-3"><i class="fa-solid fa-building text-lg"></i></div>
                         <h4 class="font-bold text-sm text-gray-900 dark:text-white">Sampul Laporan Bisnis</h4>
                         <p class="text-gray-500 text-[11px] mt-1">Gaya modern korporat untuk proposal proyek, laporan keuangan tahunan, dan riset bisnis profesional.</p>
                     </div>
@@ -2553,9 +2555,9 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>🔣</span> Palet Simbol & Karakter Khusus
+                    <span><i class="fa-solid fa-icons mr-1"></i></span> Palet Simbol &amp; Karakter Khusus
                 </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4 text-xs">
                 <div>
@@ -2597,28 +2599,28 @@
             <!-- Modal Header -->
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50/70 to-purple-50/70 dark:from-gray-900 dark:to-gray-800">
                 <div class="flex items-center gap-2.5">
-                    <span class="p-1.5 rounded-lg bg-indigo-600 text-white text-sm">📚</span>
+                    <span class="p-1.5 rounded-lg bg-indigo-600 text-white text-sm"><i class="fa-solid fa-book-bookmark"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Sitasi & Pengelola Daftar Pustaka (Word Standard)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Mesin pencari literatur ilmiah, kelola sumber referensi, & format daftar pustaka otomatis</p>
                     </div>
                 </div>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Tab Navigation (Word References Tabs) -->
             <div class="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/60 px-4 text-xs font-semibold gap-1 select-none overflow-x-auto">
                 <button type="button" data-citation-nav="search" class="citation-tab-btn py-2.5 px-3 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1.5">
-                    <span>🔍</span> Mesin Pencari Online
+                    <span><i class="fa-solid fa-magnifying-glass mr-1"></i></span> Mesin Pencari Online
                 </button>
                 <button type="button" data-citation-nav="add" class="citation-tab-btn py-2.5 px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1.5">
-                    <span>✍️</span> Tambah Sumber Manual
+                    <span><i class="fa-solid fa-pen-nib mr-1"></i></span> Tambah Sumber Manual
                 </button>
                 <button type="button" data-citation-nav="manage" class="citation-tab-btn py-2.5 px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1.5">
-                    <span>📋</span> Kelola Sumber (<span id="tab-source-count-badge">0</span>)
+                    <span><i class="fa-solid fa-clipboard mr-1"></i></span> Kelola Sumber (<span id="tab-source-count-badge">0</span>)
                 </button>
                 <button type="button" data-citation-nav="bibliography" class="citation-tab-btn py-2.5 px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1.5">
-                    <span>📖</span> Sisipkan Daftar Pustaka
+                    <span><i class="fa-solid fa-book-open mr-1"></i></span> Sisipkan Daftar Pustaka
                 </button>
             </div>
 
@@ -2633,7 +2635,7 @@
                     <div class="flex flex-col sm:flex-row gap-2">
                         <div class="flex-1 relative">
                             <input type="text" id="search-source-query" placeholder="Ketik kata kunci judul, topik (mis: IoT ESP32), nama penulis, atau DOI (10.xxxx)..." class="w-full px-3 py-2 pl-8 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-indigo-500 shadow-2xs" />
-                            <span class="absolute left-2.5 top-2.5 text-gray-400">🔍</span>
+                            <span class="absolute left-2.5 top-2.5 text-gray-400"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
                         </div>
                         <select id="search-source-type" class="px-2.5 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-indigo-500">
                             <option value="all">Semua Tipe</option>
@@ -2659,7 +2661,7 @@
 
                     <!-- Search Results State -->
                     <div id="search-source-status" class="hidden text-xs text-center py-2 text-indigo-600 font-medium">
-                        <span class="inline-block animate-spin mr-1">⏳</span> Mencari literatur di CrossRef dan basis data ilmiah...
+                        <span class="inline-block mr-1"><i class="fa-solid fa-spinner fa-spin"></i></span> Mencari literatur di CrossRef dan basis data ilmiah...
                     </div>
 
                     <!-- Results List -->
@@ -2730,10 +2732,10 @@
 
                     <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
                         <button type="button" id="btn-save-source-only" class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition cursor-pointer">
-                            💾 Simpan ke Pengelola Sumber
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan ke Pengelola Sumber
                         </button>
                         <button type="button" id="btn-confirm-citation" class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer shadow-xs">
-                            ✍️ Sisipkan Sitasi di Kursor
+                            <i class="fa-solid fa-pen-nib mr-1"></i> Sisipkan Sitasi di Kursor
                         </button>
                     </div>
                 </div>
@@ -2743,7 +2745,7 @@
                     <div class="flex items-center justify-between gap-2">
                         <div class="relative flex-1">
                             <input type="text" id="manage-source-filter" placeholder="Cari dalam daftar sumber naskah..." class="w-full px-3 py-1.5 pl-8 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs outline-none focus:border-indigo-500" />
-                            <span class="absolute left-2.5 top-2 text-gray-400">🔍</span>
+                            <span class="absolute left-2.5 top-2 text-gray-400"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
                         </div>
                         <button type="button" id="btn-add-sample-sources" class="px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded font-semibold text-[11px] hover:bg-indigo-100 transition cursor-pointer border border-indigo-200 dark:border-indigo-800">
                             + Sampel Sumber Ilmiah
@@ -2790,10 +2792,10 @@
 
                     <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
                         <button type="button" id="btn-sync-bibliography-block" class="px-3.5 py-2 text-xs font-semibold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 transition cursor-pointer">
-                            🔄 Perbarui Daftar Pustaka Dokumen
+                            <i class="fa-solid fa-arrows-rotate mr-1"></i> Perbarui Daftar Pustaka Dokumen
                         </button>
                         <button type="button" id="btn-insert-bibliography-block" class="px-4 py-2 text-xs font-bold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer flex items-center gap-1.5">
-                            <span>📚 Sisipkan ke Dokumen</span>
+                            <span><i class="fa-solid fa-book-bookmark mr-1"></i> Sisipkan ke Dokumen</span>
                         </button>
                     </div>
                 </div>
@@ -2812,10 +2814,10 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
                 <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                    <span class="p-1 rounded bg-indigo-600 text-white">📋</span>
+                    <span class="p-1 rounded bg-indigo-600 text-white"><i class="fa-solid fa-clipboard text-xs"></i></span>
                     <span>Pengaturan Header & Footer Dokumen</span>
                 </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4 text-xs">
                 <div>
@@ -2826,7 +2828,7 @@
 
                 <div>
                     <label class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Teks Footer (Bagian Bawah Dokumen):</label>
-                    <input type="text" id="hf-footer-input" placeholder="Contoh: Dokumen VelScribe Wordcraft / Draft Rahasia" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
+                    <input type="text" id="hf-footer-input" placeholder="Contoh: Dokumen Sahabat Penelitian - Xishie Studio / Draft Rahasia" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 outline-none focus:border-indigo-500" />
                     <p class="text-[11px] text-gray-400 mt-1">Muncul di sudut kiri bawah berdampingan dengan nomor halaman.</p>
                 </div>
 
@@ -2886,7 +2888,7 @@
                     <span class="p-1 rounded bg-indigo-600 text-white font-serif font-bold text-xs">∑</span>
                     <span id="latex-modal-title">Rumus & Persamaan Matematika (LaTeX)</span>
                 </h3>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <div class="p-5 space-y-4 text-xs">
@@ -2955,7 +2957,7 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden transform transition-all">
             <div class="p-4 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                    <span class="text-lg">🎨</span>
+                    <span class="text-lg"><i class="fa-solid fa-palette"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Pengaturan Tema & Tampilan Visual</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Pilih skema warna antarmuka editor dan kontras lembar dokumen</p>
@@ -2983,11 +2985,11 @@
                             </div>
                             <div>
                                 <span class="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-center gap-1">
-                                    <span>☀️</span> Terang
+                                    <span><i class="fa-solid fa-sun"></i></span> Terang
                                 </span>
                                 <span class="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Mode Siang Bersih</span>
                             </div>
-                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center">✓</span>
+                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center"><i class="fa-solid fa-check text-[10px]"></i></span>
                         </div>
 
                         <!-- Card 2: Gelap (Dark Studio) -->
@@ -3004,11 +3006,11 @@
                             </div>
                             <div>
                                 <span class="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-center gap-1">
-                                    <span>🌙</span> Gelap
+                                    <span><i class="fa-solid fa-moon"></i></span> Gelap
                                 </span>
                                 <span class="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Studio Malam</span>
                             </div>
-                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center">✓</span>
+                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center"><i class="fa-solid fa-check text-[10px]"></i></span>
                         </div>
 
                         <!-- Card 3: Otomatis Sistem -->
@@ -3016,19 +3018,19 @@
                             <!-- Visual Preview Mockup (Split) -->
                             <div class="w-full h-16 rounded-lg border border-gray-300 dark:border-gray-700 p-1 flex gap-1 overflow-hidden shadow-2xs bg-gradient-to-r from-gray-100 to-gray-950">
                                 <div class="w-1/2 h-full bg-white rounded-l p-1 flex flex-col justify-center items-center">
-                                    <span class="text-[10px]">☀️</span>
+                                    <span class="text-[10px]"><i class="fa-solid fa-sun"></i></span>
                                 </div>
                                 <div class="w-1/2 h-full bg-gray-900 rounded-r p-1 flex flex-col justify-center items-center">
-                                    <span class="text-[10px]">🌙</span>
+                                    <span class="text-[10px]"><i class="fa-solid fa-moon"></i></span>
                                 </div>
                             </div>
                             <div>
                                 <span class="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-center gap-1">
-                                    <span>💻</span> Sistem
+                                    <span><i class="fa-solid fa-desktop"></i></span> Sistem
                                 </span>
                                 <span class="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Ikuti Perangkat</span>
                             </div>
-                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center">✓</span>
+                            <span class="theme-check-badge hidden absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] items-center justify-center"><i class="fa-solid fa-check text-[10px]"></i></span>
                         </div>
                     </div>
                 </div>
@@ -3040,7 +3042,7 @@
                         <label id="sheet-card-white" class="cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 flex items-start gap-2.5 transition-all hover:border-indigo-400">
                             <input type="radio" name="sheet-canvas-theme" value="white" checked class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
                             <div>
-                                <span class="font-bold text-gray-900 dark:text-white block">📄 Lembar Putih (Standar Cetak)</span>
+                                <span class="font-bold text-gray-900 dark:text-white block"><i class="fa-solid fa-file mr-1"></i> Lembar Putih (Standar Cetak)</span>
                                 <span class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block leading-relaxed">
                                     Format kertas putih asli (WYSIWYG) untuk akurasi cetak skripsi, laporan, dan dokumen resmi.
                                 </span>
@@ -3049,7 +3051,7 @@
                         <label id="sheet-card-dark" class="cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 flex items-start gap-2.5 transition-all hover:border-indigo-400">
                             <input type="radio" name="sheet-canvas-theme" value="dark" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
                             <div>
-                                <span class="font-bold text-gray-900 dark:text-white block">🕶️ Lembar Gelap (Mode Redup)</span>
+                                <span class="font-bold text-gray-900 dark:text-white block"><i class="fa-solid fa-moon mr-1"></i> Lembar Gelap (Mode Redup)</span>
                                 <span class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block leading-relaxed">
                                     Mengubah latar kertas jadi hitam arang untuk kenyamanan mata saat membaca di malam hari.
                                 </span>
@@ -3075,13 +3077,13 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50/70 to-purple-50/70 dark:from-gray-900 dark:to-gray-800">
                 <div class="flex items-center gap-2.5">
-                    <span class="p-1.5 rounded-lg bg-indigo-600 text-white text-sm">📑</span>
+                    <span class="p-1.5 rounded-lg bg-indigo-600 text-white text-sm"><i class="fa-solid fa-file-lines"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Kustomisasi Format Daftar Isi (Word Standard)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur hierarki level heading, karakter tab leader, dan gaya tipografi daftar isi</p>
                     </div>
                 </div>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <div class="p-5 overflow-y-auto space-y-4 text-xs flex-1">
@@ -3155,7 +3157,7 @@
                 <div class="flex items-center gap-2">
                     <button type="button" data-close-modal class="px-3.5 py-2 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">Batal</button>
                     <button type="button" id="btn-confirm-insert-toc" class="px-4 py-2 text-xs font-bold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer flex items-center gap-1.5">
-                        <span>📑 Sisipkan Daftar Isi</span>
+                        <span><i class="fa-solid fa-file-lines mr-1"></i> Sisipkan Daftar Isi</span>
                     </button>
                 </div>
             </div>
@@ -3167,10 +3169,10 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-emerald-50/70 to-teal-50/70 dark:from-gray-900 dark:to-gray-800">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-emerald-600 text-white text-xs">🔄</span>
+                    <span class="p-1 rounded bg-emerald-600 text-white text-xs"><i class="fa-solid fa-arrows-rotate"></i></span>
                     <h3 class="font-bold text-sm text-gray-900 dark:text-white">Perbarui Daftar Isi (Update Table of Contents)</h3>
                 </div>
-                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">✕</button>
+                <button data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-5 space-y-3.5 text-xs">
                 <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -3216,13 +3218,13 @@
             <!-- Header -->
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-indigo-600 text-white text-xs">📐</span>
+                    <span class="p-1 rounded bg-indigo-600 text-white text-xs"><i class="fa-solid fa-ruler-combined"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Penyetelan Halaman (Page Setup)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur margin, ukuran kertas, orientasi, dan tata letak standar Microsoft Word</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Tabs Navigation -->
@@ -3343,25 +3345,25 @@
                             </div>
                             <div class="grid grid-cols-2 gap-1.5">
                                 <button type="button" data-ps-preset="skripsi" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-left font-semibold hover:bg-indigo-100 transition">
-                                    🎓 Skripsi (4-4-3-3 cm)
+                                    <i class="fa-solid fa-graduation-cap mr-1 text-indigo-500"></i> Skripsi (4-4-3-3 cm)
                                 </button>
                                 <button type="button" data-ps-preset="normal" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
-                                    📄 Normal (2.54 cm)
+                                    <i class="fa-solid fa-file mr-1"></i> Normal (2.54 cm)
                                 </button>
                                 <button type="button" data-ps-preset="narrow" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
-                                    📐 Sempit (1.27 cm)
+                                    <i class="fa-solid fa-ruler-combined mr-1"></i> Sempit (1.27 cm)
                                 </button>
                                 <button type="button" data-ps-preset="moderate" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
-                                    📏 Sedang (2.54 x 1.91)
+                                    <i class="fa-solid fa-ruler mr-1"></i> Sedang (2.54 x 1.91)
                                 </button>
                                 <button type="button" data-ps-preset="wide" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
                                     ↔️ Lebar (2.54 x 5.08)
                                 </button>
                                 <button type="button" data-ps-preset="mirrored" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
-                                    📖 Cermin (3.18 / 2.54)
+                                    <i class="fa-solid fa-book-open mr-1"></i> Cermin (3.18 / 2.54)
                                 </button>
                                 <button type="button" data-ps-preset="office2003" class="btn-ps-quick-preset px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition">
-                                    🏛️ Office 2003 (2.54 x 3.18)
+                                    <i class="fa-solid fa-table-columns mr-1"></i> Office 2003 (2.54 x 3.18)
                                 </button>
                             </div>
 
@@ -3436,7 +3438,7 @@
                         <!-- Paper Info Cards -->
                         <div class="bg-indigo-50/40 dark:bg-indigo-950/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-900/40 space-y-3">
                             <h4 class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                                <span>📄 Informasi Kertas</span>
+                                <span><i class="fa-solid fa-file mr-1"></i> Informasi Kertas</span>
                             </h4>
                             <p class="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
                                 Standar naskah akademik, proposal penelitian, tesis, dan skripsi di universitas Indonesia umumnya menggunakan kertas <strong>A4 80 gram</strong> atau <strong>Folio / F4</strong>.
@@ -3527,7 +3529,7 @@
                         <!-- Layout Info -->
                         <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2.5 text-[11px] text-gray-600 dark:text-gray-400">
                             <span class="font-bold text-gray-900 dark:text-white block text-xs">Tata Letak Standar Word</span>
-                            <p>Konfigurasi header dan footer terintegrasi dengan running header dan nomor halaman pada dokumen Wordcraft Anda.</p>
+                            <p>Konfigurasi header dan footer terintegrasi dengan running header dan nomor halaman pada dokumen Xishie Studio Anda.</p>
                             <p>Menandai <em>Different first page</em> akan menyembunyikan running header dan nomor halaman pada lembar sampul pertama.</p>
                         </div>
                     </div>
@@ -3567,13 +3569,13 @@
             <!-- Header -->
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-blue-600 text-white text-xs">📝</span>
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs"><i class="fa-solid fa-file-pen"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Format Paragraf (Paragraph Options)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur perataan, indentasi baris pertama / gantung, jarak baris, dan spasi sebelum / sesudah</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Tabs Navigation -->
@@ -3818,7 +3820,7 @@
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur perhentian tab, perataan, dan karakter pemandu standar Word</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Body -->
@@ -3911,13 +3913,13 @@
             <!-- Header -->
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-blue-600 text-white text-xs">💧</span>
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs"><i class="fa-solid fa-droplet"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Cap Air Kustom (Watermark)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Sisipkan tanda teks transparan di latar belakang naskah</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Body -->
@@ -4003,13 +4005,13 @@
             <!-- Header -->
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-blue-600 text-white text-xs">🖼️</span>
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs"><i class="fa-solid fa-image"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Batas Halaman (Page Borders)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur garis bingkai sekeliling lembar halaman dokumen Word</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Body -->
@@ -4105,13 +4107,13 @@
             <!-- Header -->
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-blue-600 text-white text-xs">🔢</span>
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs"><i class="fa-solid fa-list-ol"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Penomoran Baris (Line Numbers)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Atur penomoran baris naskah akademik & jurnal</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Body -->
@@ -4166,7 +4168,7 @@
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Buat huruf kapital besar di awal paragraf naskah</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Body -->
@@ -4242,7 +4244,7 @@
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Urutkan paragraf atau daftar secara alfabetis</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Body -->
@@ -4285,13 +4287,13 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-bold">⚖️</span>
+                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-bold"><i class="fa-solid fa-scale-balanced"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Bandingkan Dokumen (Document Compare)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Legal blackline diff semantik tingkat kata antara naskah asli dan naskah saat ini</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-4 space-y-3.5 text-xs overflow-y-auto">
                 <div>
@@ -4322,13 +4324,13 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-blue-600 text-white text-xs font-bold">♿</span>
+                    <span class="p-1 rounded bg-blue-600 text-white text-xs font-bold"><i class="fa-solid fa-universal-access"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Audit Aksesibilitas (Accessibility Checker)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Standar WCAG 2.2 AA & Microsoft Word Accessibility Checker</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-4 space-y-3.5 text-xs overflow-y-auto">
                 <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -4359,13 +4361,13 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-bold">✉️</span>
+                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-bold"><i class="fa-solid fa-envelope"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Surat Masal (Mail Merge Studio)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Cetak surat, amplop, dan label dari daftar penerima berkas CSV</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-4 space-y-3.5 text-xs overflow-y-auto">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -4413,13 +4415,13 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-bold">🕰️</span>
+                    <span class="p-1 rounded bg-indigo-600 text-white text-xs font-bold"><i class="fa-solid fa-clock-rotate-left"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Riwayat Versi Server (Version History)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Snapshot versi tidak terhapus dan pemulihan non-destruktif</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-4 space-y-3.5 text-xs overflow-y-auto">
                 <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-2">
@@ -4449,13 +4451,13 @@
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="p-1 rounded bg-amber-600 text-white text-xs font-bold">🔒</span>
+                    <span class="p-1 rounded bg-amber-600 text-white text-xs font-bold"><i class="fa-solid fa-lock"></i></span>
                     <div>
                         <h3 class="font-bold text-sm text-gray-900 dark:text-white">Proteksi Sandi Dokumen</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Pembatasan mode penyuntingan dengan enkripsi kata sandi</p>
                     </div>
                 </div>
-                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none">✕</button>
+                <button type="button" data-close-modal class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md text-base leading-none"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-4 space-y-4 text-xs">
                 <!-- Apply Protection -->
@@ -4494,10 +4496,10 @@
     <!-- Floating Theme Switcher Widget -->
     <div id="floating-theme-widget" class="fixed bottom-12 right-6 z-40 no-print flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-gray-900/95 border border-gray-300 dark:border-gray-700 shadow-xl backdrop-blur-md transition-all">
         <button id="floating-theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-amber-500 dark:text-indigo-400 transition cursor-pointer" title="Beralih Cepat Tema Terang / Gelap">
-            <span id="floating-theme-icon" class="text-base leading-none">☀️</span>
+            <span id="floating-theme-icon" class="text-base leading-none"><i class="fa-solid fa-sun"></i></span>
         </button>
         <button data-action="open-theme-modal" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1 cursor-pointer" title="Pengaturan Tema & Tampilan Visual">
-            <span>🎨 Tema</span>
+            <span><i class="fa-solid fa-palette mr-1"></i> Tema</span>
         </button>
     </div>
 

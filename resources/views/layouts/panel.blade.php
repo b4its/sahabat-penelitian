@@ -8,6 +8,9 @@
 
     @fonts
 
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <!-- Theme Initialization Script to prevent FOUC -->
     <script>
         if (localStorage.getItem('sahabat_theme') === 'dark' || (!('sahabat_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -157,13 +160,13 @@
                         <a
                             href="{{ url('/editor') }}"
                             class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors duration-150"
-                            title="Buka Wordcraft Editor"
+                            title="Buka Xishie Studio Editor"
                         >
                             <div class="flex items-center gap-3 min-w-0">
                                 <svg class="w-5 h-5 shrink-0 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
-                                <span class="sidebar-text-label truncate">Wordcraft Studio</span>
+                                <span class="sidebar-text-label truncate">Xishie Studio</span>
                             </div>
                             <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
                                 Editor A4

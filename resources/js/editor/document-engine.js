@@ -981,7 +981,7 @@ export class DocumentEngine {
      * Create an individual A4 sheet element for the specified page.
      */
     createPageSheetElement(p, pageNum, totalPages, docTitle = null) {
-        const title = docTitle || this.getTitle() || 'Dokumen VelScribe Wordcraft';
+        const title = docTitle || this.getTitle() || 'Dokumen Sahabat Penelitian Xishie Studio';
         const sheet = document.createElement('article');
         sheet.className = 'document-page-sheet relative flex flex-col justify-between shadow-2xl';
         sheet.setAttribute('data-page-index', pageNum);
@@ -1073,7 +1073,7 @@ export class DocumentEngine {
         sideActions.className = 'page-side-actions absolute -right-12 sm:-right-14 top-4 select-none no-print flex flex-col items-center gap-1 pointer-events-auto';
         sideActions.innerHTML = `
             <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isHeaderApplied ? 'Header Aktif: ' + this.escapeHtml(this.customHeaderText) : 'Header: Belum diterapkan (Klik untuk mengatur)'}">
-                <span class="text-xs">🏷️</span>
+                <span class="text-xs"><i class="fa-solid fa-tag"></i></span>
             </button>
             <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] ${isHeaderApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isHeaderApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
         `;
@@ -1083,7 +1083,7 @@ export class DocumentEngine {
         sideFooterAction.className = 'page-side-footer-action absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex flex-col items-center gap-1';
         sideFooterAction.innerHTML = `
             <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isFooterApplied ? 'Footer Aktif: ' + this.escapeHtml(this.customFooterText) : 'Footer: Belum diterapkan (Klik untuk mengatur)'}">
-                <span class="text-xs">📋</span>
+                <span class="text-xs"><i class="fa-solid fa-clipboard"></i></span>
             </button>
             <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] ${isFooterApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isFooterApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
         `;
@@ -1113,7 +1113,7 @@ export class DocumentEngine {
             container.className = 'mx-6 sm:mx-14 mt-2 mb-2 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white/95 dark:bg-gray-800/95 shadow-md flex items-center justify-between gap-3 text-xs transition-all no-print z-20';
             container.innerHTML = `
                 <div class="flex items-center gap-2.5 flex-1 min-w-0">
-                    <span class="inline-block animate-spin text-sm" role="status" aria-label="Loading">⏳</span>
+                    <span class="inline-block text-sm" role="status" aria-label="Loading"><i class="fa-solid fa-spinner fa-spin"></i></span>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
                             <span id="chunk-progress-label">Memuat lembar dokumen secara bertahap...</span>
@@ -1172,7 +1172,7 @@ export class DocumentEngine {
             footerMarker.className = 'page-chunk-loading-marker my-4 py-2 px-4 rounded-full bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 text-center text-[11px] text-indigo-600 dark:text-indigo-400 font-medium select-none no-print flex items-center justify-center gap-2 shadow-xs';
             this.pagesWrapper.appendChild(footerMarker);
         }
-        footerMarker.innerHTML = `<span class="inline-block animate-spin text-xs">⏳</span> <span>Memuat lembar dokumen dari atas ke bawah: Halaman ${nextPage} dari ${total}...</span>`;
+        footerMarker.innerHTML = `<span class="inline-block text-xs"><i class="fa-solid fa-spinner fa-spin"></i></span> <span>Memuat lembar dokumen dari atas ke bawah: Halaman ${nextPage} dari ${total}...</span>`;
     }
 
     /**
@@ -1184,7 +1184,7 @@ export class DocumentEngine {
             if (nextPage > total) {
                 footerMarker.remove();
             } else {
-                footerMarker.innerHTML = `<span class="inline-block animate-spin text-xs">⏳</span> <span>Memuat lembar dokumen dari atas ke bawah: Halaman ${nextPage} dari ${total}...</span>`;
+                footerMarker.innerHTML = `<span class="inline-block text-xs"><i class="fa-solid fa-spinner fa-spin"></i></span> <span>Memuat lembar dokumen dari atas ke bawah: Halaman ${nextPage} dari ${total}...</span>`;
             }
         }
     }
@@ -1240,7 +1240,7 @@ export class DocumentEngine {
 
         const pages = this.paginateHtml(html);
         const totalPages = pages.length;
-        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
+        const docTitle = this.getTitle() || 'Dokumen Sahabat Penelitian Xishie Studio';
 
         // Clear existing sheets and gaps while preserving vertical ruler and other static controls
         const existingItems = this.pagesWrapper.querySelectorAll('.document-page-sheet, .page-sheet-gap, #chunk-loading-footer, .page-chunk-loading-marker');
@@ -1469,7 +1469,7 @@ export class DocumentEngine {
     renumberPages() {
         const sheets = this.getAllPageSheets();
         const total = sheets.length;
-        const docTitle = this.getTitle() || 'Dokumen VelScribe Wordcraft';
+        const docTitle = this.getTitle() || 'Dokumen Sahabat Penelitian Xishie Studio';
 
         let activeChapter = '';
         sheets.forEach((sheet, idx) => {
@@ -1575,7 +1575,7 @@ export class DocumentEngine {
             }
             sideActions.innerHTML = `
                 <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isHeaderApplied ? 'Header Aktif: ' + this.escapeHtml(this.customHeaderText) : 'Header: Belum diterapkan (Klik untuk mengatur)'}">
-                    <span class="text-xs">🏷️</span>
+                    <span class="text-xs"><i class="fa-solid fa-tag"></i></span>
                 </button>
                 <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] ${isHeaderApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isHeaderApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
             `;
@@ -1588,7 +1588,7 @@ export class DocumentEngine {
             }
             sideFooterAction.innerHTML = `
                 <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition" title="${isFooterApplied ? 'Footer Aktif: ' + this.escapeHtml(this.customFooterText) : 'Footer: Belum diterapkan (Klik untuk mengatur)'}">
-                    <span class="text-xs">📋</span>
+                    <span class="text-xs"><i class="fa-solid fa-clipboard"></i></span>
                 </button>
                 <span class="side-footer-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Footer:<br><span class="text-[7.5px] ${isFooterApplied ? 'text-indigo-500 font-semibold' : 'text-amber-500'}">${isFooterApplied ? 'Aktif' : 'Belum diterapkan'}</span></span>
             `;
@@ -2291,15 +2291,15 @@ export class DocumentEngine {
                 tocGroupDiv.innerHTML = `
                     <div class="toc-toolbar absolute -top-4 right-0 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-3 py-1 rounded-md shadow-lg flex items-center gap-2 text-xs opacity-0 group-hover:opacity-100 transition duration-150 z-30 no-print select-none" contenteditable="false">
                         <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
-                            <span>🔄 Perbarui Tabel...</span>
+                            <span><i class="fa-solid fa-arrows-rotate mr-1"></i> Perbarui Tabel...</span>
                         </button>
                         <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
                         <button type="button" class="btn-toc-customize hover:text-indigo-400 dark:hover:text-indigo-600 flex items-center gap-1 cursor-pointer" title="Kustomisasi Format Daftar Isi">
-                            <span>⚙️ Format</span>
+                            <span><i class="fa-solid fa-gear mr-1"></i> Format</span>
                         </button>
                         <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
                         <button type="button" class="btn-toc-delete hover:text-red-400 text-red-300 dark:text-red-600 cursor-pointer" title="Hapus Daftar Isi dari Dokumen">
-                            <span>🗑️ Hapus</span>
+                            <span><i class="fa-solid fa-trash-can mr-1"></i> Hapus</span>
                         </button>
                     </div>
                     <h1 class="toc-header heading-chapter text-center font-bold text-xl mb-6 uppercase tracking-wider text-gray-900 dark:text-white font-serif outline-none" contenteditable="true">${this.escapeHtml(tocHeading)}</h1>
@@ -3827,15 +3827,15 @@ export class DocumentEngine {
             <div class="table-of-contents my-6 ${containerClass} relative shadow-2xs group" data-toc-block="true" data-toc-style="${this.escapeHtml(style)}" data-toc-leader="${this.escapeHtml(leader)}" data-toc-levels="${levels}" data-toc-shownum="${showPageNumbers}" data-toc-rightalign="${rightAlignPageNumbers}" contenteditable="false" tabindex="0">
                 <div class="toc-toolbar absolute -top-3 right-4 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-2.5 py-1 rounded-md shadow-md flex items-center gap-2 text-[11px] opacity-0 group-hover:opacity-100 transition duration-150 z-20 no-print select-none" contenteditable="false">
                     <button type="button" class="btn-toc-update hover:text-indigo-400 dark:hover:text-indigo-600 font-semibold flex items-center gap-1 cursor-pointer" title="Perbarui Daftar Isi (Update Table)">
-                        <span>🔄 Perbarui Tabel...</span>
+                        <span><i class="fa-solid fa-arrows-rotate mr-1"></i> Perbarui Tabel...</span>
                     </button>
                     <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
                     <button type="button" class="btn-toc-customize hover:text-indigo-400 dark:hover:text-indigo-600 flex items-center gap-1 cursor-pointer" title="Kustomisasi Format Daftar Isi">
-                        <span>⚙️ Format</span>
+                        <span><i class="fa-solid fa-gear mr-1"></i> Format</span>
                     </button>
                     <span class="w-px h-3 bg-gray-700 dark:bg-gray-300"></span>
                     <button type="button" class="btn-toc-delete hover:text-red-400 text-red-300 dark:text-red-600 cursor-pointer" title="Hapus Daftar Isi dari Dokumen">
-                        <span>🗑️ Hapus</span>
+                        <span><i class="fa-solid fa-trash-can mr-1"></i> Hapus</span>
                     </button>
                 </div>
 
@@ -4453,7 +4453,7 @@ export class DocumentEngine {
     <h1 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 my-4">${this.escapeHtml(title)}</h1>
     <p class="text-base text-gray-600 dark:text-gray-400 max-w-xl mx-auto my-3">Dokumen evaluasi strategis, metodologi riset, dan analisis implementasi sistem 2026.</p>
     <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center text-xs text-gray-500">
-        <span>Disiapkan oleh: Tim Pengembang VelScribe</span>
+        <span>Disiapkan oleh: Tim Pengembang Sahabat Penelitian</span>
         <span>Tanggal: ${new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
     </div>
 </div>

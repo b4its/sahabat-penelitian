@@ -377,10 +377,10 @@ export class UiController {
             const icon = document.getElementById('sheet-theme-icon') || darkSheetBtn.querySelector('span:first-child');
             const label = document.getElementById('sheet-theme-label') || darkSheetBtn.querySelector('span:last-child');
             if (icon && label && icon !== label) {
-                icon.textContent = isDark ? '🌙' : '📄';
+                icon.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-file"></i>';
                 label.textContent = isDark ? 'Lembar Gelap' : 'Lembar Putih';
             } else if (darkSheetBtn.querySelector('span')) {
-                darkSheetBtn.querySelector('span').textContent = isDark ? '🌙 Lembar Gelap' : '📄 Lembar Putih';
+                darkSheetBtn.querySelector('span').innerHTML = isDark ? '<i class="fa-solid fa-moon mr-1"></i> Lembar Gelap' : '<i class="fa-solid fa-file mr-1"></i> Lembar Putih';
             }
         }
 
@@ -480,7 +480,7 @@ export class UiController {
         }
 
         if (knobIcon) {
-            knobIcon.textContent = effectiveDark ? '🌙' : '☀️';
+            knobIcon.innerHTML = effectiveDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
         }
 
         if (text) {
@@ -505,11 +505,11 @@ export class UiController {
 
         // 3. Update Status Bar Switcher visuals
         const statusIcon = document.getElementById('status-theme-icon');
-        if (statusIcon) statusIcon.textContent = effectiveDark ? '🌙' : '☀️';
+        if (statusIcon) statusIcon.innerHTML = effectiveDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
 
         // 4. Update Floating Theme Widget visuals
         const floatingIcon = document.getElementById('floating-theme-icon');
-        if (floatingIcon) floatingIcon.textContent = effectiveDark ? '🌙' : '☀️';
+        if (floatingIcon) floatingIcon.innerHTML = effectiveDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
 
         // 5. Update Modal cards if modal elements exist
         this.syncThemeModal();
@@ -671,7 +671,7 @@ export class UiController {
         if (!banner || !descEl) return;
 
         if (titleEl) {
-            titleEl.textContent = notice.type === 'academic' ? '🎓 Format Skripsi/Akademik Otomatis Disesuaikan:' : '📄 Format Dokumen Otomatis Disesuaikan:';
+            titleEl.innerHTML = notice.type === 'academic' ? '<i class="fa-solid fa-graduation-cap mr-1"></i> Format Skripsi/Akademik Otomatis Disesuaikan:' : '<i class="fa-solid fa-file mr-1"></i> Format Dokumen Otomatis Disesuaikan:';
         }
         descEl.textContent = notice.message;
         banner.classList.remove('hidden');
@@ -915,10 +915,10 @@ export class UiController {
                     </div>
                     <div class="flex sm:flex-col gap-1.5 shrink-0 self-end sm:self-start">
                         <button type="button" class="btn-cite-item px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] shadow-2xs transition cursor-pointer flex items-center justify-center gap-1">
-                            <span>✍️ Sisipkan Sitasi</span>
+                            <span><i class="fa-solid fa-pen-nib mr-1"></i> Sisipkan Sitasi</span>
                         </button>
                         <button type="button" class="btn-save-item px-2.5 py-1.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium text-[11px] transition cursor-pointer flex items-center justify-center gap-1">
-                            <span>➕ Simpan Sumber</span>
+                            <span><i class="fa-solid fa-plus mr-1"></i> Simpan Sumber</span>
                         </button>
                     </div>
                 `;
@@ -935,7 +935,7 @@ export class UiController {
 
                 btnSave.addEventListener('click', () => {
                     this.engine.addSource(item);
-                    btnSave.innerHTML = '<span>✓ Tersimpan</span>';
+                    btnSave.innerHTML = '<span><i class="fa-solid fa-check mr-1"></i> Tersimpan</span>';
                     btnSave.classList.add('bg-emerald-100', 'text-emerald-800', 'dark:bg-emerald-950', 'dark:text-emerald-300');
                     updateSourceCountUI();
                     this.showToast('Sumber referensi berhasil disimpan ke Pengelola Sumber!');
@@ -1064,7 +1064,7 @@ export class UiController {
                             Sisipkan
                         </button>
                         <button type="button" class="btn-manage-delete p-1 rounded hover:bg-red-100 dark:hover:bg-red-950/60 text-red-600 dark:text-red-400 text-xs transition cursor-pointer" title="Hapus sumber ini">
-                            🗑️
+                            <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
                 `;

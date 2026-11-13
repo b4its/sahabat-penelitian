@@ -400,7 +400,7 @@
                                             @elseif($prov->provider === 'groq')
                                                 <span class="font-extrabold text-orange-600">GQ</span>
                                             @elseif($prov->provider === 'ollama')
-                                                <span class="font-extrabold text-slate-700 dark:text-slate-200">🦙</span>
+                                                <i class="fa-solid fa-server text-sm text-slate-700 dark:text-slate-200"></i>
                                             @else
                                                 <svg class="w-5 h-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -442,7 +442,7 @@
                                                 <span class="text-[11px] font-medium px-2 py-0.5 rounded-lg border {{ $m === $prov->default_model ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-bold' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}">
                                                     {{ $m }}
                                                     @if($m === $prov->default_model)
-                                                        <span class="text-[9px] text-blue-500 ml-0.5">★</span>
+                                                        <i class="fa-solid fa-star text-[9px] text-blue-500 ml-0.5"></i>
                                                     @endif
                                                 </span>
                                             @endforeach
@@ -758,7 +758,7 @@
                                 onclick="sendQuickPrompt('Bantu susun outline metodologi penelitian mixed-methods untuk studi kasus evaluasi implementasi sistem.')"
                                 class="p-3 rounded-xl border border-blue-100 dark:border-blue-900/60 hover:border-blue-300 dark:hover:border-blue-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-xs text-slate-700 dark:text-slate-300 transition text-left cursor-pointer group"
                             >
-                                <span class="font-bold text-blue-600 dark:text-blue-400 block group-hover:underline">📐 Metodologi Riset</span>
+                                <span class="font-bold text-blue-600 dark:text-blue-400 block group-hover:underline"><i class="fa-solid fa-ruler-combined mr-1"></i> Metodologi Riset</span>
                                 <span class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">Rancangan mixed-methods studi kasus implementasi.</span>
                             </button>
 
@@ -767,7 +767,7 @@
                                 onclick="sendQuickPrompt('Bagaimana cara merumuskan abstrak artikel jurnal yang ringkas, tajam, dan memuat IMRaD secara seimbang?')"
                                 class="p-3 rounded-xl border border-blue-100 dark:border-blue-900/60 hover:border-blue-300 dark:hover:border-blue-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-xs text-slate-700 dark:text-slate-300 transition text-left cursor-pointer group"
                             >
-                                <span class="font-bold text-emerald-600 dark:text-emerald-400 block group-hover:underline">📝 Abstrak IMRaD</span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400 block group-hover:underline"><i class="fa-solid fa-file-lines mr-1"></i> Abstrak IMRaD</span>
                                 <span class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">Formulasi abstrak jurnal seimbang dan padat.</span>
                             </button>
 
@@ -776,7 +776,7 @@
                                 onclick="sendQuickPrompt('Beri contoh sitasi APA 7th edition dan IEEE untuk artikel jurnal dengan 3 penulis serta ada DOI.')"
                                 class="p-3 rounded-xl border border-blue-100 dark:border-blue-900/60 hover:border-blue-300 dark:hover:border-blue-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-xs text-slate-700 dark:text-slate-300 transition text-left cursor-pointer group"
                             >
-                                <span class="font-bold text-amber-600 dark:text-amber-400 block group-hover:underline">📚 Standar Sitasi</span>
+                                <span class="font-bold text-amber-600 dark:text-amber-400 block group-hover:underline"><i class="fa-solid fa-book-bookmark mr-1"></i> Standar Sitasi</span>
                                 <span class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">Contoh komparasi format sitasi APA 7th vs IEEE.</span>
                             </button>
 
@@ -785,7 +785,7 @@
                                 onclick="sendQuickPrompt('Jelaskan apa saja kriteria novelty dan kontribusi empiris dalam penulisan tesis atau disertasi.')"
                                 class="p-3 rounded-xl border border-blue-100 dark:border-blue-900/60 hover:border-blue-300 dark:hover:border-blue-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-xs text-slate-700 dark:text-slate-300 transition text-left cursor-pointer group"
                             >
-                                <span class="font-bold text-purple-600 dark:text-purple-400 block group-hover:underline">💡 Kebaruan / Novelty</span>
+                                <span class="font-bold text-purple-600 dark:text-purple-400 block group-hover:underline"><i class="fa-solid fa-lightbulb mr-1"></i> Kebaruan / Novelty</span>
                                 <span class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">Kriteria novelty &amp; kontribusi penelitian ilmiah.</span>
                             </button>
                         </div>
@@ -1361,7 +1361,7 @@
                 defBtn.className = isDef
                     ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs cursor-default'
                     : 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-300 cursor-pointer transition';
-                defBtn.textContent = isDef ? '★ Utama' : 'Set Utama';
+                defBtn.innerHTML = isDef ? '<i class="fa-solid fa-star text-[9px] mr-1"></i> Utama' : 'Set Utama';
                 defBtn.title = isDef ? 'Model ini adalah model utama (default)' : 'Jadikan sebagai model utama (default)';
                 defBtn.onclick = (e) => {
                     e.preventDefault();
@@ -1521,7 +1521,7 @@
                 chip.className = 'inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-lg border transition ' + (m === currentDefaultModel ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700');
                 
                 const label = document.createElement('span');
-                label.textContent = m + (m === currentDefaultModel ? ' ★' : '');
+                label.innerHTML = m + (m === currentDefaultModel ? ' <i class="fa-solid fa-star text-[9px] text-blue-500 ml-0.5"></i>' : '');
                 chip.appendChild(label);
 
                 const delBtn = document.createElement('button');
@@ -1713,12 +1713,12 @@
             });
             const data = await res.json();
             if (data.success) {
-                alert(`✓ ${data.message}`);
+                alert(`[Sukses] ${data.message}`);
                 if (timestampSpan) {
                     timestampSpan.textContent = `Diuji: baru saja (${data.latency_ms} ms)`;
                 }
             } else {
-                alert(`✕ ${data.message}`);
+                alert(`[Gagal] ${data.message}`);
             }
         } catch (err) {
             alert('Gagal menguji koneksi: ' + err.message);
@@ -2106,7 +2106,7 @@
             } else {
                 appendMessageToUi({
                     role: 'assistant',
-                    content: '⚠️ Gagal mendapatkan balasan dari model: ' + (data.message || 'Terjadi kesalahan sistem.'),
+                    content: '<i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i> Gagal mendapatkan balasan dari model: ' + (data.message || 'Terjadi kesalahan sistem.'),
                     provider_name: 'Error Handler',
                     model_used: model,
                     created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -2116,7 +2116,7 @@
             typingIndicator.classList.add('hidden');
             appendMessageToUi({
                 role: 'assistant',
-                content: '⚠️ Kesalahan koneksi jaringan saat menghubungi server AI: ' + err.message,
+                content: '<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-1"></i> Kesalahan koneksi jaringan saat menghubungi server AI: ' + err.message,
                 provider_name: 'Network Error',
                 model_used: model,
                 created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

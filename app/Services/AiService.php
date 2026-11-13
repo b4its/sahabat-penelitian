@@ -5,7 +5,7 @@ namespace App\Services;
 class AiService
 {
     /**
-     * Process Wordcraft AI action.
+     * Process Xishie Studio AI action.
      */
     public function process(
         string $action,
@@ -210,11 +210,11 @@ class AiService
             'title' => 'Ringkasan Eksekutif',
             'source' => mb_substr($clean, 0, 150).'...',
             'options' => [
-                "📌 **Intisari Dokumen**:\nDokumen ini menyajikan gagasan terstruktur berfokus pada: ".mb_substr($excerpt, 0, 180)."...\n\n".
+                "<i class=\"fa-solid fa-thumbtack mr-1\"></i> **Intisari Dokumen**:\nDokumen ini menyajikan gagasan terstruktur berfokus pada: ".mb_substr($excerpt, 0, 180)."...\n\n".
                 "• **Poin Kunci 1**: Kerangka konseptual dibangun dengan konsistensi metodologis yang teruji.\n".
                 "• **Poin Kunci 2**: Penyelarasan format dan konten memungkinkan pemahaman yang lebih cepat dan efisien.\n".
                 '• **Rekomendasi**: Lanjutkan dengan verifikasi data akhir dan implementasi langkah operasional.',
-                "💡 **Ringkasan Singkat (1 Kalimat)**:\nDokumen ini mengartikulasikan panduan komprehensif mengenai perancangan dan modifikasi dokumen dengan penekanan pada akurasi format dan keterbacaan optimal.",
+                "<i class=\"fa-solid fa-lightbulb mr-1\"></i> **Ringkasan Singkat (1 Kalimat)**:\nDokumen ini mengartikulasikan panduan komprehensif mengenai perancangan dan modifikasi dokumen dengan penekanan pada akurasi format dan keterbacaan optimal.",
             ],
             'explanation' => 'Ringkasan dihasilkan dari analisis konten dokumen utama.',
         ];
@@ -232,9 +232,9 @@ class AiService
             'title' => 'Eksplorasi Ide & Struktur',
             'source' => $topic,
             'options' => [
-                "💡 **Ide Bagian Lanjutan (Argumen Baru)**:\n1. Analisis Perbandingan: Membandingkan skenario sebelum dan sesudah implementasi.\n2. Studi Kasus Lapangan: Menambahkan 2 contoh konkret penerapan di industri.\n3. Pertimbangan Regulasi & Etika: Menjawab tantangan kepatuhan dan tata kelola.",
-                "🔍 **Pertanyaan Kritis untuk Diangkat**:\n• Bagaimana efektivitas pendekatan ini jika diterapkan pada skala volume dokumen yang jauh lebih besar?\n• Apa saja tolok ukur kuantitatif yang paling tepat digunakan untuk mengukur keberhasilan?",
-                "🗺️ **Struktur Rekomendasi Bab**:\n1. Latar Belakang & Urgensi Masalah\n2. Metodologi & Pendekatan Teknis\n3. Pembahasan Temuan Kunci\n4. Kesimpulan & Rencana Aksi",
+                "<i class=\"fa-solid fa-lightbulb mr-1\"></i> **Ide Bagian Lanjutan (Argumen Baru)**:\n1. Analisis Perbandingan: Membandingkan skenario sebelum dan sesudah implementasi.\n2. Studi Kasus Lapangan: Menambahkan 2 contoh konkret penerapan di industri.\n3. Pertimbangan Regulasi & Etika: Menjawab tantangan kepatuhan dan tata kelola.",
+                "<i class=\"fa-solid fa-magnifying-glass mr-1\"></i> **Pertanyaan Kritis untuk Diangkat**:\n• Bagaimana efektivitas pendekatan ini jika diterapkan pada skala volume dokumen yang jauh lebih besar?\n• Apa saja tolok ukur kuantitatif yang paling tepat digunakan untuk mengukur keberhasilan?",
+                "<i class=\"fa-solid fa-map-location-dot mr-1\"></i> **Struktur Rekomendasi Bab**:\n1. Latar Belakang & Urgensi Masalah\n2. Metodologi & Pendekatan Teknis\n3. Pembahasan Temuan Kunci\n4. Kesimpulan & Rencana Aksi",
             ],
             'explanation' => 'Ide pengembangan argumen dan bab lanjutan berhasil dieksplorasi.',
         ];

@@ -319,16 +319,16 @@
                                             Terbuka
                                         </span>
                                     @elseif ($doc->restricted_mode === 'read_only')
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300">
-                                            🔒 Read-Only
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300">
+                                            <i class="fa-solid fa-lock text-[10px] text-amber-600 dark:text-amber-400"></i> Read-Only
                                         </span>
                                     @elseif ($doc->restricted_mode === 'comments_only')
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300">
-                                            💬 Komentar
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300">
+                                            <i class="fa-solid fa-comment-dots text-[10px] text-indigo-600 dark:text-indigo-400"></i> Komentar
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300">
-                                            🔑 Password
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300">
+                                            <i class="fa-solid fa-key text-[10px] text-rose-600 dark:text-rose-400"></i> Password
                                         </span>
                                     @endif
                                 </td>
@@ -341,11 +341,11 @@
                                 <!-- Actions -->
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="flex items-center justify-end gap-1.5">
-                                        <!-- Edit in Wordcraft -->
+                                        <!-- Edit in Xishie Studio -->
                                         <a
                                             href="{{ url('/editor?doc='.$doc->uuid) }}"
                                             class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-600 transition-colors"
-                                            title="Buka dan sunting di Wordcraft Studio"
+                                            title="Buka dan sunting di Xishie Studio"
                                             aria-label="Sunting naskah {{ $doc->title }}"
                                         >
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

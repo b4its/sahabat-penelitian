@@ -1,5 +1,5 @@
 /**
- * VelScribe Word Tools Suite
+ * Sahabat Penelitian Word Tools Suite
  * Integrates Microsoft Word parity features into the web workspace:
  * 1. Track Changes & Revision Management (Accept / Reject All / Indicator)
  * 2. Document Comparison (Legal Blackline Semantic Diff)
@@ -214,10 +214,10 @@ export class WordToolsSuite {
                 if (badge) {
                     if (audit.passed) {
                         badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
-                        badge.textContent = '✓ Lolos Penuh (Aksesibel)';
+                        badge.innerHTML = '<i class="fa-solid fa-circle-check mr-1 text-emerald-500"></i> Lolos Penuh (Aksesibel)';
                     } else {
                         badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
-                        badge.textContent = '⚠️ Perlu Perbaikan';
+                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1 text-amber-500"></i> Perlu Perbaikan';
                     }
                 }
 
@@ -236,7 +236,7 @@ export class WordToolsSuite {
                             item.className = 'p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 text-xs space-y-1';
                             const title = document.createElement('div');
                             title.className = 'font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5';
-                            title.innerHTML = `<span class="text-amber-500">⚠️</span> <span>${this.escapeHtml(issue.type)}</span>`;
+                            title.innerHTML = `<span class="text-amber-500"><i class="fa-solid fa-triangle-exclamation"></i></span> <span>${this.escapeHtml(issue.type)}</span>`;
                             const desc = document.createElement('p');
                             desc.className = 'text-gray-600 dark:text-gray-400';
                             desc.textContent = issue.message;
@@ -590,7 +590,7 @@ export class WordToolsSuite {
         const badge = document.getElementById('document-protection-badge');
         if (badge) {
             badge.classList.toggle('hidden', !locked);
-            badge.textContent = locked ? `🔒 Terproteksi (${mode})` : '';
+            badge.innerHTML = locked ? `<i class="fa-solid fa-lock mr-1"></i> Terproteksi (${mode})` : '';
         }
     }
 

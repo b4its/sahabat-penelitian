@@ -1,6 +1,5 @@
 /**
- * VelScribe Wordcraft AI Studio
- * Inspired by Google PAIR / storytold Wordcraft open-source project.
+ * Sahabat Penelitian Xishie Studio AI
  * Implements creative writing operations (Continue, Elaborate, Rewrite, Grammar, Summarize, Ideate, Chat).
  */
 
@@ -282,7 +281,7 @@ export class WordcraftAi {
                 action: 'summarize',
                 title: 'Ringkasan Eksekutif',
                 options: [
-                    "📌 **Intisari Dokumen**:\n• Dokumen membahas strategi modifikasi dokumen lokal dengan penyelarasan format otomatis.\n• Fitur terintegrasi mengadopsi standar Word, Google Docs, dan Wordcraft.\n• Ekspor multi-format (DOCX, PDF, MD, HTML) siap digunakan.",
+                    "**Intisari Dokumen**:\n• Dokumen membahas strategi modifikasi dokumen lokal dengan penyelarasan format otomatis.\n• Fitur terintegrasi mengadopsi standar Word, Google Docs, dan Xishie Studio.\n• Ekspor multi-format (DOCX, PDF, MD, HTML) siap digunakan.",
                 ],
                 explanation: 'Ringkasan poin eksekutif siap pakai.',
             };

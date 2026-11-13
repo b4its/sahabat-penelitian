@@ -55,7 +55,7 @@ class DocumentController extends Controller
 <p class="lead">Panduan komprehensif implementasi teknologi berbasis naskah dan penyelarasan format dokumen otomatis.</p>
 <hr />
 <h2>1. Pendahuluan & Latar Belakang</h2>
-<p>Dalam era komputasi modern, pengelolaan berkas dokumen teks sering kali menghadapi tantangan fragmentasi format antar aplikasi perkantoran konvensional seperti <strong>Microsoft Word</strong>, <strong>Google Documents</strong>, dan platform kreatif berbasis AI seperti <strong>Wordcraft</strong>. Integrasi sistem ini bertujuan untuk menyatukan kenyamanan visual, presisi tata letak kertas A4, serta kecerdasan asistensi penulisan ke dalam satu ruang kerja tunggal.</p>
+<p>Dalam era komputasi modern, pengelolaan berkas dokumen teks sering kali menghadapi tantangan fragmentasi format antar aplikasi perkantoran konvensional seperti <strong>Microsoft Word</strong>, <strong>Google Documents</strong>, dan platform kreatif berbasis AI seperti <strong>Xishie Studio</strong>. Integrasi sistem ini bertujuan untuk menyatukan kenyamanan visual, presisi tata letak kertas A4, serta kecerdasan asistensi penulisan ke dalam satu ruang kerja tunggal.</p>
 <p>Dokumen ini dimuat secara otomatis dari berkas lokal, di mana struktur paragraf, tabel, gaya tipografi, dan hierarki judul disesuaikan secara instan tanpa kehilangan integritas data.</p>
 
 <h2>2. Metodologi & Matriks Pengujian</h2>
@@ -101,7 +101,7 @@ class DocumentController extends Controller
 <ul>
     <li><strong>Ribbon Toolbar Microsoft Word</strong>: Pengaturan font, ukuran, warna sorot, indentasi, alignment, hingga pembuatan tabel interaktif.</li>
     <li><strong>Kenyamanan Google Documents</strong>: Judul naskah inline-editable, menu bubble instan saat menyorot teks, dan navigasi outline otomatis.</li>
-    <li><strong>Asisten AI Wordcraft</strong>: Fitur lanjut penulisan, perluas narasi, parafrase multi-gaya, koreksi ejaan PUEBI, serta tanya jawab terhadap naskah.</li>
+    <li><strong>Asisten AI Xishie Studio</strong>: Fitur lanjut penulisan, perluas narasi, parafrase multi-gaya, koreksi ejaan PUEBI, serta tanya jawab terhadap naskah.</li>
 </ul>
 
 <blockquote>
@@ -218,7 +218,7 @@ HTML;
     }
 
     /**
-     * Process Wordcraft AI Assistant request.
+     * Process Xishie Studio AI Assistant request.
      */
     public function aiAssistant(Request $request): JsonResponse
     {

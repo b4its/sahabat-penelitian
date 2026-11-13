@@ -12,7 +12,7 @@ function setupEnvironment() {
         </head>
         <body>
             <span id="document-format-badge">DOCX</span>
-            <span id="document-protection-badge" class="hidden">🔒 Terproteksi</span>
+            <span id="document-protection-badge" class="hidden"><i class="fa-solid fa-lock mr-1"></i> Terproteksi</span>
 
             <!-- Track changes -->
             <button id="btn-toggle-track-changes"><span id="track-changes-indicator" class="bg-gray-400"></span></button>

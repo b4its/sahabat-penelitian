@@ -13,8 +13,8 @@ use Illuminate\Http\UploadedFile;
 test('black-box: document editor view loads successfully at /editor route', function () {
     $responseEditor = $this->get('/editor');
     $responseEditor->assertStatus(200);
-    $responseEditor->assertSee('VelScribe', false);
-    $responseEditor->assertSee('Wordcraft', false);
+    $responseEditor->assertSee('Sahabat Penelitian', false);
+    $responseEditor->assertSee('Xishie Studio', false);
     $responseEditor->assertSee('document-editor', false);
     $responseEditor->assertSee('document-page-canvas', false);
     $responseEditor->assertSee('outline-sidebar', false);
@@ -31,7 +31,7 @@ test('black-box: document editor view renders all ribbon tabs and interactive to
     $response->assertSee('Sisipkan (Insert)');
     $response->assertSee('Tata Letak (Layout)');
     $response->assertSee('Tampilan (View)');
-    $response->assertSee('Asisten AI Wordcraft');
+    $response->assertSee('Asisten AI Xishie Studio');
 
     // Modals
     $response->assertSee('modal-open-file', false);

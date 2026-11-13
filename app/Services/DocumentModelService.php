@@ -30,7 +30,7 @@ class DocumentModelService
             'id' => $docId,
             'title' => $title,
             'metadata' => [
-                'creator' => 'VelScribe Wordcraft Studio',
+                'creator' => 'Sahabat Penelitian Xishie Studio',
                 'language' => $lang,
                 'createdAt' => now()->toIso8601String(),
                 'updatedAt' => now()->toIso8601String(),
@@ -113,7 +113,7 @@ class DocumentModelService
             'id' => $docId,
             'title' => $title,
             'metadata' => [
-                'creator' => 'VelScribe Wordcraft Studio',
+                'creator' => 'Sahabat Penelitian Xishie Studio',
                 'language' => 'id-ID',
                 'createdAt' => now()->toIso8601String(),
                 'updatedAt' => now()->toIso8601String(),
