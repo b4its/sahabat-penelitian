@@ -393,17 +393,118 @@ class AiStudioBlackBoxTest extends TestCase
     }
 
     /**
-     * Black-box BB15: Form validation prevents invalid provider creation.
+     * Black-box BB15: Form validation prevents invalid provider creation when required fields are missing.
      */
     public function test_black_box_provider_validation_rules(): void
     {
-        // Missing name and models
+        // Missing name and provider driver
         $response = $this->postJson('/panel/ai-studio/providers', [
-            'provider' => 'openai',
+            'base_url' => 'https://api.openai.com/v1',
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['name', 'models']);
+        $response->assertJsonValidationErrors(['name', 'provider']);
+    }
+
+    /**
+     * Black-box BB16: Adding a provider without models saves empty models and renders "model belum didaftarkan" default badge.
+     */
+    public function test_black_box_add_provider_without_models_renders_model_belum_didaftarkan(): void
+    {
+        $uniqueName = 'Provider Tanpa Model '.uniqid();
+        $response = $this->postJson('/panel/ai-studio/providers', [
+            'name' => $uniqueName,
+            'provider' => 'gemini',
+            'api_key' => 'AIzaSy-test-key-12345',
+            // models is deliberately omitted on creation
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        // Assert database record has empty models and null default_model
+        $provider = AiProvider::where('name', $uniqueName)->first();
+        $this->assertNotNull($provider);
+        $this->assertEmpty($provider->models);
+        $this->assertNull($provider->default_model);
+
+        // Assert connections table renders "model belum didaftarkan"
+        $tableResponse = $this->get('/panel/ai-studio?tab=connections');
+        $tableResponse->assertStatus(200);
+        $tableResponse->assertSee($uniqueName);
+        $tableResponse->assertSee('model belum didaftarkan', false);
+        $tableResponse->assertSee('empty-models-badge', false);
+    }
+
+    /**
+     * Black-box BB17: Provider modal contains searchable multiple-choice models container hidden by default.
+     */
+    public function test_black_box_modal_structure_hides_models_by_default(): void
+    {
+        $response = $this->get('/panel/ai-studio?tab=connections');
+        $response->assertStatus(200);
+
+        // Container is hidden by default for "Tambah Provider Baru"
+        $response->assertSee('id="container-provider-models" class="space-y-3 pt-3 border-t border-blue-100 dark:border-blue-900/40 hidden"', false);
+
+        // Search input for multiple choice models
+        $response->assertSee('id="model-search-input"', false);
+        $response->assertSee('placeholder="Cari model dalam koneksi ini..."', false);
+
+        // Scrollable multiple choice container
+        $response->assertSee('id="model-multiselect-container"', false);
+
+        // Selected models counter badge & chips container
+        $response->assertSee('id="selected-models-count-badge"', false);
+        $response->assertSee('id="container-selected-models-chips"', false);
+
+        // Dynamic default model dropdown
+        $response->assertSee('id="input-provider-default-model"', false);
+    }
+
+    /**
+     * Black-box BB18: End-to-end update provider with multiple choice models selection.
+     */
+    public function test_black_box_e2e_edit_provider_models_via_multiple_choice(): void
+    {
+        $provider = AiProvider::create([
+            'uuid' => (string) Str::uuid(),
+            'name' => 'Provider Edit Test '.uniqid(),
+            'provider' => 'openai',
+            'base_url' => 'https://api.openai.com/v1',
+            'api_key' => 'sk-test-secret',
+            'models' => [],
+            'default_model' => null,
+            'is_active' => true,
+            'status' => 'ready',
+        ]);
+
+        // Initially renders "model belum didaftarkan"
+        $initResponse = $this->get('/panel/ai-studio?tab=connections');
+        $initResponse->assertSee($provider->name);
+        $initResponse->assertSee('model belum didaftarkan', false);
+
+        // User edits provider and selects multiple models (e.g. gpt-4o, gpt-4o-mini, o3-mini)
+        $updateResponse = $this->postJson("/panel/ai-studio/providers/{$provider->uuid}/update", [
+            'name' => $provider->name.' Updated',
+            'provider' => 'openai',
+            'models' => ['gpt-4o', 'gpt-4o-mini', 'o3-mini'],
+            'default_model' => 'gpt-4o',
+        ]);
+
+        $updateResponse->assertStatus(200);
+        $updateResponse->assertJson(['success' => true]);
+
+        // Provider now has models stored and default model selected
+        $provider->refresh();
+        $this->assertEquals(['gpt-4o', 'gpt-4o-mini', 'o3-mini'], $provider->models);
+        $this->assertEquals('gpt-4o', $provider->default_model);
+
+        // Table now displays selected model badges instead of "model belum didaftarkan"
+        $afterResponse = $this->get('/panel/ai-studio?tab=connections');
+        $afterResponse->assertSee('gpt-4o');
+        $afterResponse->assertSee('gpt-4o-mini');
+        $afterResponse->assertSee('o3-mini');
     }
 
     /**

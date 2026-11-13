@@ -436,16 +436,25 @@
 
                                 <!-- Models List -->
                                 <td class="px-4 py-4 min-w-[220px]">
-                                    <div class="flex flex-wrap gap-1 max-w-[280px]">
-                                        @foreach($prov->models ?? [] as $m)
-                                            <span class="text-[11px] font-medium px-2 py-0.5 rounded-lg border {{ $m === $prov->default_model ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-bold' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}">
-                                                {{ $m }}
-                                                @if($m === $prov->default_model)
-                                                    <span class="text-[9px] text-blue-500 ml-0.5">★</span>
-                                                @endif
-                                            </span>
-                                        @endforeach
-                                    </div>
+                                    @if(!empty($prov->models) && count($prov->models) > 0)
+                                        <div class="flex flex-wrap gap-1 max-w-[280px]">
+                                            @foreach($prov->models as $m)
+                                                <span class="text-[11px] font-medium px-2 py-0.5 rounded-lg border {{ $m === $prov->default_model ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-bold' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}">
+                                                    {{ $m }}
+                                                    @if($m === $prov->default_model)
+                                                        <span class="text-[9px] text-blue-500 ml-0.5">★</span>
+                                                    @endif
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/60 empty-models-badge">
+                                            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            model belum didaftarkan
+                                        </span>
+                                    @endif
                                 </td>
 
                                 <!-- Status & Test -->
@@ -991,38 +1000,120 @@
                     </div>
                 </div>
 
-                <!-- 5. Configured Models List (comma separated or selectable) -->
-                <div>
-                    <label for="input-provider-models" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Daftar Model yang Dihubungkan <span class="text-rose-500">*</span>
-                        <span class="text-[11px] font-normal text-slate-400">(Pisahkan dengan koma)</span>
-                    </label>
+                <!-- 5. Configured Models Section (Hidden when adding provider, shown on Edit) -->
+                <div id="container-provider-models" class="space-y-3 pt-3 border-t border-blue-100 dark:border-blue-900/40 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                Daftar Model yang Dihubungkan
+                            </label>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                Pilih model dari provider ini (multiple choice dengan fitur pencarian).
+                            </p>
+                        </div>
+                        <span id="selected-models-count-badge" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800 shrink-0">
+                            0 model dipilih
+                        </span>
+                    </div>
+
+                    <!-- Search input for models -->
+                    <div class="relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="model-search-input"
+                            placeholder="Cari model dalam koneksi ini..."
+                            oninput="filterModelOptions(this.value)"
+                            class="w-full pl-8 pr-8 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                        <button
+                            type="button"
+                            id="model-search-clear-btn"
+                            onclick="clearModelSearch()"
+                            class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                            title="Hapus pencarian"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Quick selection controls -->
+                    <div class="flex items-center justify-between text-[11px] px-0.5">
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="selectAllModels()" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer">
+                                Pilih Semua
+                            </button>
+                            <span class="text-slate-300 dark:text-slate-700">•</span>
+                            <button type="button" onclick="deselectAllModels()" class="text-slate-500 dark:text-slate-400 hover:underline font-medium cursor-pointer">
+                                Batalkan Semua
+                            </button>
+                        </div>
+                        <span id="model-search-count-hint" class="text-[10px] text-slate-400"></span>
+                    </div>
+
+                    <!-- Multiple Choice List Container (Scrollable) -->
+                    <div id="model-multiselect-container" class="max-h-48 overflow-y-auto rounded-xl border border-blue-200 dark:border-blue-800/80 bg-slate-50/60 dark:bg-slate-800/50 p-2 space-y-1 divide-y divide-slate-100 dark:divide-slate-800">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+
+                    <!-- Empty search state -->
+                    <div id="model-empty-search-state" class="hidden p-3 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                        Tidak ada model yang cocok dengan kata kunci pencarian.
+                    </div>
+
+                    <!-- Add custom model option -->
+                    <div class="flex items-center gap-2 pt-1">
+                        <input
+                            type="text"
+                            id="input-add-custom-model"
+                            placeholder="Tambah model kustom lainnya..."
+                            onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addCustomModelOption(); }"
+                            class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                        <button
+                            type="button"
+                            onclick="addCustomModelOption()"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition cursor-pointer"
+                        >
+                            + Tambah
+                        </button>
+                    </div>
+
+                    <!-- Selected models chips preview -->
+                    <div id="container-selected-models-chips" class="flex flex-wrap gap-1.5 pt-1">
+                        <!-- Selected model badges populated by JS -->
+                    </div>
+
+                    <!-- Hidden input to submit models (compatible with controller parseModelsInput) -->
                     <input
-                        type="text"
+                        type="hidden"
                         id="input-provider-models"
                         name="models"
-                        placeholder="gpt-4o, gpt-4o-mini"
-                        class="w-full px-3 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        required
-                    >
-                    <!-- Quick preset pills -->
-                    <div class="mt-2 flex flex-wrap gap-1" id="preset-model-pills">
-                        <!-- Populated by JS based on driver -->
-                    </div>
-                </div>
+                        value=""
+                    />
 
-                <!-- 6. Default Model -->
-                <div>
-                    <label for="input-provider-default-model" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Model Utama (Default)
-                    </label>
-                    <input
-                        type="text"
-                        id="input-provider-default-model"
-                        name="default_model"
-                        placeholder="gpt-4o"
-                        class="w-full px-3 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    >
+                    <!-- Legacy pill container kept invisible for safety -->
+                    <div id="preset-model-pills" class="hidden"></div>
+
+                    <!-- Default Model Selection -->
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <label for="input-provider-default-model" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            Model Utama (Default)
+                        </label>
+                        <select
+                            id="input-provider-default-model"
+                            name="default_model"
+                            class="w-full px-3 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-xs sm:text-sm font-mono font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                        >
+                            <!-- Populated dynamically based on checked models -->
+                        </select>
+                    </div>
                 </div>
 
                 <!-- 7. Active Status Toggle & Description -->
@@ -1196,17 +1287,282 @@
         }
     }
 
-    // Modal Add Provider
+    // =========================================================================
+    // MULTIPLE CHOICE FOR CONNECTED MODELS (ON EDIT ONLY)
+    // =========================================================================
+    let currentAvailableModels = [];
+    let selectedModelsSet = new Set();
+    let currentDefaultModel = '';
+
+    function setupModelMultiSelect(driver, initialSelected = [], defaultModel = '') {
+        const preset = PRESETS[driver] || {};
+        const presetModels = Array.isArray(preset.default_models) ? preset.default_models : [];
+        
+        // Merge preset models and already registered models, preserving uniqueness
+        const allSet = new Set([...presetModels, ...initialSelected]);
+        currentAvailableModels = Array.from(allSet).filter(Boolean);
+        
+        selectedModelsSet = new Set(initialSelected.filter(Boolean));
+        currentDefaultModel = defaultModel || (initialSelected[0] || (currentAvailableModels[0] || ''));
+        
+        // Reset search input
+        const searchInput = document.getElementById('model-search-input');
+        if (searchInput) searchInput.value = '';
+        const clearBtn = document.getElementById('model-search-clear-btn');
+        if (clearBtn) clearBtn.classList.add('hidden');
+
+        renderModelMultiSelectUI();
+    }
+
+    function renderModelMultiSelectUI() {
+        const container = document.getElementById('model-multiselect-container');
+        const emptyState = document.getElementById('model-empty-search-state');
+        const countHint = document.getElementById('model-search-count-hint');
+        if (!container) return;
+
+        const q = (document.getElementById('model-search-input')?.value || '').trim().toLowerCase();
+        container.innerHTML = '';
+        let visibleCount = 0;
+
+        currentAvailableModels.forEach((model, idx) => {
+            const matches = !q || model.toLowerCase().includes(q);
+            const isChecked = selectedModelsSet.has(model);
+
+            const row = document.createElement('div');
+            row.className = 'model-multiselect-item flex items-center justify-between p-2 rounded-lg hover:bg-blue-50/70 dark:hover:bg-slate-700/60 transition ' + (matches ? '' : 'hidden');
+            row.setAttribute('data-model-name', model.toLowerCase());
+
+            const leftDiv = document.createElement('label');
+            leftDiv.className = 'flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer select-none';
+            leftDiv.htmlFor = `chk-model-${idx}`;
+
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.id = `chk-model-${idx}`;
+            chk.value = model;
+            chk.checked = isChecked;
+            chk.className = 'model-checkbox-choice w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer';
+            chk.onchange = (e) => toggleModelChoice(model, e.target.checked);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'text-xs font-mono font-medium text-slate-800 dark:text-slate-200 truncate';
+            nameSpan.textContent = model;
+
+            leftDiv.appendChild(chk);
+            leftDiv.appendChild(nameSpan);
+
+            const rightDiv = document.createElement('div');
+            rightDiv.className = 'flex items-center gap-1 shrink-0 ml-2';
+
+            if (isChecked) {
+                const isDef = (model === currentDefaultModel);
+                const defBtn = document.createElement('button');
+                defBtn.type = 'button';
+                defBtn.className = isDef
+                    ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs cursor-default'
+                    : 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-300 cursor-pointer transition';
+                defBtn.textContent = isDef ? '★ Utama' : 'Set Utama';
+                defBtn.title = isDef ? 'Model ini adalah model utama (default)' : 'Jadikan sebagai model utama (default)';
+                defBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDefaultModelChoice(model);
+                };
+                rightDiv.appendChild(defBtn);
+            }
+
+            row.appendChild(leftDiv);
+            row.appendChild(rightDiv);
+            container.appendChild(row);
+
+            if (matches) visibleCount++;
+        });
+
+        if (emptyState) {
+            if (visibleCount === 0 && currentAvailableModels.length > 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        if (countHint) {
+            if (q) {
+                countHint.textContent = `${visibleCount} dari ${currentAvailableModels.length} model`;
+            } else {
+                countHint.textContent = `${currentAvailableModels.length} model tersedia`;
+            }
+        }
+
+        syncMultiSelectState();
+    }
+
+    function toggleModelChoice(model, isChecked) {
+        if (isChecked) {
+            selectedModelsSet.add(model);
+            if (!currentDefaultModel || !selectedModelsSet.has(currentDefaultModel)) {
+                currentDefaultModel = model;
+            }
+        } else {
+            selectedModelsSet.delete(model);
+            if (currentDefaultModel === model) {
+                currentDefaultModel = Array.from(selectedModelsSet)[0] || '';
+            }
+        }
+        renderModelMultiSelectUI();
+    }
+
+    function setDefaultModelChoice(model) {
+        if (selectedModelsSet.has(model)) {
+            currentDefaultModel = model;
+            renderModelMultiSelectUI();
+        }
+    }
+
+    function selectAllModels() {
+        currentAvailableModels.forEach(m => selectedModelsSet.add(m));
+        if (!currentDefaultModel && currentAvailableModels.length > 0) {
+            currentDefaultModel = currentAvailableModels[0];
+        }
+        renderModelMultiSelectUI();
+    }
+
+    function deselectAllModels() {
+        selectedModelsSet.clear();
+        currentDefaultModel = '';
+        renderModelMultiSelectUI();
+    }
+
+    function filterModelOptions(query) {
+        const clearBtn = document.getElementById('model-search-clear-btn');
+        if (clearBtn) {
+            if (query && query.trim().length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        }
+        renderModelMultiSelectUI();
+    }
+
+    function clearModelSearch() {
+        const searchInput = document.getElementById('model-search-input');
+        if (searchInput) searchInput.value = '';
+        filterModelOptions('');
+    }
+
+    function addCustomModelOption() {
+        const input = document.getElementById('input-add-custom-model');
+        const val = (input?.value || '').trim();
+        if (!val) return;
+
+        if (!currentAvailableModels.includes(val)) {
+            currentAvailableModels.push(val);
+        }
+        selectedModelsSet.add(val);
+        if (!currentDefaultModel) {
+            currentDefaultModel = val;
+        }
+        input.value = '';
+        renderModelMultiSelectUI();
+    }
+
+    function syncMultiSelectState() {
+        const selectedArr = Array.from(selectedModelsSet);
+
+        // Update hidden input for form submission
+        const hiddenInput = document.getElementById('input-provider-models');
+        if (hiddenInput) {
+            hiddenInput.value = selectedArr.join(', ');
+        }
+
+        // Update count badge
+        const countBadge = document.getElementById('selected-models-count-badge');
+        if (countBadge) {
+            countBadge.textContent = `${selectedArr.length} model dipilih`;
+        }
+
+        // Update default model dropdown
+        const defSelect = document.getElementById('input-provider-default-model');
+        if (defSelect) {
+            defSelect.innerHTML = '';
+            if (selectedArr.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = '(Belum ada model dipilih)';
+                defSelect.appendChild(opt);
+                currentDefaultModel = '';
+            } else {
+                if (!currentDefaultModel || !selectedModelsSet.has(currentDefaultModel)) {
+                    currentDefaultModel = selectedArr[0];
+                }
+                selectedArr.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m + (m === currentDefaultModel ? ' (Default)' : '');
+                    if (m === currentDefaultModel) {
+                        opt.selected = true;
+                    }
+                    defSelect.appendChild(opt);
+                });
+            }
+            defSelect.onchange = (e) => {
+                currentDefaultModel = e.target.value;
+                renderModelMultiSelectUI();
+            };
+        }
+
+        // Update chips preview
+        const chipsContainer = document.getElementById('container-selected-models-chips');
+        if (chipsContainer) {
+            chipsContainer.innerHTML = '';
+            selectedArr.forEach(m => {
+                const chip = document.createElement('span');
+                chip.className = 'inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-lg border transition ' + (m === currentDefaultModel ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700');
+                
+                const label = document.createElement('span');
+                label.textContent = m + (m === currentDefaultModel ? ' ★' : '');
+                chip.appendChild(label);
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 ml-0.5 cursor-pointer';
+                delBtn.innerHTML = '&times;';
+                delBtn.title = 'Hapus pilihan model';
+                delBtn.onclick = () => toggleModelChoice(m, false);
+                chip.appendChild(delBtn);
+
+                chipsContainer.appendChild(chip);
+            });
+        }
+    }
+
+    // Modal Add Provider (Models section is hidden)
     function openAddProviderModal() {
         document.getElementById('modal-provider-title').textContent = 'Tambah AI Provider Baru';
         document.getElementById('provider-edit-uuid').value = '';
         document.getElementById('form-provider').reset();
         document.getElementById('input-provider-active').checked = true;
+
+        // Hide models section completely on Add
+        const containerModels = document.getElementById('container-provider-models');
+        if (containerModels) {
+            containerModels.classList.add('hidden');
+        }
+
+        // Clear models state
+        currentAvailableModels = [];
+        selectedModelsSet.clear();
+        currentDefaultModel = '';
+        document.getElementById('input-provider-models').value = '';
+        const defSelect = document.getElementById('input-provider-default-model');
+        if (defSelect) defSelect.innerHTML = '';
+
         handleDriverPresetChange();
         document.getElementById('modal-provider').classList.remove('hidden');
     }
 
-    // Modal Edit Provider
+    // Modal Edit Provider (Models section is displayed with multiple choice)
     function openEditProviderModal(provider) {
         document.getElementById('modal-provider-title').textContent = 'Edit AI Provider: ' + provider.name;
         document.getElementById('provider-edit-uuid').value = provider.uuid;
@@ -1215,11 +1571,23 @@
         document.getElementById('input-provider-url').value = provider.base_url || '';
         document.getElementById('input-provider-key').value = '';
         document.getElementById('input-provider-key').placeholder = provider.masked_api_key || 'Kunci tersimpan (kosongkan jika tidak diganti)';
-        document.getElementById('input-provider-models').value = Array.isArray(provider.models) ? provider.models.join(', ') : (provider.models || '');
-        document.getElementById('input-provider-default-model').value = provider.default_model || '';
         document.getElementById('input-provider-active').checked = Boolean(provider.is_active);
 
-        renderPresetPills(provider.provider);
+        // Show models section on Edit
+        const containerModels = document.getElementById('container-provider-models');
+        if (containerModels) {
+            containerModels.classList.remove('hidden');
+        }
+
+        // Parse existing models
+        let initialModels = [];
+        if (Array.isArray(provider.models)) {
+            initialModels = provider.models;
+        } else if (typeof provider.models === 'string' && provider.models.trim()) {
+            initialModels = provider.models.split(',').map(s => s.trim()).filter(Boolean);
+        }
+
+        setupModelMultiSelect(provider.provider, initialModels, provider.default_model);
         document.getElementById('modal-provider').classList.remove('hidden');
     }
 
@@ -1237,43 +1605,22 @@
             document.getElementById('input-provider-name').value = preset.label;
             document.getElementById('input-provider-url').value = preset.default_base_url;
             document.getElementById('input-provider-key').placeholder = preset.placeholder_key;
-            document.getElementById('input-provider-models').value = preset.default_models.join(', ');
-            document.getElementById('input-provider-default-model').value = preset.default_model;
+            // On Add: Models are NOT set, kept blank
+            document.getElementById('input-provider-models').value = '';
+        } else if (preset && editUuid) {
+            // On Edit: Refresh available models for new driver
+            setupModelMultiSelect(driver, Array.from(selectedModelsSet), currentDefaultModel);
         }
-
-        renderPresetPills(driver);
     }
 
     function renderPresetPills(driver) {
-        const container = document.getElementById('preset-model-pills');
-        container.innerHTML = '';
-        const preset = PRESETS[driver];
-        if (!preset || !preset.default_models) return;
-
-        const label = document.createElement('span');
-        label.className = 'text-[10px] text-slate-400 mr-1 self-center';
-        label.textContent = 'Model Rekomendasi:';
-        container.appendChild(label);
-
-        preset.default_models.forEach(model => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'text-[10px] px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer';
-            btn.textContent = '+ ' + model;
-            btn.onclick = () => addModelToInput(model);
-            container.appendChild(btn);
-        });
+        // Kept for backward compatibility
     }
 
     function addModelToInput(model) {
-        const input = document.getElementById('input-provider-models');
-        let current = input.value.split(',').map(s => s.trim()).filter(Boolean);
-        if (!current.includes(model)) {
-            current.push(model);
-            input.value = current.join(', ');
-        }
-        if (!document.getElementById('input-provider-default-model').value) {
-            document.getElementById('input-provider-default-model').value = model;
+        // Kept for backward compatibility
+        if (typeof toggleModelChoice === 'function') {
+            toggleModelChoice(model, true);
         }
     }
 

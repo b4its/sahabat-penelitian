@@ -375,4 +375,55 @@ class AiStudioWhiteBoxTest extends TestCase
         $this->assertStringContainsString('<blockquote>', $renderedHtml);
         $this->assertStringContainsString('<code>Y = a + bX</code>', $renderedHtml);
     }
+
+    /**
+     * White-box WB14: Controller storeProvider saves empty models array when models is omitted on create.
+     */
+    public function test_white_box_store_provider_omitted_models_defaults_to_empty_and_null(): void
+    {
+        $request = Request::create('/panel/ai-studio/providers', 'POST', [
+            'name' => 'WB Provider Tanpa Model '.uniqid(),
+            'provider' => 'groq',
+            'base_url' => 'https://api.groq.com/openai/v1',
+            // models omitted
+        ]);
+        $request->headers->set('Accept', 'application/json');
+
+        $response = $this->controller->storeProvider($request);
+        $this->assertInstanceOf(JsonResponse::class, $response);
+
+        $data = $response->getData(true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals([], $data['provider']['models']);
+        $this->assertNull($data['provider']['default_model']);
+    }
+
+    /**
+     * White-box WB15: Controller updateProvider updates models via multiple choice array and sets default model.
+     */
+    public function test_white_box_update_provider_multiple_choice_models_and_default(): void
+    {
+        $provider = AiProvider::create([
+            'name' => 'WB Update Multi Choice '.uniqid(),
+            'provider' => 'anthropic',
+            'models' => [],
+            'default_model' => null,
+        ]);
+
+        $request = Request::create("/panel/ai-studio/providers/{$provider->uuid}/update", 'POST', [
+            'name' => $provider->name.' (Edited)',
+            'provider' => 'anthropic',
+            'models' => ['claude-3-5-sonnet', 'claude-3-5-haiku', 'claude-3-opus'],
+            'default_model' => 'claude-3-5-sonnet',
+        ]);
+        $request->headers->set('Accept', 'application/json');
+
+        $response = $this->controller->updateProvider($request, $provider->uuid);
+        $this->assertInstanceOf(JsonResponse::class, $response);
+
+        $data = $response->getData(true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals(['claude-3-5-sonnet', 'claude-3-5-haiku', 'claude-3-opus'], $data['provider']['models']);
+        $this->assertEquals('claude-3-5-sonnet', $data['provider']['default_model']);
+    }
 }

@@ -118,21 +118,17 @@ class AiStudioController extends Controller
             'provider' => ['required', 'string', 'max:50'],
             'base_url' => ['nullable', 'string', 'max:500'],
             'api_key' => ['nullable', 'string', 'max:1000'],
-            'models' => ['required'],
+            'models' => ['nullable'],
             'default_model' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $modelsList = $this->parseModelsInput($validated['models']);
-        if (empty($modelsList)) {
-            $presets = $this->aiStudioService->getProviderPresets();
-            $modelsList = $presets[$validated['provider']]['default_models'] ?? ['default-model'];
-        }
+        $modelsList = ! empty($validated['models']) ? $this->parseModelsInput($validated['models']) : [];
 
-        $defaultModel = $validated['default_model'] ?? ($modelsList[0] ?? 'default-model');
-        if (! in_array($defaultModel, $modelsList, true)) {
-            $defaultModel = $modelsList[0] ?? 'default-model';
+        $defaultModel = $validated['default_model'] ?? ($modelsList[0] ?? null);
+        if ($defaultModel && ! in_array($defaultModel, $modelsList, true)) {
+            $defaultModel = $modelsList[0] ?? null;
         }
 
         $provider = AiProvider::create([
@@ -172,20 +168,17 @@ class AiStudioController extends Controller
             'provider' => ['required', 'string', 'max:50'],
             'base_url' => ['nullable', 'string', 'max:500'],
             'api_key' => ['nullable', 'string', 'max:1000'],
-            'models' => ['required'],
+            'models' => ['nullable'],
             'default_model' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $modelsList = $this->parseModelsInput($validated['models']);
-        if (empty($modelsList)) {
-            $modelsList = $provider->models ?: ['default-model'];
-        }
+        $modelsList = isset($validated['models']) ? $this->parseModelsInput($validated['models']) : ($provider->models ?? []);
 
-        $defaultModel = $validated['default_model'] ?? ($modelsList[0] ?? 'default-model');
-        if (! in_array($defaultModel, $modelsList, true)) {
-            $defaultModel = $modelsList[0] ?? 'default-model';
+        $defaultModel = $validated['default_model'] ?? ($modelsList[0] ?? null);
+        if ($defaultModel && ! in_array($defaultModel, $modelsList, true)) {
+            $defaultModel = $modelsList[0] ?? null;
         }
 
         $updateData = [

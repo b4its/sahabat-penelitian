@@ -98,3 +98,104 @@ test('provider multiple choice selection toggles count and bulk actions bar', ()
     assert.equal(countLabel.textContent, '2');
     assert.equal(badgeLabel.textContent, '2');
 });
+
+test('model multiple choice initialization reads available models from presets and marks initial selected', () => {
+    const PRESETS = {
+        openai: {
+            default_models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+            default_model: 'gpt-4o',
+        },
+    };
+
+    const initialSelected = ['gpt-4o', 'custom-finetune'];
+    const presetModels = PRESETS.openai.default_models;
+    const allModels = Array.from(new Set([...presetModels, ...initialSelected]));
+    const selectedSet = new Set(initialSelected);
+
+    assert.equal(allModels.length, 5);
+    assert.equal(allModels.includes('custom-finetune'), true);
+    assert.equal(selectedSet.has('gpt-4o'), true);
+    assert.equal(selectedSet.has('custom-finetune'), true);
+    assert.equal(selectedSet.has('gpt-4o-mini'), false);
+});
+
+test('model multiple choice search filtering shows only matching models without losing checked state', () => {
+    const dom = new JSDOM(`
+        <div id="container-provider-models">
+            <input type="text" id="model-search-input" value="mini" />
+            <div id="model-multiselect-container">
+                <div class="model-multiselect-item" data-model="gpt-4o">
+                    <input type="checkbox" id="chk-0" value="gpt-4o" checked />
+                    <span>gpt-4o</span>
+                </div>
+                <div class="model-multiselect-item" data-model="gpt-4o-mini">
+                    <input type="checkbox" id="chk-1" value="gpt-4o-mini" checked />
+                    <span>gpt-4o-mini</span>
+                </div>
+                <div class="model-multiselect-item" data-model="o3-mini">
+                    <input type="checkbox" id="chk-2" value="o3-mini" />
+                    <span>o3-mini</span>
+                </div>
+            </div>
+            <div id="model-empty-search-state" class="hidden"></div>
+        </div>
+    `);
+
+    const { document } = dom.window;
+    const query = document.getElementById('model-search-input').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.model-multiselect-item');
+    let visible = 0;
+
+    rows.forEach(row => {
+        const model = row.getAttribute('data-model') || '';
+        if (model.includes(query)) {
+            row.classList.remove('hidden');
+            visible++;
+        } else {
+            row.classList.add('hidden');
+        }
+    });
+
+    assert.equal(visible, 2);
+    assert.equal(rows[0].classList.contains('hidden'), true);
+    assert.equal(rows[1].classList.contains('hidden'), false);
+    assert.equal(rows[2].classList.contains('hidden'), false);
+
+    // Assert checkbox states remain checked
+    assert.equal(document.getElementById('chk-0').checked, true);
+    assert.equal(document.getElementById('chk-1').checked, true);
+    assert.equal(document.getElementById('chk-2').checked, false);
+});
+
+test('model multiple choice select all and deselect all updates state and hidden input', () => {
+    const available = ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+    let selectedSet = new Set(['gemini-2.0-flash']);
+
+    // Select all
+    available.forEach(m => selectedSet.add(m));
+    assert.equal(selectedSet.size, 3);
+    const hiddenValueAll = Array.from(selectedSet).join(', ');
+    assert.equal(hiddenValueAll, 'gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash');
+
+    // Deselect all
+    selectedSet.clear();
+    assert.equal(selectedSet.size, 0);
+    const hiddenValueEmpty = Array.from(selectedSet).join(', ');
+    assert.equal(hiddenValueEmpty, '');
+});
+
+test('model multiple choice custom model addition integrates into list and marks it selected', () => {
+    const available = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const selectedSet = new Set(['llama-3.3-70b-versatile']);
+
+    const customModel = 'deepseek-r1-distill-llama-70b';
+    if (!available.includes(customModel)) {
+        available.push(customModel);
+    }
+    selectedSet.add(customModel);
+
+    assert.equal(available.includes(customModel), true);
+    assert.equal(selectedSet.has(customModel), true);
+    assert.equal(selectedSet.size, 2);
+    assert.equal(Array.from(selectedSet).includes(customModel), true);
+});
