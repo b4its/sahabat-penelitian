@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiStudioController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\PanelController;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,19 @@ Route::prefix('panel')->name('panel.')->group(function () {
     Route::post('/documents/bulk-destroy', [PanelController::class, 'bulkDestroyDocuments'])->name('documents.bulk-destroy');
     Route::post('/profile', [PanelController::class, 'updateProfile'])->name('profile.update');
     Route::post('/logout', [PanelController::class, 'logout'])->name('logout');
+
+    // AI Studio Routes
+    Route::get('/ai-studio', [AiStudioController::class, 'index'])->name('ai-studio.index');
+    Route::get('/ai-studio/connections', [AiStudioController::class, 'connections'])->name('ai-studio.connections');
+    Route::get('/ai-studio/chat', [AiStudioController::class, 'chatView'])->name('ai-studio.chat');
+    Route::get('/ai-studio/providers/list', [AiStudioController::class, 'getProvidersJson'])->name('ai-studio.providers.list');
+    Route::post('/ai-studio/providers', [AiStudioController::class, 'storeProvider'])->name('ai-studio.providers.store');
+    Route::post('/ai-studio/providers/{uuid}/update', [AiStudioController::class, 'updateProvider'])->name('ai-studio.providers.update');
+    Route::delete('/ai-studio/providers/{uuid}', [AiStudioController::class, 'destroyProvider'])->name('ai-studio.providers.destroy');
+    Route::post('/ai-studio/providers/{uuid}/test', [AiStudioController::class, 'testProvider'])->name('ai-studio.providers.test');
+    Route::post('/ai-studio/providers/{uuid}/toggle', [AiStudioController::class, 'toggleProvider'])->name('ai-studio.providers.toggle');
+    Route::post('/ai-studio/chat/send', [AiStudioController::class, 'sendChatMessage'])->name('ai-studio.chat.send');
+    Route::post('/ai-studio/chat/clear', [AiStudioController::class, 'clearChatSession'])->name('ai-studio.chat.clear');
 });
 
 /*
