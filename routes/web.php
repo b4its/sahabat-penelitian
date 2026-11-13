@@ -38,6 +38,7 @@ Route::prefix('panel')->name('panel.')->group(function () {
     Route::get('/ai-studio/chat', [AiStudioController::class, 'chatView'])->name('ai-studio.chat');
     Route::get('/ai-studio/providers/list', [AiStudioController::class, 'getProvidersJson'])->name('ai-studio.providers.list');
     Route::post('/ai-studio/providers', [AiStudioController::class, 'storeProvider'])->name('ai-studio.providers.store');
+    Route::post('/ai-studio/providers/bulk-destroy', [AiStudioController::class, 'bulkDestroyProviders'])->name('ai-studio.providers.bulk-destroy');
     Route::post('/ai-studio/providers/{uuid}/update', [AiStudioController::class, 'updateProvider'])->name('ai-studio.providers.update');
     Route::delete('/ai-studio/providers/{uuid}', [AiStudioController::class, 'destroyProvider'])->name('ai-studio.providers.destroy');
     Route::post('/ai-studio/providers/{uuid}/test', [AiStudioController::class, 'testProvider'])->name('ai-studio.providers.test');

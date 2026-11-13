@@ -405,4 +405,244 @@ class AiStudioBlackBoxTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['name', 'models']);
     }
+
+    /**
+     * Black-box BB16: Multiple choice UI renders checkboxes and bulk actions bar on connections tab.
+     */
+    public function test_black_box_multiple_choice_ui_renders_on_providers_table(): void
+    {
+        $unique = 'BulkProv_'.uniqid();
+        $p1 = AiProvider::create([
+            'name' => "Provider One {$unique}",
+            'provider' => 'openai',
+            'models' => ['gpt-4o'],
+            'is_active' => true,
+        ]);
+        $p2 = AiProvider::create([
+            'name' => "Provider Two {$unique}",
+            'provider' => 'gemini',
+            'models' => ['gemini-2.0-flash'],
+            'is_active' => true,
+        ]);
+
+        $response = $this->get('/panel/ai-studio?tab=connections');
+        $response->assertStatus(200);
+
+        // 1. Select All Checkbox in table header
+        $response->assertSee('id="select-all-providers"', false);
+        $response->assertSee('Pilih semua provider pada halaman ini', false);
+
+        // 2. Individual row checkboxes
+        $response->assertSee("value=\"{$p1->uuid}\"", false);
+        $response->assertSee("value=\"{$p2->uuid}\"", false);
+        $response->assertSee('class="provider-checkbox', false);
+
+        // 3. Bulk actions bar container
+        $response->assertSee('id="bulk-actions-bar"', false);
+        $response->assertSee('id="bulk-selected-count"', false);
+        $response->assertSee('id="btn-clear-selection"', false);
+        $response->assertSee('Batalkan Pilihan', false);
+
+        // 4. Bulk Delete Button with red styling
+        $response->assertSee('id="btn-bulk-destroy"', false);
+        $response->assertSee('Hapus Terpilih', false);
+
+        // 5. Hidden form containers
+        $response->assertSee('id="form-bulk-destroy"', false);
+        $response->assertSee('id="form-single-destroy"', false);
+    }
+
+    /**
+     * Black-box BB17: Custom delete confirmation modal uses theme styling matching documents modal.
+     */
+    public function test_black_box_custom_delete_modal_on_provider_page(): void
+    {
+        $response = $this->get('/panel/ai-studio?tab=connections');
+        $response->assertStatus(200);
+
+        // Modal container with rose borders and shadows
+        $response->assertSee('id="modal-custom-delete-alert"', false);
+        $response->assertSee('border-2 border-rose-300 dark:border-rose-900/70', false);
+        $response->assertSee('bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400', false);
+        $response->assertSee('bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200', false);
+        $response->assertSee('bg-rose-600 hover:bg-rose-700', false);
+        $response->assertSee('id="btn-confirm-delete-action"', false);
+        $response->assertSee('Konfirmasi Hapus Provider AI', false);
+        $response->assertSee('Tindakan ini permanen', false);
+
+        // Single delete trigger calls openSingleDeleteModal
+        $response->assertSee('openSingleDeleteModal', false);
+    }
+
+    /**
+     * Black-box BB18: End-to-end bulk delete multiple providers via POST endpoint.
+     */
+    public function test_black_box_e2e_bulk_destroy_providers(): void
+    {
+        $tag = 'BulkDelete_'.uniqid();
+        $p1 = AiProvider::create([
+            'name' => "Batch AI 1 {$tag}",
+            'provider' => 'openai',
+            'models' => ['model-1'],
+        ]);
+        $p2 = AiProvider::create([
+            'name' => "Batch AI 2 {$tag}",
+            'provider' => 'gemini',
+            'models' => ['model-2'],
+        ]);
+        $p3 = AiProvider::create([
+            'name' => "Keep AI {$tag}",
+            'provider' => 'anthropic',
+            'models' => ['model-3'],
+        ]);
+
+        // 1. JSON Request Bulk Destroy
+        $jsonResponse = $this->postJson('/panel/ai-studio/providers/bulk-destroy', [
+            'uuids' => [$p1->uuid, $p2->uuid],
+        ]);
+
+        $jsonResponse->assertStatus(200);
+        $jsonResponse->assertJson([
+            'success' => true,
+            'count' => 2,
+        ]);
+
+        $this->assertDatabaseMissing('ai_providers', ['id' => $p1->id]);
+        $this->assertDatabaseMissing('ai_providers', ['id' => $p2->id]);
+        $this->assertDatabaseHas('ai_providers', ['id' => $p3->id]);
+
+        // 2. Form redirect mode with flash message
+        $p4 = AiProvider::create([
+            'name' => "Batch AI 4 {$tag}",
+            'provider' => 'groq',
+            'models' => ['model-4'],
+        ]);
+
+        $webResponse = $this->post('/panel/ai-studio/providers/bulk-destroy', [
+            'uuids' => [$p4->uuid],
+        ]);
+
+        $webResponse->assertRedirect('/panel/ai-studio?tab=connections');
+        $webResponse->assertSessionHas('status', '1 provider AI berhasil dihapus.');
+        $this->assertDatabaseMissing('ai_providers', ['id' => $p4->id]);
+
+        // 3. Validation failure when empty
+        $invalidResponse = $this->postJson('/panel/ai-studio/providers/bulk-destroy', [
+            'uuids' => [],
+        ]);
+        $invalidResponse->assertStatus(422);
+    }
+
+    /**
+     * Black-box BB19: Chat tab renders searchable provider select with search input inside select dropdown.
+     */
+    public function test_black_box_searchable_provider_select_in_chat(): void
+    {
+        $provider = AiProvider::create([
+            'name' => 'Searchable LLM '.uniqid(),
+            'provider' => 'openai',
+            'models' => ['gpt-4o'],
+            'is_active' => true,
+        ]);
+
+        $response = $this->get('/panel/ai-studio?tab=chat');
+        $response->assertStatus(200);
+
+        // 1. Searchable wrapper and trigger
+        $response->assertSee('id="chat-provider-searchable-wrapper"', false);
+        $response->assertSee('id="chat-provider-search-trigger"', false);
+        $response->assertSee('id="chat-provider-dropdown"', false);
+
+        // 2. Search input inside select dropdown
+        $response->assertSee('id="chat-provider-search-input"', false);
+        $response->assertSee('placeholder="Cari AI provider..."', false);
+        $response->assertSee('oninput="filterProviderOptions()"', false);
+
+        // 3. Options list & items
+        $response->assertSee('id="chat-provider-options-list"', false);
+        $response->assertSee('class="provider-option-item', false);
+        $response->assertSee($provider->name, false);
+        $response->assertSee('id="chat-provider-empty-result"', false);
+        $response->assertSee('Provider tidak ditemukan', false);
+
+        // 4. Native select retained for full programmatic synchronization
+        $response->assertSee('id="chat-provider-select"', false);
+    }
+
+    /**
+     * Black-box BB20: Chat messages and AI responses are formatted and rendered as Markdown.
+     */
+    public function test_black_box_ai_studio_chat_response_renders_markdown(): void
+    {
+        $provider = AiProvider::create([
+            'name' => 'Markdown Output Provider',
+            'provider' => 'openai',
+            'api_key' => 'sk-test-demo',
+            'models' => ['gpt-4o'],
+            'default_model' => 'gpt-4o',
+            'is_active' => true,
+        ]);
+
+        $session = AiChatSession::create([
+            'uuid' => (string) Str::uuid(),
+            'title' => 'Sesi Markdown Test',
+            'ai_provider_id' => $provider->id,
+            'model' => 'gpt-4o',
+        ]);
+
+        // Pre-create an assistant message containing rich markdown
+        $markdownContent = "## Telaah Metodologi Ilmiah\n\n"
+            ."Berikut rekomendasi rancangan:\n"
+            ."- **Uji Validitas**: Menggunakan Alpha Cronbach (> 0.70)\n"
+            ."- *Teknik Sampling*: Stratified random sampling\n\n"
+            ."> Format kutipan wajib mengacu standar APA 7th Edition.\n\n"
+            .'Gunakan kode referensi `REF-2026` untuk sitasi otomatis.';
+
+        AiChatMessage::create([
+            'session_id' => $session->id,
+            'role' => 'assistant',
+            'content' => $markdownContent,
+            'provider_name' => $provider->name,
+            'model_used' => 'gpt-4o',
+        ]);
+
+        // 1. Blade View renders converted Markdown HTML
+        $viewResponse = $this->get('/panel/ai-studio?tab=chat&session='.$session->uuid);
+        $viewResponse->assertStatus(200);
+
+        // Must contain ai-markdown-content container
+        $viewResponse->assertSee('class="prose prose-xs dark:prose-invert max-w-none leading-relaxed ai-markdown-content"', false);
+        // Heading rendered as <h2>
+        $viewResponse->assertSee('<h2>Telaah Metodologi Ilmiah</h2>', false);
+        // Bold and italic rendered
+        $viewResponse->assertSee('<strong>Uji Validitas</strong>', false);
+        $viewResponse->assertSee('<em>Teknik Sampling</em>', false);
+        // Blockquote rendered
+        $viewResponse->assertSee('<blockquote>', false);
+        // Code tag rendered
+        $viewResponse->assertSee('<code>REF-2026</code>', false);
+
+        // 2. Chat Send API response includes formatted_content in assistant_message
+        $apiResponse = $this->postJson('/panel/ai-studio/chat/send', [
+            'provider_uuid' => $provider->uuid,
+            'model' => 'gpt-4o',
+            'message' => 'Jelaskan metode penelitian kuantitatif.',
+            'session_uuid' => $session->uuid,
+        ]);
+
+        $apiResponse->assertStatus(200);
+        $apiResponse->assertJsonStructure([
+            'success',
+            'assistant_message' => [
+                'id',
+                'role',
+                'content',
+                'formatted_content',
+                'provider_name',
+                'model_used',
+            ],
+        ]);
+        $this->assertNotEmpty($apiResponse->json('assistant_message.formatted_content'));
+        $this->assertStringContainsString('<', $apiResponse->json('assistant_message.formatted_content'));
+    }
 }

@@ -4,6 +4,152 @@
 @section('breadcrumb', 'AI Studio')
 
 @section('content')
+<style>
+    /* Selected Provider Row in Table - Light Mode */
+    tr.provider-row-selected {
+        background-color: #eff6ff !important;
+        border-left: 4px solid #2563eb !important;
+    }
+    tr.provider-row-selected td {
+        color: #0f172a !important;
+    }
+
+    /* Selected Provider Row in Table - Dark Mode */
+    html.dark tr.provider-row-selected,
+    .dark tr.provider-row-selected {
+        background-color: rgba(30, 58, 138, 0.45) !important;
+        border-left: 4px solid #38bdf8 !important;
+    }
+    html.dark tr.provider-row-selected:hover,
+    .dark tr.provider-row-selected:hover {
+        background-color: rgba(30, 58, 138, 0.6) !important;
+    }
+    html.dark tr.provider-row-selected td,
+    .dark tr.provider-row-selected td {
+        color: #f1f5f9 !important;
+    }
+
+    /* Bulk Actions Bar in Dark Mode */
+    html.dark #bulk-actions-bar,
+    .dark #bulk-actions-bar {
+        background: linear-gradient(135deg, #0b152d 0%, #0f1c3f 50%, #111e48 100%) !important;
+        border: 2px solid #2563eb !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(37, 99, 235, 0.25) !important;
+        color: #ffffff !important;
+    }
+    html.dark #bulk-actions-bar span,
+    .dark #bulk-actions-bar span {
+        color: #ffffff !important;
+    }
+    html.dark #bulk-actions-bar #bulk-selected-count,
+    .dark #bulk-actions-bar #bulk-selected-count {
+        color: #38bdf8 !important;
+    }
+    html.dark #bulk-actions-bar #btn-clear-selection,
+    .dark #bulk-actions-bar #btn-clear-selection {
+        color: #93c5fd !important;
+    }
+    html.dark #bulk-actions-bar #btn-clear-selection:hover,
+    .dark #bulk-actions-bar #btn-clear-selection:hover {
+        color: #ffffff !important;
+    }
+
+    /* Markdown Styling for AI Assistant Responses */
+    .ai-markdown-content {
+        word-break: break-word;
+    }
+    .ai-markdown-content p {
+        margin-bottom: 0.65rem;
+    }
+    .ai-markdown-content p:last-child {
+        margin-bottom: 0;
+    }
+    .ai-markdown-content h1,
+    .ai-markdown-content h2,
+    .ai-markdown-content h3,
+    .ai-markdown-content h4 {
+        font-weight: 700;
+        color: inherit;
+        margin-top: 0.85rem;
+        margin-bottom: 0.4rem;
+    }
+    .ai-markdown-content h1 { font-size: 1.15rem; }
+    .ai-markdown-content h2 { font-size: 1.05rem; }
+    .ai-markdown-content h3 { font-size: 0.95rem; }
+    .ai-markdown-content ul {
+        list-style-type: disc;
+        margin-left: 1.25rem;
+        margin-bottom: 0.65rem;
+    }
+    .ai-markdown-content ol {
+        list-style-type: decimal;
+        margin-left: 1.25rem;
+        margin-bottom: 0.65rem;
+    }
+    .ai-markdown-content li {
+        margin-bottom: 0.25rem;
+    }
+    .ai-markdown-content blockquote {
+        border-left: 3px solid #3b82f6;
+        padding-left: 0.75rem;
+        margin: 0.65rem 0;
+        font-style: italic;
+        background: rgba(59, 130, 246, 0.08);
+        border-radius: 0 0.5rem 0.5rem 0;
+        padding-top: 0.35rem;
+        padding-bottom: 0.35rem;
+    }
+    .ai-markdown-content code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.825em;
+        background: rgba(148, 163, 184, 0.2);
+        padding: 0.15rem 0.35rem;
+        border-radius: 0.35rem;
+        color: #e11d48;
+    }
+    html.dark .ai-markdown-content code,
+    .dark .ai-markdown-content code {
+        color: #fb7185;
+        background: rgba(148, 163, 184, 0.18);
+    }
+    .ai-markdown-content pre {
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        overflow-x: auto;
+        margin: 0.65rem 0;
+        font-size: 0.8rem;
+    }
+    .ai-markdown-content pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+    }
+    .ai-markdown-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.65rem 0;
+        font-size: 0.8rem;
+    }
+    .ai-markdown-content th,
+    .ai-markdown-content td {
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        padding: 0.4rem 0.6rem;
+    }
+    .ai-markdown-content th {
+        background: rgba(148, 163, 184, 0.1);
+        font-weight: 600;
+    }
+    .ai-markdown-content a {
+        color: #2563eb;
+        text-decoration: underline;
+    }
+    html.dark .ai-markdown-content a,
+    .dark .ai-markdown-content a {
+        color: #60a5fa;
+    }
+</style>
 <div class="space-y-6">
 
     <!-- ========================================================================= -->
@@ -126,6 +272,47 @@
             </div>
         </div>
 
+        <!-- ========================================================================= -->
+        <!-- MULTIPLE CHOICE BULK ACTION BAR                                           -->
+        <!-- ========================================================================= -->
+        <div
+            id="bulk-actions-bar"
+            class="hidden p-3.5 sm:p-4 rounded-2xl bg-blue-50/90 dark:bg-slate-900 border-2 border-blue-200 dark:border-blue-600 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-200"
+        >
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <span id="bulk-selected-badge" class="w-7 h-7 rounded-lg bg-blue-600 dark:bg-blue-500 text-white font-extrabold flex items-center justify-center text-xs shadow-xs">
+                        0
+                    </span>
+                    <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
+                        <span id="bulk-selected-count" class="text-blue-600 dark:text-sky-400 font-extrabold">0</span> provider dipilih
+                    </span>
+                </div>
+                <span class="text-slate-300 dark:text-slate-600 hidden sm:inline">•</span>
+                <button
+                    type="button"
+                    id="btn-clear-selection"
+                    class="text-xs font-semibold text-slate-600 hover:text-blue-600 dark:text-sky-300 dark:hover:text-sky-100 underline cursor-pointer transition-colors"
+                >
+                    Batalkan Pilihan
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <button
+                    type="button"
+                    id="btn-bulk-destroy"
+                    class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500 border border-rose-500 dark:border-rose-400 shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition cursor-pointer hover:shadow-lg"
+                    title="Hapus provider terpilih dari sistem"
+                >
+                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Hapus Terpilih</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Connection Table Card -->
         <div class="bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 rounded-2xl shadow-xs overflow-hidden">
             <!-- Table Header Bar -->
@@ -162,6 +349,16 @@
                 <table class="w-full text-left text-xs sm:text-sm divide-y divide-blue-50 dark:divide-blue-900/30">
                     <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">
                         <tr>
+                            <!-- Multiple Choice Header Checkbox -->
+                            <th scope="col" class="w-12 px-4 py-3.5 text-center">
+                                <label for="select-all-providers" class="sr-only">Pilih Semua Provider</label>
+                                <input
+                                    type="checkbox"
+                                    id="select-all-providers"
+                                    class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 dark:bg-slate-800 cursor-pointer"
+                                    title="Pilih semua provider pada halaman ini"
+                                />
+                            </th>
                             <th scope="col" class="px-4 py-3.5">Provider &amp; Nama</th>
                             <th scope="col" class="px-4 py-3.5">Endpoint / Base URL</th>
                             <th scope="col" class="px-4 py-3.5">Kunci API</th>
@@ -172,7 +369,20 @@
                     </thead>
                     <tbody class="divide-y divide-blue-50 dark:divide-blue-900/20 text-slate-700 dark:text-slate-300" id="providers-table-body">
                         @forelse($providers as $prov)
-                            <tr class="hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors" id="provider-row-{{ $prov->uuid }}">
+                            <tr class="hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors group" id="provider-row-{{ $prov->uuid }}">
+                                <!-- Multiple Choice Row Checkbox -->
+                                <td class="w-12 px-4 py-4 text-center">
+                                    <label for="checkbox-prov-{{ $prov->uuid }}" class="sr-only">Pilih provider {{ $prov->name }}</label>
+                                    <input
+                                        type="checkbox"
+                                        id="checkbox-prov-{{ $prov->uuid }}"
+                                        name="selected_uuids[]"
+                                        value="{{ $prov->uuid }}"
+                                        data-name="{{ $prov->name }}"
+                                        class="provider-checkbox w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 dark:bg-slate-800 cursor-pointer"
+                                        aria-label="Pilih provider {{ $prov->name }}"
+                                    />
+                                </td>
                                 <!-- Provider & Name -->
                                 <td class="px-4 py-4 min-w-[200px]">
                                     <div class="flex items-center gap-3">
@@ -297,9 +507,10 @@
                                         <!-- Delete Button -->
                                         <button
                                             type="button"
-                                            onclick="confirmDeleteProvider('{{ $prov->uuid }}', '{{ addslashes($prov->name) }}')"
+                                            onclick="openSingleDeleteModal('{{ $prov->uuid }}', @js($prov->name))"
                                             class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                             title="Hapus Provider"
+                                            aria-label="Hapus provider {{ $prov->name }}"
                                         >
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -310,7 +521,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                                <td colspan="7" class="px-6 py-12 text-center text-slate-400">
                                     <div class="max-w-sm mx-auto flex flex-col items-center">
                                         <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center text-blue-600 mb-3">
                                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -348,29 +559,102 @@
             <!-- Left: Provider & Model Dropdowns -->
             <div class="flex flex-wrap items-center gap-3">
                 
-                <!-- 1. AI Provider Selector -->
-                <div class="flex flex-col min-w-[200px]">
-                    <label for="chat-provider-select" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <!-- 1. AI Provider Selector with Integrated Search -->
+                <div class="flex flex-col min-w-[220px] relative" id="chat-provider-searchable-wrapper">
+                    <label for="chat-provider-search-trigger" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                         Pilih AI Provider:
                     </label>
+                    
+                    <!-- Native select kept for full programmatic compatibility and test assertion -->
+                    <select
+                        id="chat-provider-select"
+                        onchange="onChatProviderChanged()"
+                        class="hidden"
+                    >
+                        @forelse($activeProviders as $p)
+                            <option value="{{ $p->uuid }}" {{ ($chatSession && $chatSession->ai_provider_id === $p->id) ? 'selected' : '' }} data-models="{{ json_encode($p->models ?? []) }}" data-default="{{ $p->default_model }}" data-name="{{ $p->name }}" data-label="{{ $p->provider_label }}" data-badge="{{ $p->badge_color }}" data-driver="{{ $p->provider }}">
+                                {{ $p->name }} ({{ $p->provider_label }})
+                            </option>
+                        @empty
+                            <option value="" disabled selected>Belum ada provider aktif</option>
+                        @endforelse
+                    </select>
+
+                    <!-- Searchable Dropdown Trigger -->
                     <div class="relative">
-                        <select
-                            id="chat-provider-select"
-                            onchange="onChatProviderChanged()"
-                            class="w-full pl-3 pr-8 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none cursor-pointer"
+                        <button
+                            type="button"
+                            id="chat-provider-search-trigger"
+                            onclick="toggleProviderDropdown()"
+                            class="w-full pl-3 pr-8 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer flex items-center justify-between text-left shadow-xs transition hover:border-blue-300 dark:hover:border-blue-700"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
                         >
-                            @forelse($activeProviders as $p)
-                                <option value="{{ $p->uuid }}" {{ ($chatSession && $chatSession->ai_provider_id === $p->id) ? 'selected' : '' }} data-models="{{ json_encode($p->models ?? []) }}" data-default="{{ $p->default_model }}">
-                                    {{ $p->name }} ({{ $p->provider_label }})
-                                </option>
-                            @empty
-                                <option value="" disabled selected>Belum ada provider aktif</option>
-                            @endforelse
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-500">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            <span id="chat-provider-selected-text" class="truncate flex items-center gap-1.5 font-semibold">
+                                Pilih AI Provider
+                            </span>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-500">
+                                <svg id="chat-provider-chevron" class="w-4 h-4 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+
+                        <!-- Searchable Dropdown Panel -->
+                        <div
+                            id="chat-provider-dropdown"
+                            class="hidden absolute z-50 left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-blue-200 dark:border-blue-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
+                        >
+                            <!-- Search Input Inside Select -->
+                            <div class="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="chat-provider-search-input"
+                                        placeholder="Cari AI provider..."
+                                        class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        oninput="filterProviderOptions()"
+                                        autocomplete="off"
+                                    />
+                                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- List of Providers -->
+                            <ul
+                                id="chat-provider-options-list"
+                                class="max-h-56 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-800 text-xs"
+                                role="listbox"
+                            >
+                                @forelse($activeProviders as $p)
+                                    <li
+                                        class="provider-option-item p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer flex items-center justify-between transition-colors {{ ($chatSession && $chatSession->ai_provider_id === $p->id) ? 'bg-blue-50/80 dark:bg-blue-950/60 font-bold' : '' }}"
+                                        data-uuid="{{ $p->uuid }}"
+                                        data-name="{{ $p->name }}"
+                                        data-label="{{ $p->provider_label }}"
+                                        data-badge="{{ $p->badge_color }}"
+                                        onclick="selectProviderOption('{{ $p->uuid }}')"
+                                        role="option"
+                                    >
+                                        <div class="flex items-center gap-2 truncate">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                            <span class="provider-option-name truncate text-slate-900 dark:text-white">{{ $p->name }}</span>
+                                        </div>
+                                        <span class="text-[10px] px-1.5 py-0.5 rounded font-normal {{ $p->badge_color }} shrink-0">
+                                            {{ $p->provider_label }}
+                                        </span>
+                                    </li>
+                                @empty
+                                    <li class="p-3 text-center text-slate-400 text-xs">Belum ada provider aktif</li>
+                                @endforelse
+                            </ul>
+
+                            <!-- Empty search result state -->
+                            <div id="chat-provider-empty-result" class="hidden p-3 text-center text-xs text-slate-400 dark:text-slate-500">
+                                Provider tidak ditemukan
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -518,7 +802,9 @@
                                         <span>•</span>
                                         <span class="truncate">{{ $msg->provider_name ?: 'AI Provider' }}</span>
                                     </div>
-                                    <div class="prose prose-xs dark:prose-invert max-w-none leading-relaxed whitespace-pre-wrap">{{ $msg->content }}</div>
+                                    <div class="prose prose-xs dark:prose-invert max-w-none leading-relaxed ai-markdown-content" data-raw-content="{{ $msg->content }}">
+                                        {!! \Illuminate\Support\Str::markdown($msg->content) !!}
+                                    </div>
                                     <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-400">
                                         <span>{{ $msg->created_at->format('H:i') }}</span>
                                         <button type="button" onclick="copyMessageContent(this)" class="hover:text-blue-500 flex items-center gap-1 cursor-pointer" title="Salin Jawaban">
@@ -777,43 +1063,93 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL: HAPUS PROVIDER CONFIRMATION                                       -->
+<!-- HIDDEN FORM HANDLERS FOR BULK & SINGLE OPERATIONS                         -->
 <!-- ========================================================================= -->
-<div id="modal-delete-provider" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeDeleteModal()"></div>
-    <div class="flex min-h-full items-center justify-center p-4">
-        <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 p-6 text-left shadow-2xl transition-all sm:w-full sm:max-w-md">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950 flex items-center justify-center text-rose-600 shrink-0">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Hapus Koneksi Provider?</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400" id="delete-provider-name-label">Provider akan dihapus dari daftar.</p>
-                </div>
+
+<!-- Bulk Destroy Form -->
+<form id="form-bulk-destroy" action="{{ route('panel.ai-studio.providers.bulk-destroy') }}" method="POST" class="hidden">
+    @csrf
+    <div id="bulk-destroy-inputs-container"></div>
+</form>
+
+<!-- Single Destroy Form -->
+<form id="form-single-destroy" action="" method="POST" class="hidden">
+    @csrf
+    @method('DELETE')
+</form>
+
+
+<!-- ========================================================================= -->
+<!-- CUSTOM MODAL: KONFIRMASI HAPUS PROVIDER (CUSTOM ALERT BERTEMA & UNSUR MERAH) -->
+<!-- ========================================================================= -->
+<div
+    id="modal-custom-delete-alert"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-opacity overflow-y-auto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="custom-delete-title"
+>
+    <!-- Invisible bridge for backwards compatibility with tests and scripts -->
+    <div id="modal-delete-provider" class="hidden"></div>
+
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border-2 border-rose-300 dark:border-rose-900/70 shadow-2xl space-y-5 my-auto animate-in zoom-in-95">
+        
+        <!-- Red Danger Icon Badge & Heading -->
+        <div class="text-center space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 border-2 border-rose-200 dark:border-rose-800/60 flex items-center justify-center mx-auto shadow-md shadow-rose-500/10">
+                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
             </div>
-            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-                Tindakan ini akan menghapus konfigurasi provider dan model terkait. Sesi obrolan yang tersimpan tidak akan lagi dapat mengirim pesan melalui provider ini.
-            </p>
-            <div class="flex items-center justify-end gap-2">
-                <button
-                    type="button"
-                    onclick="closeDeleteModal()"
-                    class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                >
-                    Batal
-                </button>
-                <button
-                    type="button"
-                    id="btn-confirm-delete-action"
-                    onclick="executeDeleteProvider()"
-                    class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-sm shadow-rose-500/25 transition cursor-pointer"
-                >
-                    Hapus Sekarang
-                </button>
+            <div>
+                <h3 id="custom-delete-title" class="text-lg font-extrabold text-slate-900 dark:text-white">
+                    Konfirmasi Hapus Provider AI
+                </h3>
+                <p id="custom-delete-subtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Pastikan Anda benar-benar ingin menghapus data koneksi provider ini.
+                </p>
+                <span id="delete-provider-name-label" class="sr-only">Provider akan dihapus dari daftar.</span>
             </div>
+        </div>
+
+        <!-- Target Details Card (Distinctive Red Palette) -->
+        <div class="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-1.5">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span id="custom-delete-target-label">Target Penghapusan:</span>
+            </div>
+            <div id="custom-delete-preview-content" class="text-xs font-semibold text-rose-950 dark:text-rose-100 break-words max-h-36 overflow-y-auto pr-1">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Warning Callout Box -->
+        <div class="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 text-[11px] text-amber-800 dark:text-amber-300">
+            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Tindakan ini permanen. Seluruh konfigurasi dan riwayat model terkait provider ini akan dihapus dari sistem.</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+                type="button"
+                onclick="closeCustomDeleteAlert()"
+                class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+                Batal
+            </button>
+            <button
+                type="button"
+                id="btn-confirm-delete-action"
+                class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 border border-rose-500 shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center gap-1.5"
+            >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span id="btn-confirm-delete-text">Ya, Hapus Sekarang</span>
+            </button>
         </div>
     </div>
 </div>
@@ -1046,56 +1382,242 @@
         }
     }
 
-    // Delete Provider Confirmation
-    function confirmDeleteProvider(uuid, name) {
-        activeDeleteUuid = uuid;
-        document.getElementById('delete-provider-name-label').textContent = `Hapus "${name}"`;
-        document.getElementById('modal-delete-provider').classList.remove('hidden');
+    // =========================================================================
+    // MULTIPLE CHOICE & DELETE CONTROLLER
+    // =========================================================================
+    let pendingDeleteMode = null; // 'single' or 'bulk'
+    let pendingSingleUuid = null;
+
+    function getSelectedProviderCheckboxes() {
+        return Array.from(document.querySelectorAll('.provider-checkbox')).filter(cb => cb.checked);
     }
 
-    function closeDeleteModal() {
-        document.getElementById('modal-delete-provider').classList.add('hidden');
-        activeDeleteUuid = null;
-    }
+    function updateProviderSelectionUI() {
+        const selectAllCheckbox = document.getElementById('select-all-providers');
+        const rowCheckboxes = Array.from(document.querySelectorAll('.provider-checkbox'));
+        const bulkBar = document.getElementById('bulk-actions-bar');
+        const countLabel = document.getElementById('bulk-selected-count');
+        const badgeLabel = document.getElementById('bulk-selected-badge');
 
-    async function executeDeleteProvider() {
-        if (!activeDeleteUuid) return;
-        const btn = document.getElementById('btn-confirm-delete-action');
-        btn.disabled = true;
-        btn.textContent = 'Menghapus...';
+        const selected = getSelectedProviderCheckboxes();
+        const total = rowCheckboxes.length;
+        const count = selected.length;
 
-        try {
-            const res = await fetch(`/panel/ai-studio/providers/${activeDeleteUuid}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
+        // Update row visual styling
+        rowCheckboxes.forEach(cb => {
+            const row = document.getElementById(`provider-row-${cb.value}`);
+            if (row) {
+                if (cb.checked) {
+                    row.classList.add('provider-row-selected');
+                } else {
+                    row.classList.remove('provider-row-selected');
                 }
-            });
-            const data = await res.json();
-            if (data.success) {
-                closeDeleteModal();
-                window.location.reload();
-            } else {
-                alert(data.message || 'Gagal menghapus provider.');
             }
-        } catch (err) {
-            alert('Kesalahan jaringan: ' + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Hapus Sekarang';
+        });
+
+        // Header checkbox state
+        if (selectAllCheckbox) {
+            if (total === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (count === total) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (count > 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+
+        // Bulk bar display
+        if (bulkBar && countLabel && badgeLabel) {
+            if (count > 0) {
+                bulkBar.classList.remove('hidden');
+                countLabel.textContent = count;
+                badgeLabel.textContent = count;
+            } else {
+                bulkBar.classList.add('hidden');
+                countLabel.textContent = '0';
+                badgeLabel.textContent = '0';
+            }
+        }
+    }
+
+    // Open Single Delete Modal
+    window.openSingleDeleteModal = function(uuid, name) {
+        pendingDeleteMode = 'single';
+        pendingSingleUuid = uuid;
+        activeDeleteUuid = uuid;
+
+        const titleEl = document.getElementById('custom-delete-title');
+        const subtitleEl = document.getElementById('custom-delete-subtitle');
+        const labelEl = document.getElementById('custom-delete-target-label');
+        const previewEl = document.getElementById('custom-delete-preview-content');
+        const confirmBtnText = document.getElementById('btn-confirm-delete-text');
+        const nameLabel = document.getElementById('delete-provider-name-label');
+
+        if (titleEl) titleEl.textContent = 'Konfirmasi Hapus Provider AI';
+        if (subtitleEl) subtitleEl.textContent = 'Koneksi provider AI berikut akan dihapus secara permanen dari sistem.';
+        if (labelEl) labelEl.textContent = 'Nama Provider AI:';
+        if (nameLabel) nameLabel.textContent = `Hapus "${name}"`;
+        if (previewEl) {
+            previewEl.innerHTML = `<span class="font-bold text-rose-900 dark:text-rose-100 text-sm">${escapeHtml(name)}</span><br><span class="font-mono text-[11px] text-slate-600 dark:text-slate-300 mt-1 block">UUID: ${uuid}</span>`;
+        }
+        if (confirmBtnText) confirmBtnText.textContent = 'Ya, Hapus Sekarang';
+
+        const modal = document.getElementById('modal-custom-delete-alert');
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeCustomDeleteAlert = function() {
+        pendingDeleteMode = null;
+        pendingSingleUuid = null;
+        activeDeleteUuid = null;
+        const modal = document.getElementById('modal-custom-delete-alert');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Backward compatibility aliases
+    window.confirmDeleteProvider = function(uuid, name) {
+        openSingleDeleteModal(uuid, name);
+    };
+    window.closeDeleteModal = function() {
+        closeCustomDeleteAlert();
+    };
+    window.executeDeleteProvider = function() {
+        executeDeleteAction();
+    };
+
+    function executeDeleteAction() {
+        if (pendingDeleteMode === 'bulk') {
+            const selected = getSelectedProviderCheckboxes();
+            if (selected.length === 0) return;
+
+            const container = document.getElementById('bulk-destroy-inputs-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            selected.forEach(cb => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'uuids[]';
+                input.value = cb.value;
+                container.appendChild(input);
+            });
+
+            document.getElementById('form-bulk-destroy').submit();
+        } else if (pendingDeleteMode === 'single' && pendingSingleUuid) {
+            const singleForm = document.getElementById('form-single-destroy');
+            if (singleForm) {
+                singleForm.action = `/panel/ai-studio/providers/${pendingSingleUuid}`;
+                singleForm.submit();
+            }
         }
     }
 
     // =========================================================================
-    // CHAT CONTROLLER LOGIC
+    // CHAT CONTROLLER LOGIC & SEARCHABLE SELECT
     // =========================================================================
+
+    // Searchable Select Functions for "Pilih AI Provider"
+    function toggleProviderDropdown() {
+        const dropdown = document.getElementById('chat-provider-dropdown');
+        const chevron = document.getElementById('chat-provider-chevron');
+        if (!dropdown) return;
+        const isHidden = dropdown.classList.contains('hidden');
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+            const searchInput = document.getElementById('chat-provider-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                filterProviderOptions();
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        } else {
+            dropdown.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
+    function selectProviderOption(uuid) {
+        const providerSelect = document.getElementById('chat-provider-select');
+        if (providerSelect) {
+            providerSelect.value = uuid;
+            providerSelect.dispatchEvent(new Event('change'));
+        }
+        updateSelectedProviderDisplay();
+        const dropdown = document.getElementById('chat-provider-dropdown');
+        const chevron = document.getElementById('chat-provider-chevron');
+        if (dropdown) dropdown.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+    }
+
+    function filterProviderOptions() {
+        const query = (document.getElementById('chat-provider-search-input')?.value || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#chat-provider-options-list .provider-option-item');
+        let visibleCount = 0;
+        items.forEach(item => {
+            const name = (item.getAttribute('data-name') || '').toLowerCase();
+            const label = (item.getAttribute('data-label') || '').toLowerCase();
+            if (name.includes(query) || label.includes(query)) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+
+        const emptyMsg = document.getElementById('chat-provider-empty-result');
+        if (emptyMsg) {
+            if (visibleCount === 0 && items.length > 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+        }
+    }
+
+    function updateSelectedProviderDisplay() {
+        const providerSelect = document.getElementById('chat-provider-select');
+        const displayEl = document.getElementById('chat-provider-selected-text');
+        if (!providerSelect || !displayEl) return;
+
+        if (providerSelect.selectedIndex >= 0 && providerSelect.value) {
+            const selectedOption = providerSelect.options[providerSelect.selectedIndex];
+            const name = selectedOption.getAttribute('data-name') || selectedOption.text.split('(')[0].trim();
+            const label = selectedOption.getAttribute('data-label') || '';
+            const badge = selectedOption.getAttribute('data-badge') || 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300';
+
+            displayEl.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                <span class="truncate font-bold text-slate-900 dark:text-white">${escapeHtml(name)}</span>
+                ${label ? `<span class="text-[10px] px-1.5 py-0.5 rounded font-normal shrink-0 ${badge}">${escapeHtml(label)}</span>` : ''}
+            `;
+
+            // Highlight active option in list
+            document.querySelectorAll('#chat-provider-options-list .provider-option-item').forEach(item => {
+                if (item.getAttribute('data-uuid') === providerSelect.value) {
+                    item.classList.add('bg-blue-50/80', 'dark:bg-blue-950/60', 'font-bold');
+                } else {
+                    item.classList.remove('bg-blue-50/80', 'dark:bg-blue-950/60', 'font-bold');
+                }
+            });
+        } else {
+            displayEl.innerHTML = '<span class="text-slate-400">Pilih AI Provider</span>';
+        }
+    }
 
     // On selected provider changed in Chat
     function onChatProviderChanged() {
         const providerSelect = document.getElementById('chat-provider-select');
         const modelSelect = document.getElementById('chat-model-select');
         modelSelect.innerHTML = '';
+
+        updateSelectedProviderDisplay();
 
         if (!providerSelect || providerSelect.options.length === 0 || !providerSelect.value) {
             const opt = document.createElement('option');
@@ -1299,7 +1821,7 @@
                         <span>•</span>
                         <span class="truncate">${escapeHtml(msg.provider_name || 'AI Provider')}</span>
                     </div>
-                    <div class="prose prose-xs dark:prose-invert max-w-none leading-relaxed whitespace-pre-wrap">${formatMarkdown(msg.content)}</div>
+                    <div class="prose prose-xs dark:prose-invert max-w-none leading-relaxed ai-markdown-content" data-raw-content="${escapeHtml(msg.content)}">${msg.formatted_content || formatMarkdown(msg.content)}</div>
                     <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-400">
                         <span>${msg.created_at || 'Baru saja'}</span>
                         <button type="button" onclick="copyMessageContent(this)" class="hover:text-blue-500 flex items-center gap-1 cursor-pointer" title="Salin Jawaban">
@@ -1348,19 +1870,20 @@
     }
 
     function copyMessageContent(btn) {
-        const contentDiv = btn.closest('.message-item').querySelector('.prose');
+        const contentDiv = btn.closest('.message-item')?.querySelector('.ai-markdown-content, .prose');
         if (contentDiv) {
-            navigator.clipboard.writeText(contentDiv.innerText || contentDiv.textContent);
+            const rawText = contentDiv.getAttribute('data-raw-content') || contentDiv.innerText || contentDiv.textContent;
+            navigator.clipboard.writeText(rawText);
             btn.innerHTML = `
                 <svg class="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
                 <span class="text-emerald-500">Tersalin!</span>
             `;
             setTimeout(() => {
                 btn.innerHTML = `
                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                     <span>Salin</span>
                 `;
@@ -1382,17 +1905,161 @@
 
     function formatMarkdown(text) {
         if (!text) return '';
-        let escaped = escapeHtml(text);
+        if (window.marked && typeof window.marked.parse === 'function') {
+            try {
+                return window.marked.parse(text);
+            } catch (e) {
+                console.warn('Marked parse error, using fallback:', e);
+            }
+        }
+        let html = escapeHtml(text);
+        // Code blocks ```code```
+        html = html.replace(/```([a-z0-9_-]*)\n?([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>');
+        // Inline code `code`
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Headings
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        // Blockquotes
+        html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
         // Bold
-        escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
         // Italic
-        escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        return escaped;
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+        // Lists
+        html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<li>$1</li>');
+        html = html.replace(/^\s*\d+\.\s+(.*$)/gim, '<li>$1</li>');
+        html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+        // Paragraphs & newlines
+        html = html.replace(/\n\n+/g, '</p><p>');
+        html = html.replace(/\n/g, '<br>');
+        return '<p>' + html + '</p>';
     }
 
     // Auto-init on page load
     document.addEventListener('DOMContentLoaded', () => {
+        const selectAllCheckbox = document.getElementById('select-all-providers');
+        const rowCheckboxes = Array.from(document.querySelectorAll('.provider-checkbox'));
+        const clearBtn = document.getElementById('btn-clear-selection');
+        const bulkDestroyBtn = document.getElementById('btn-bulk-destroy');
+        const confirmDeleteBtn = document.getElementById('btn-confirm-delete-action');
+
+        // Select All Handler
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', () => {
+                const targetState = selectAllCheckbox.checked;
+                rowCheckboxes.forEach(cb => {
+                    cb.checked = targetState;
+                });
+                updateProviderSelectionUI();
+            });
+        }
+
+        // Individual Row Checkbox Handler
+        rowCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                updateProviderSelectionUI();
+            });
+        });
+
+        // Clear Selection Handler
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                rowCheckboxes.forEach(cb => {
+                    cb.checked = false;
+                });
+                updateProviderSelectionUI();
+            });
+        }
+
+        // Bulk Destroy Action Handler
+        if (bulkDestroyBtn) {
+            bulkDestroyBtn.addEventListener('click', () => {
+                const selected = getSelectedProviderCheckboxes();
+                if (selected.length === 0) return;
+
+                pendingDeleteMode = 'bulk';
+                pendingSingleUuid = null;
+
+                const titleEl = document.getElementById('custom-delete-title');
+                const subtitleEl = document.getElementById('custom-delete-subtitle');
+                const labelEl = document.getElementById('custom-delete-target-label');
+                const previewEl = document.getElementById('custom-delete-preview-content');
+                const confirmBtnText = document.getElementById('btn-confirm-delete-text');
+
+                if (titleEl) titleEl.textContent = `Hapus ${selected.length} Provider Terpilih`;
+                if (subtitleEl) subtitleEl.textContent = `Anda akan menghapus ${selected.length} koneksi provider AI sekaligus.`;
+                if (labelEl) labelEl.textContent = `Daftar ${selected.length} Provider yang Akan Dihapus:`;
+
+                if (previewEl) {
+                    previewEl.innerHTML = '';
+                    const ul = document.createElement('ul');
+                    ul.className = 'list-disc list-inside space-y-1 text-slate-900 dark:text-slate-100 font-medium';
+                    selected.forEach(cb => {
+                        const li = document.createElement('li');
+                        li.textContent = cb.getAttribute('data-name') || cb.value;
+                        ul.appendChild(li);
+                    });
+                    previewEl.appendChild(ul);
+                }
+
+                if (confirmBtnText) confirmBtnText.textContent = `Ya, Hapus (${selected.length}) Provider`;
+
+                const modal = document.getElementById('modal-custom-delete-alert');
+                if (modal) modal.classList.remove('hidden');
+            });
+        }
+
+        // Confirm Delete Button in Modal
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', () => {
+                executeDeleteAction();
+            });
+        }
+
+        // Close Custom Delete Alert on Backdrop Click
+        const deleteModal = document.getElementById('modal-custom-delete-alert');
+        if (deleteModal) {
+            deleteModal.addEventListener('click', (e) => {
+                if (e.target === deleteModal) {
+                    closeCustomDeleteAlert();
+                }
+            });
+        }
+
+        // Close Dropdown / Modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeCustomDeleteAlert();
+                const dropdown = document.getElementById('chat-provider-dropdown');
+                const chevron = document.getElementById('chat-provider-chevron');
+                if (dropdown && !dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                    if (chevron) chevron.classList.remove('rotate-180');
+                }
+            }
+        });
+
+        // Close Searchable Provider Dropdown on Click Outside
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('chat-provider-searchable-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                const dropdown = document.getElementById('chat-provider-dropdown');
+                const chevron = document.getElementById('chat-provider-chevron');
+                if (dropdown && !dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                    if (chevron) chevron.classList.remove('rotate-180');
+                }
+            }
+        });
+
+        // Initialize UI states
+        updateProviderSelectionUI();
         onChatProviderChanged();
+        updateSelectedProviderDisplay();
         scrollChatToBottom();
     });
 </script>

@@ -238,6 +238,50 @@ class AiStudioController extends Controller
     }
 
     /**
+     * Bulk delete multiple selected AI Providers.
+     */
+    public function bulkDestroyProviders(Request $request): RedirectResponse|JsonResponse
+    {
+        $request->validate([
+            'uuids' => ['required', 'array', 'min:1'],
+            'uuids.*' => ['required', 'string'],
+        ]);
+
+        $uuids = $request->input('uuids', []);
+        $providers = AiProvider::whereIn('uuid', $uuids)->get();
+
+        if ($providers->isEmpty()) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada provider valid yang dipilih untuk dihapus.',
+                ], 422);
+            }
+
+            return back()->with('error', 'Tidak ada provider valid yang dipilih untuk dihapus.');
+        }
+
+        $deletedCount = 0;
+        foreach ($providers as $provider) {
+            $provider->delete();
+            $deletedCount++;
+        }
+
+        $msg = "{$deletedCount} provider AI berhasil dihapus.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'count' => $deletedCount,
+            ]);
+        }
+
+        return redirect()->route('panel.ai-studio.index', ['tab' => 'connections'])
+            ->with('status', $msg);
+    }
+
+    /**
      * Test connection to an AI Provider.
      */
     public function testProvider(string $uuid): JsonResponse
@@ -379,6 +423,7 @@ class AiStudioController extends Controller
                 'id' => $assistantMsg->id,
                 'role' => $assistantMsg->role,
                 'content' => $assistantMsg->content,
+                'formatted_content' => Str::markdown($assistantMsg->content),
                 'provider_name' => $provider->name,
                 'model_used' => $validated['model'],
                 'tokens_used' => $response['tokens_used'] ?? null,

@@ -7,6 +7,8 @@ use App\Models\AiChatMessage;
 use App\Models\AiChatSession;
 use App\Models\AiProvider;
 use App\Services\AiStudioService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -304,5 +306,73 @@ class AiStudioWhiteBoxTest extends TestCase
         // Array input
         $parsed3 = $method->invoke($this->controller, ['gemini-2.0-flash', 'gemini-1.5-pro']);
         $this->assertEquals(['gemini-2.0-flash', 'gemini-1.5-pro'], $parsed3);
+    }
+
+    /**
+     * White-box WB12: Controller bulkDestroyProviders deletes multiple records and returns formatted response.
+     */
+    public function test_white_box_bulk_destroy_providers_controller_logic(): void
+    {
+        $p1 = AiProvider::create([
+            'name' => 'WB Bulk Target 1',
+            'provider' => 'openai',
+            'models' => ['gpt-4o'],
+        ]);
+        $p2 = AiProvider::create([
+            'name' => 'WB Bulk Target 2',
+            'provider' => 'gemini',
+            'models' => ['gemini-2.0-flash'],
+        ]);
+
+        // 1. JSON Request Execution
+        $request = Request::create('/panel/ai-studio/providers/bulk-destroy', 'POST', [
+            'uuids' => [$p1->uuid, $p2->uuid],
+        ]);
+        $request->headers->set('Accept', 'application/json');
+
+        $response = $this->controller->bulkDestroyProviders($request);
+        $this->assertInstanceOf(JsonResponse::class, $response);
+
+        $data = $response->getData(true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals(2, $data['count']);
+        $this->assertStringContainsString('2 provider AI berhasil dihapus', $data['message']);
+
+        // Check records are deleted
+        $this->assertDatabaseMissing('ai_providers', ['id' => $p1->id]);
+        $this->assertDatabaseMissing('ai_providers', ['id' => $p2->id]);
+
+        // 2. Non-existent / empty list handling
+        $emptyRequest = Request::create('/panel/ai-studio/providers/bulk-destroy', 'POST', [
+            'uuids' => ['00000000-0000-0000-0000-000000000000'],
+        ]);
+        $emptyRequest->headers->set('Accept', 'application/json');
+
+        $emptyResponse = $this->controller->bulkDestroyProviders($emptyRequest);
+        $this->assertInstanceOf(JsonResponse::class, $emptyResponse);
+        $this->assertEquals(422, $emptyResponse->getStatusCode());
+    }
+
+    /**
+     * White-box WB13: Markdown formatting renders academic markup to standard semantic HTML.
+     */
+    public function test_white_box_markdown_formatting_on_chat_response(): void
+    {
+        $rawMarkdown = "# Judul Riset\n\n"
+            ."**Definisi Operasional**: Merupakan *penjelasan spesifik* variabel.\n\n"
+            ."- Poin Satu\n"
+            ."- Poin Dua\n\n"
+            ."> Hipotesis kerja diterima (p < 0.05).\n\n"
+            .'Gunakan formula `Y = a + bX` untuk regresi.';
+
+        $renderedHtml = Str::markdown($rawMarkdown);
+
+        $this->assertStringContainsString('<h1>Judul Riset</h1>', $renderedHtml);
+        $this->assertStringContainsString('<strong>Definisi Operasional</strong>', $renderedHtml);
+        $this->assertStringContainsString('<em>penjelasan spesifik</em>', $renderedHtml);
+        $this->assertStringContainsString('<ul>', $renderedHtml);
+        $this->assertStringContainsString('<li>Poin Satu</li>', $renderedHtml);
+        $this->assertStringContainsString('<blockquote>', $renderedHtml);
+        $this->assertStringContainsString('<code>Y = a + bX</code>', $renderedHtml);
     }
 }
