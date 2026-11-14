@@ -28,6 +28,7 @@ export class UiController {
 
     init() {
         const tasks = [
+            ['bindTopDropdown', () => this.bindTopDropdown()],
             ['bindRibbonTabs', () => this.bindRibbonTabs()],
             ['bindRibbonTools', () => this.bindRibbonTools()],
             ['bindReviewComments', () => { this.reviewComments = new ReviewComments(this.engine); this.reviewComments.bind(); }],
@@ -65,6 +66,101 @@ export class UiController {
                 console.error(`UiController ${name} error:`, err);
             }
         }
+    }
+
+    /* -------------------------------------------------------------
+     * Top Application Bar Hamburger & Responsive Dropdown Menu
+     * ------------------------------------------------------------- */
+
+    bindTopDropdown() {
+        const hamburgerBtn = document.getElementById('btn-top-hamburger');
+        const dropdown = document.getElementById('top-nav-dropdown');
+        const icon = document.getElementById('top-hamburger-icon');
+
+        if (!hamburgerBtn || !dropdown) return;
+
+        const toggleDropdown = (forceOpen = null) => {
+            const isCurrentlyOpen = !dropdown.classList.contains('hidden');
+            const shouldOpen = forceOpen !== null ? forceOpen : !isCurrentlyOpen;
+
+            if (shouldOpen) {
+                dropdown.classList.remove('hidden');
+                hamburgerBtn.setAttribute('aria-expanded', 'true');
+                if (icon) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-xmark');
+                }
+            } else {
+                dropdown.classList.add('hidden');
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+                if (icon) {
+                    icon.classList.remove('fa-xmark');
+                    icon.classList.add('fa-bars');
+                }
+            }
+        };
+
+        this.toggleTopDropdown = toggleDropdown;
+
+        hamburgerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+
+        // Close when clicking any item inside dropdown
+        dropdown.querySelectorAll('.top-dropdown-item').forEach((item) => {
+            item.addEventListener('click', () => {
+                toggleDropdown(false);
+            });
+        });
+
+        // Close when clicking outside dropdown & hamburger button
+        document.addEventListener('click', (e) => {
+            if (!dropdown.classList.contains('hidden')) {
+                if (!dropdown.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                    toggleDropdown(false);
+                }
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !dropdown.classList.contains('hidden')) {
+                toggleDropdown(false);
+            }
+        });
+
+        // Wire dropdown actions
+        const dropdownAiBtn = document.getElementById('dropdown-btn-toggle-ai');
+        if (dropdownAiBtn) {
+            dropdownAiBtn.addEventListener('click', () => {
+                this.toggleWordcraftSidebar(true);
+            });
+        }
+
+        const dropdownOutlineBtn = document.getElementById('dropdown-btn-toggle-outline');
+        if (dropdownOutlineBtn) {
+            dropdownOutlineBtn.addEventListener('click', () => {
+                this.toggleOutline(true);
+            });
+        }
+
+        const dropdownThemeBtn = document.getElementById('dropdown-theme-toggle-btn');
+        if (dropdownThemeBtn) {
+            dropdownThemeBtn.addEventListener('click', () => {
+                const themeToggleBtn = document.getElementById('theme-toggle-btn');
+                if (themeToggleBtn) {
+                    themeToggleBtn.click();
+                }
+            });
+        }
+
+        // Wire compact AI trigger buttons (e.g. mobile top bar)
+        document.querySelectorAll('.top-nav-ai-trigger').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.toggleWordcraftSidebar();
+            });
+        });
     }
 
     /* -------------------------------------------------------------
@@ -510,10 +606,20 @@ export class UiController {
         const floatingIcon = document.getElementById('floating-theme-icon');
         if (floatingIcon) floatingIcon.innerHTML = effectiveDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
 
-        // 5. Update Modal cards if modal elements exist
+        // 5. Update Top Dropdown Theme visuals
+        const dropdownThemeIcon = document.getElementById('dropdown-theme-icon');
+        const dropdownThemeText = document.getElementById('dropdown-theme-text');
+        if (dropdownThemeIcon) {
+            dropdownThemeIcon.className = effectiveDark ? 'fa-solid fa-moon text-xs' : 'fa-solid fa-sun text-xs';
+        }
+        if (dropdownThemeText) {
+            dropdownThemeText.textContent = this.currentTheme === 'system' ? 'Mode Sistem' : (effectiveDark ? 'Mode Gelap Aktif' : 'Mode Terang Aktif');
+        }
+
+        // 6. Update Modal cards if modal elements exist
         this.syncThemeModal();
 
-        // 6. Dispatch custom event
+        // 7. Dispatch custom event
         window.dispatchEvent(new CustomEvent('velscribe:theme-changed', {
             detail: { theme: this.currentTheme, effectiveDark, isDark: effectiveDark }
         }));

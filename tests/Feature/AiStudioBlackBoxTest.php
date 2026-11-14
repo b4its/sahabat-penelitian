@@ -874,7 +874,16 @@ class AiStudioBlackBoxTest extends TestCase
         // Responsive CSS media query in editor
         $response->assertSee('@media screen and (max-width: 1024px)', false);
 
-        // Responsive top-nav and status-bar utilities
+        // Responsive top navigation hamburger and dropdown menu in editor
+        $response->assertSee('id="btn-top-hamburger"', false);
+        $response->assertSee('id="top-hamburger-icon"', false);
+        $response->assertSee('id="top-nav-dropdown"', false);
+        $response->assertSee('id="dropdown-btn-toggle-ai"', false);
+        $response->assertSee('id="dropdown-btn-toggle-outline"', false);
+        $response->assertSee('id="dropdown-theme-toggle-btn"', false);
+        $response->assertSee('aria-controls="top-nav-dropdown"', false);
+
+        // Responsive ribbon and status-bar utilities
         $response->assertSee('overflow-x-auto no-scrollbar', false);
 
         // Check zero emojis in rendered editor view

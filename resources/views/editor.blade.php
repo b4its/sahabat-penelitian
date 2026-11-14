@@ -764,7 +764,7 @@
     <!-- ========================================================================= -->
     <!-- 1. TOP APPLICATION BAR (Google Docs & Microsoft Word inspired)            -->
     <!-- ========================================================================= -->
-    <header id="top-nav" class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-2.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between shrink-0 no-print z-30 shadow-xs gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
+    <header id="top-nav" class="relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-2.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between shrink-0 no-print z-30 shadow-xs gap-1.5 sm:gap-2">
         <div class="flex items-center gap-1.5 sm:gap-3 min-w-0">
             <!-- App Logo & Link to Landing Page -->
             <a href="{{ url('/') }}" class="flex items-center gap-2 pr-1.5 sm:pr-3 border-r border-gray-200 dark:border-gray-800 hover:opacity-90 transition group shrink-0" title="Kembali ke Beranda Sahabat Penelitian">
@@ -814,8 +814,8 @@
             </div>
         </div>
 
-        <!-- Top Right Actions -->
-        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+        <!-- Desktop Action Buttons (lg and up) -->
+        <div class="hidden lg:flex items-center gap-1 sm:gap-2 shrink-0">
             <!-- Open Local File (Primary CTA) -->
             <button
                 data-action="open-file-modal"
@@ -884,7 +884,7 @@
             <!-- Print Shortcut -->
             <button
                 onclick="window.print()"
-                class="hidden sm:inline-flex p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                class="hidden sm:inline-flex p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
                 title="Cetak Dokumen / Ekspor ke PDF (Ctrl+P)"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -904,6 +904,166 @@
                 <span class="hidden md:inline">Xishie Studio AI</span>
                 <span class="inline md:hidden text-[11px] font-bold">AI</span>
             </button>
+        </div>
+
+        <!-- Mobile & Tablet Actions with Hamburger Menu (< lg) -->
+        <div class="lg:hidden flex items-center gap-1.5 shrink-0">
+            <!-- Compact Quick AI Button -->
+            <button
+                type="button"
+                class="top-nav-ai-trigger px-2 sm:px-2.5 py-1 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
+                title="Buka Asisten AI Xishie Studio"
+            >
+                <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                <span class="text-[11px] font-bold">AI</span>
+            </button>
+
+            <!-- Top Navigation Hamburger Button -->
+            <button
+                id="btn-top-hamburger"
+                type="button"
+                class="p-1.5 sm:p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-200 shadow-2xs transition focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                aria-expanded="false"
+                aria-haspopup="true"
+                aria-controls="top-nav-dropdown"
+                title="Menu Aksi Dokumen"
+            >
+                <i id="top-hamburger-icon" class="fa-solid fa-bars text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Downward Dropdown Menu for Top Navigation (Responsive) -->
+        <div
+            id="top-nav-dropdown"
+            class="hidden absolute top-full right-2 sm:right-4 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-2.5 z-50 text-xs font-medium text-gray-700 dark:text-gray-200 divide-y divide-gray-100 dark:divide-gray-800 transition-all duration-150 origin-top-right"
+        >
+            <!-- Group 1: Aksi Dokumen Utama -->
+            <div class="py-1.5 space-y-1">
+                <div class="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    Aksi Dokumen
+                </div>
+                <!-- Buka Dokumen Lokal -->
+                <button
+                    type="button"
+                    data-action="open-file-modal"
+                    class="top-dropdown-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left font-medium text-gray-700 dark:text-gray-200 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-400 transition cursor-pointer"
+                >
+                    <div class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-folder-open text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold">Buka Dokumen Lokal</div>
+                        <div class="text-[10px] text-gray-400 truncate">Buka berkas DOCX, TXT, MD dari komputer (Ctrl+O)</div>
+                    </div>
+                </button>
+
+                <!-- Unduh / Ekspor -->
+                <button
+                    type="button"
+                    data-action="export-modal"
+                    class="top-dropdown-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left font-medium text-gray-700 dark:text-gray-200 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/50 dark:hover:text-emerald-400 transition cursor-pointer"
+                >
+                    <div class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-file-export text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold">Unduh / Ekspor</div>
+                        <div class="text-[10px] text-gray-400 truncate">Format Word (.docx), PDF, Markdown, HTML</div>
+                    </div>
+                </button>
+
+                <!-- Cetak PDF -->
+                <button
+                    type="button"
+                    onclick="window.print()"
+                    class="top-dropdown-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left font-medium text-gray-700 dark:text-gray-200 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/50 dark:hover:text-sky-400 transition cursor-pointer"
+                >
+                    <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-900/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-print text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold">Cetak / Print PDF</div>
+                        <div class="text-[10px] text-gray-400 truncate">Cetak instan atau simpan sebagai PDF (Ctrl+P)</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Group 2: Kecerdasan Buatan & Navigasi -->
+            <div class="py-1.5 space-y-1">
+                <div class="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    Kecerdasan Buatan & Navigasi
+                </div>
+                <!-- Wordcraft AI Toggle -->
+                <button
+                    type="button"
+                    id="dropdown-btn-toggle-ai"
+                    class="top-dropdown-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition cursor-pointer"
+                >
+                    <div class="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold">Asisten AI Xishie Studio</div>
+                        <div class="text-[10px] text-gray-400 truncate">Sidebar analisis, sitasi, dan parafrase AI</div>
+                    </div>
+                </button>
+
+                <!-- Struktur Outline Dokumen -->
+                <button
+                    type="button"
+                    id="dropdown-btn-toggle-outline"
+                    class="top-dropdown-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                >
+                    <div class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-list-tree text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold">Struktur Outline Dokumen</div>
+                        <div class="text-[10px] text-gray-400 truncate">Tampilkan hierarki judul dan navigasi cepat</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Group 3: Tema & Tampilan -->
+            <div class="py-1.5 space-y-1">
+                <div class="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    Tampilan & Preferensi
+                </div>
+                <!-- Toggle Dark/Light Mode -->
+                <button
+                    type="button"
+                    id="dropdown-theme-toggle-btn"
+                    class="top-dropdown-item w-full flex items-center justify-between px-3 py-2 rounded-xl font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-indigo-950 text-amber-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                            <i id="dropdown-theme-icon" class="fa-solid fa-circle-half-stroke text-xs"></i>
+                        </div>
+                        <div class="text-left min-w-0">
+                            <div class="text-xs font-semibold">Mode Tampilan</div>
+                            <div id="dropdown-theme-text" class="text-[10px] text-gray-400 truncate">Mode Terang / Gelap</div>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                        Ganti
+                    </span>
+                </button>
+
+                <!-- Buka Pengaturan Tema -->
+                <button
+                    type="button"
+                    data-action="open-theme-modal"
+                    class="top-dropdown-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                >
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-palette text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold">Palet Tema & Visual</div>
+                        <div class="text-[10px] text-gray-400 truncate">Sesuaikan warna aksen dan kontras editor</div>
+                    </div>
+                </button>
+            </div>
         </div>
     </header>
 

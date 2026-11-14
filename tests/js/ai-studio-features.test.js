@@ -474,3 +474,101 @@ test('UiController responsive drawer and backdrop logic for narrow and wide view
     assert.equal(document.getElementById('wordcraft-sidebar').classList.contains('hidden'), false);
     assert.equal(document.getElementById('wordcraft-backdrop').classList.contains('hidden'), true);
 });
+
+test('top navigation hamburger button toggles downward dropdown, handles outside click and escape key', () => {
+    const dom = new JSDOM(`
+        <header id="top-nav" class="relative">
+            <button id="btn-top-hamburger" aria-expanded="false">
+                <i id="top-hamburger-icon" class="fa-solid fa-bars"></i>
+            </button>
+            <div id="top-nav-dropdown" class="hidden">
+                <button type="button" class="top-dropdown-item" id="item-open">Buka Dokumen</button>
+                <button type="button" class="top-dropdown-item" id="item-export">Unduh / Ekspor</button>
+            </div>
+            <div id="outside-area">Canvas</div>
+        </header>
+    `);
+
+    const { window } = dom;
+    const { document } = window;
+
+    const hamburgerBtn = document.getElementById('btn-top-hamburger');
+    const dropdown = document.getElementById('top-nav-dropdown');
+    const icon = document.getElementById('top-hamburger-icon');
+
+    const toggleDropdown = (forceOpen = null) => {
+        const isCurrentlyOpen = !dropdown.classList.contains('hidden');
+        const shouldOpen = forceOpen !== null ? forceOpen : !isCurrentlyOpen;
+
+        if (shouldOpen) {
+            dropdown.classList.remove('hidden');
+            hamburgerBtn.setAttribute('aria-expanded', 'true');
+            if (icon) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-xmark');
+            }
+        } else {
+            dropdown.classList.add('hidden');
+            hamburgerBtn.setAttribute('aria-expanded', 'false');
+            if (icon) {
+                icon.classList.remove('fa-xmark');
+                icon.classList.add('fa-bars');
+            }
+        }
+    };
+
+    hamburgerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDropdown();
+    });
+
+    dropdown.querySelectorAll('.top-dropdown-item').forEach((item) => {
+        item.addEventListener('click', () => {
+            toggleDropdown(false);
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!dropdown.classList.contains('hidden')) {
+            if (!dropdown.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                toggleDropdown(false);
+            }
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !dropdown.classList.contains('hidden')) {
+            toggleDropdown(false);
+        }
+    });
+
+    // 1. Initial state: dropdown is hidden
+    assert.equal(dropdown.classList.contains('hidden'), true);
+    assert.equal(hamburgerBtn.getAttribute('aria-expanded'), 'false');
+    assert.equal(icon.classList.contains('fa-bars'), true);
+
+    // 2. Click hamburger button: dropdown opens, icon changes to fa-xmark
+    hamburgerBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    assert.equal(dropdown.classList.contains('hidden'), false);
+    assert.equal(hamburgerBtn.getAttribute('aria-expanded'), 'true');
+    assert.equal(icon.classList.contains('fa-xmark'), true);
+
+    // 3. Click outside: dropdown closes, icon changes to fa-bars
+    document.getElementById('outside-area').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    assert.equal(dropdown.classList.contains('hidden'), true);
+    assert.equal(hamburgerBtn.getAttribute('aria-expanded'), 'false');
+    assert.equal(icon.classList.contains('fa-bars'), true);
+
+    // 4. Reopen and press Escape key: dropdown closes
+    hamburgerBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    assert.equal(dropdown.classList.contains('hidden'), false);
+    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.equal(dropdown.classList.contains('hidden'), true);
+    assert.equal(hamburgerBtn.getAttribute('aria-expanded'), 'false');
+
+    // 5. Reopen and click item inside dropdown: dropdown closes
+    hamburgerBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    assert.equal(dropdown.classList.contains('hidden'), false);
+    document.getElementById('item-export').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    assert.equal(dropdown.classList.contains('hidden'), true);
+});
