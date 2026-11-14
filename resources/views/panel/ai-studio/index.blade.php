@@ -57,6 +57,9 @@
     /* Markdown Styling for AI Assistant Responses */
     .ai-markdown-content {
         word-break: break-word;
+        overflow-x: auto;
+        min-width: 0;
+        max-width: 100%;
     }
     .ai-markdown-content p {
         margin-bottom: 0.65rem;
@@ -150,23 +153,21 @@
         color: #60a5fa;
     }
 </style>
-<div class="space-y-6">
+<div class="space-y-6 w-full max-w-full min-w-0">
 
     <!-- ========================================================================= -->
     <!-- 1. HEADER SECTION & TABS NAVIGATION                                      -->
     <!-- ========================================================================= -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-blue-100 dark:border-blue-900/40">
-        <div>
-            <div class="flex items-center gap-2">
-                <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-500/30">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-blue-100 dark:border-blue-900/40">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-500/30 shrink-0">
+                    <i class="fa-solid fa-microchip text-sm"></i>
                 </span>
-                <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight truncate">
                     AI Studio
                 </h1>
-                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 shrink-0">
                     LLM Hub &amp; Chat
                 </span>
             </div>
@@ -175,19 +176,17 @@
             </p>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="flex items-center p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl shrink-0 self-start md:self-auto">
+        <!-- Navigation Tabs (Fully Responsive across mobile, tablet, and desktop) -->
+        <div class="flex items-center p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl w-full sm:w-auto shrink-0 self-stretch sm:self-start lg:self-auto overflow-x-auto max-w-full gap-1">
             <button
                 type="button"
                 onclick="switchTab('connections')"
                 id="tab-btn-connections"
-                class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 {{ $activeTab === 'connections' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 {{ $activeTab === 'connections' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
             >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Koneksi Provider</span>
-                <span class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                <i class="fa-solid fa-plug text-xs"></i>
+                <span class="whitespace-nowrap">Koneksi Provider</span>
+                <span class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 shrink-0 font-bold">
                     {{ $providers->total() }}
                 </span>
             </button>
@@ -196,13 +195,11 @@
                 type="button"
                 onclick="switchTab('chat')"
                 id="tab-btn-chat"
-                class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 {{ $activeTab === 'chat' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 {{ $activeTab === 'chat' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
             >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-                <span>Chat AI Studio</span>
-                <span class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                <i class="fa-solid fa-comments text-xs"></i>
+                <span class="whitespace-nowrap">Chat AI Studio</span>
+                <span class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 shrink-0 font-bold">
                     Aktif
                 </span>
             </button>
@@ -231,43 +228,43 @@
     <!-- ========================================================================= -->
     <div id="tab-content-connections" class="{{ $activeTab === 'connections' ? 'block' : 'hidden' }} space-y-6">
 
-        <!-- Metrics Overview Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Total Provider</span>
-                <div class="mt-2 flex items-baseline justify-between">
-                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="stat-total-providers">{{ $providers->total() }}</span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">Terkonfigurasi</span>
+        <!-- Metrics Overview Cards (Responsive Grid) -->
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs min-w-0">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block truncate">Total Provider</span>
+                <div class="mt-2 flex items-baseline justify-between gap-1">
+                    <span class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white" id="stat-total-providers">{{ $providers->total() }}</span>
+                    <span class="text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 shrink-0">Terkonfigurasi</span>
                 </div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Provider Aktif</span>
-                <div class="mt-2 flex items-baseline justify-between">
-                    <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400" id="stat-active-providers">{{ $activeProviders->count() }}</span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">Siap Pakai</span>
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs min-w-0">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block truncate">Provider Aktif</span>
+                <div class="mt-2 flex items-baseline justify-between gap-1">
+                    <span class="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400" id="stat-active-providers">{{ $activeProviders->count() }}</span>
+                    <span class="text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shrink-0">Siap Pakai</span>
                 </div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Model Terhubung</span>
-                <div class="mt-2 flex items-baseline justify-between">
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs min-w-0">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block truncate">Model Terhubung</span>
+                <div class="mt-2 flex items-baseline justify-between gap-1">
                     @php
                         $totalModels = $activeProviders->sum(fn($p) => count($p->models ?? []));
                     @endphp
-                    <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400" id="stat-total-models">{{ $totalModels }}</span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">LLM Ready</span>
+                    <span class="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400" id="stat-total-models">{{ $totalModels }}</span>
+                    <span class="text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 shrink-0">LLM Ready</span>
                 </div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Status Gateway</span>
-                <div class="mt-2 flex items-baseline justify-between">
-                    <span class="text-lg font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Optimal
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs min-w-0">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block truncate">Status Gateway</span>
+                <div class="mt-2 flex items-baseline justify-between gap-1">
+                    <span class="text-base sm:text-lg font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 truncate">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                        <span class="truncate">Optimal</span>
                     </span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">Auto Route</span>
+                    <span class="text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 shrink-0">Auto Route</span>
                 </div>
             </div>
         </div>
@@ -277,11 +274,11 @@
         <!-- ========================================================================= -->
         <div
             id="bulk-actions-bar"
-            class="hidden p-3.5 sm:p-4 rounded-2xl bg-blue-50/90 dark:bg-slate-900 border-2 border-blue-200 dark:border-blue-600 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-200"
+            class="hidden p-3.5 sm:p-4 rounded-2xl bg-blue-50/90 dark:bg-slate-900 border-2 border-blue-200 dark:border-blue-600 shadow-lg flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 transition-all duration-200"
         >
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center gap-2">
-                    <span id="bulk-selected-badge" class="w-7 h-7 rounded-lg bg-blue-600 dark:bg-blue-500 text-white font-extrabold flex items-center justify-center text-xs shadow-xs">
+                    <span id="bulk-selected-badge" class="w-7 h-7 rounded-lg bg-blue-600 dark:bg-blue-500 text-white font-extrabold flex items-center justify-center text-xs shadow-xs shrink-0">
                         0
                     </span>
                     <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
@@ -298,16 +295,14 @@
                 </button>
             </div>
 
-            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
                 <button
                     type="button"
                     id="btn-bulk-destroy"
-                    class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500 border border-rose-500 dark:border-rose-400 shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition cursor-pointer hover:shadow-lg"
+                    class="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500 border border-rose-500 dark:border-rose-400 shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition cursor-pointer hover:shadow-lg"
                     title="Hapus provider terpilih dari sistem"
                 >
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <i class="fa-solid fa-trash-can text-white text-xs"></i>
                     <span>Hapus Terpilih</span>
                 </button>
             </div>
@@ -316,11 +311,11 @@
         <!-- Connection Table Card -->
         <div class="bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 rounded-2xl shadow-xs overflow-hidden">
             <!-- Table Header Bar -->
-            <div class="p-4 sm:p-5 border-b border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50">
-                <div>
-                    <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <div class="p-3.5 sm:p-5 border-b border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50">
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-2">
                         <span>Daftar Provider AI Terhubung</span>
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 shrink-0">
                             {{ $providers->total() }} Provider
                         </span>
                     </h2>
@@ -333,12 +328,10 @@
                     <button
                         type="button"
                         onclick="openAddProviderModal()"
-                        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer"
                         id="btn-add-provider"
                     >
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                        </svg>
+                        <i class="fa-solid fa-plus text-xs"></i>
                         <span>Tambah Provider Baru</span>
                     </button>
                 </div>
@@ -482,60 +475,49 @@
                                 </td>
 
                                 <!-- Actions -->
-                                <td class="px-4 py-4 whitespace-nowrap text-right">
+                                <td class="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-right">
                                     <div class="inline-flex items-center gap-1">
                                         <!-- Test Connection Button -->
                                         <button
                                             type="button"
                                             onclick="testProviderConnection('{{ $prov->uuid }}')"
-                                            class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer btn-test-conn"
+                                            class="p-2 rounded-lg text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer btn-test-conn"
                                             title="Uji Koneksi Provider"
                                             id="btn-test-{{ $prov->uuid }}"
                                         >
-                                            <svg class="w-4 h-4 test-icon-idle" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                            <svg class="w-4 h-4 test-icon-spinner animate-spin hidden text-blue-600" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
+                                            <i class="fa-solid fa-bolt text-xs test-icon-idle"></i>
+                                            <i class="fa-solid fa-spinner fa-spin text-xs test-icon-spinner hidden text-blue-600"></i>
                                         </button>
 
                                         <!-- Edit Button -->
                                         <button
                                             type="button"
                                             onclick="openEditProviderModal({{ json_encode($prov) }})"
-                                            class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                            class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                             title="Edit Pengaturan Provider"
                                         >
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
                                         </button>
 
                                         <!-- Delete Button -->
                                         <button
                                             type="button"
                                             onclick="openSingleDeleteModal('{{ $prov->uuid }}', @js($prov->name))"
-                                            class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                            class="p-2 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                             title="Hapus Provider"
                                             aria-label="Hapus provider {{ $prov->name }}"
                                         >
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
+                                            <i class="fa-solid fa-trash-can text-xs"></i>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                                <td colspan="7" class="px-4 sm:px-6 py-12 text-center text-slate-400">
                                     <div class="max-w-sm mx-auto flex flex-col items-center">
                                         <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center text-blue-600 mb-3">
-                                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
+                                            <i class="fa-solid fa-server text-xl"></i>
                                         </div>
                                         <p class="font-bold text-slate-700 dark:text-slate-200">Belum ada AI Provider yang terhubung</p>
                                         <p class="text-xs text-slate-500 mt-1">Tambahkan provider OpenAI, Gemini, Claude, Groq, atau Ollama untuk mulai memanfaatkan fitur AI Studio.</p>
@@ -574,14 +556,14 @@
     <!-- ========================================================================= -->
     <div id="tab-content-chat" class="{{ $activeTab === 'chat' ? 'block' : 'hidden' }} space-y-4">
 
-        <!-- Top Configuration Bar: Provider & Model Selector -->
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Top Configuration Bar: Provider & Model Selector (Responsive Layout) -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs flex flex-col xl:flex-row xl:items-end justify-between gap-3">
             
-            <!-- Left: Provider & Model Dropdowns -->
-            <div class="flex flex-wrap items-center gap-3">
+            <!-- Selectors Grid (Responsive across mobile, tablet, and desktop) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:items-end gap-3 flex-1 min-w-0">
                 
                 <!-- 1. AI Provider Selector with Integrated Search -->
-                <div class="flex flex-col min-w-[220px] relative" id="chat-provider-searchable-wrapper">
+                <div class="flex flex-col w-full min-w-0 xl:w-64 relative" id="chat-provider-searchable-wrapper">
                     <label for="chat-provider-search-trigger" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                         Pilih AI Provider:
                     </label>
@@ -615,9 +597,7 @@
                                 Pilih AI Provider
                             </span>
                             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-500">
-                                <svg id="chat-provider-chevron" class="w-4 h-4 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
+                                <i id="chat-provider-chevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-150"></i>
                             </div>
                         </button>
 
@@ -637,9 +617,7 @@
                                         oninput="filterProviderOptions()"
                                         autocomplete="off"
                                     />
-                                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
+                                    <i class="fa-solid fa-magnifying-glass text-xs text-slate-400 absolute left-2.5 top-2.5 pointer-events-none"></i>
                                 </div>
                             </div>
 
@@ -680,28 +658,78 @@
                     </div>
                 </div>
 
-                <!-- 2. Model Selector (Populates from chosen provider) -->
-                <div class="flex flex-col min-w-[200px]">
-                    <label for="chat-model-select" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <!-- 2. Model Selector (Searchable Dropdown with conditional search input) -->
+                <div class="flex flex-col w-full min-w-0 xl:w-64 relative" id="chat-model-searchable-wrapper">
+                    <label for="chat-model-search-trigger" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                         Pilih Model Terhubung:
                     </label>
+
+                    <!-- Native select kept hidden for full programmatic access and test assertions -->
+                    <select
+                        id="chat-model-select"
+                        class="hidden"
+                    >
+                        <!-- Populated dynamically via JS -->
+                    </select>
+
+                    <!-- Searchable Dropdown Trigger -->
                     <div class="relative">
-                        <select
-                            id="chat-model-select"
-                            class="w-full pl-3 pr-8 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none cursor-pointer"
+                        <button
+                            type="button"
+                            id="chat-model-search-trigger"
+                            onclick="toggleChatModelDropdown()"
+                            class="w-full pl-3 pr-8 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer flex items-center justify-between text-left shadow-xs transition hover:border-blue-300 dark:hover:border-blue-700"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
                         >
-                            <!-- Populated dynamically via JS -->
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-500">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            <span id="chat-model-selected-text" class="truncate font-mono font-medium flex items-center gap-1.5">
+                                <i class="fa-solid fa-microchip text-xs text-blue-600 dark:text-blue-400 shrink-0"></i>
+                                <span>Pilih Model</span>
+                            </span>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-500">
+                                <i id="chat-model-chevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-150"></i>
+                            </div>
+                        </button>
+
+                        <!-- Searchable Dropdown Panel -->
+                        <div
+                            id="chat-model-dropdown"
+                            class="hidden absolute z-50 left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-blue-200 dark:border-blue-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
+                        >
+                            <!-- Search Input Inside Select (Hidden if models <= 2, shown if > 2) -->
+                            <div id="chat-model-search-container" class="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="chat-model-search-input"
+                                        placeholder="Cari model..."
+                                        class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        oninput="filterChatModelOptions()"
+                                        autocomplete="off"
+                                    />
+                                    <i class="fa-solid fa-magnifying-glass text-xs text-slate-400 absolute left-2.5 top-2.5 pointer-events-none"></i>
+                                </div>
+                            </div>
+
+                            <!-- List of Models -->
+                            <ul
+                                id="chat-model-options-list"
+                                class="max-h-56 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-800 text-xs font-mono"
+                                role="listbox"
+                            >
+                                <!-- Populated dynamically via JS -->
+                            </ul>
+
+                            <!-- Empty search result state -->
+                            <div id="chat-model-empty-result" class="hidden p-3 text-center text-xs text-slate-400 dark:text-slate-500">
+                                Model tidak ditemukan
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3. System Prompt / Persona Preset -->
-                <div class="flex flex-col min-w-[220px]">
+                <div class="flex flex-col w-full min-w-0 sm:col-span-2 lg:col-span-1 xl:w-64 relative">
                     <label for="chat-system-preset" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                         Peran Persona AI:
                     </label>
@@ -717,9 +745,7 @@
                             <option value="literature">Penelaah Literatur &amp; Sintesis Rujukan</option>
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-500">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
                         </div>
                     </div>
                 </div>
@@ -727,36 +753,32 @@
             </div>
 
             <!-- Right: Quick Reset Button -->
-            <div class="flex items-center gap-2 shrink-0 self-end md:self-center">
+            <div class="flex items-center gap-2 shrink-0 self-stretch sm:self-end xl:self-end">
                 <button
                     type="button"
                     onclick="resetChatSession()"
-                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
                     title="Mulai Sesi Obrolan Baru"
                 >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                    <i class="fa-solid fa-arrows-rotate text-xs"></i>
                     <span>Sesi Baru</span>
                 </button>
             </div>
         </div>
 
-        <!-- Chat Main Interactive Area -->
-        <div class="flex flex-col h-[650px] bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 rounded-2xl shadow-xs overflow-hidden">
+        <!-- Chat Main Interactive Area (Responsive Heights & Padding) -->
+        <div class="flex flex-col h-[520px] sm:h-[600px] lg:h-[680px] bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 rounded-2xl shadow-xs overflow-hidden w-full max-w-full">
             
             <!-- Message Stream Scrollable Box -->
-            <div id="chat-messages-container" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
+            <div id="chat-messages-container" class="flex-1 p-3.5 sm:p-6 overflow-y-auto space-y-4 min-w-0 max-w-full">
                 
                 @if(!$chatSession || $chatSession->messages->isEmpty())
                     <!-- Empty State Welcome Hero -->
-                    <div id="chat-empty-state" class="h-full flex flex-col items-center justify-center text-center p-6 max-w-xl mx-auto my-auto">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4">
-                            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                            </svg>
+                    <div id="chat-empty-state" class="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6 max-w-xl mx-auto my-auto">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 mb-3 sm:mb-4">
+                            <i class="fa-solid fa-comments text-xl sm:text-2xl"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                             Selamat Datang di AI Studio Chat
                         </h3>
                         <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md">
@@ -764,7 +786,7 @@
                         </p>
 
                         <!-- Suggestion Prompts Grid -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-6 w-full text-left">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 sm:mt-6 w-full text-left">
                             <button
                                 type="button"
                                 onclick="sendQuickPrompt('Bantu susun outline metodologi penelitian mixed-methods untuk studi kasus evaluasi implementasi sistem.')"
@@ -807,18 +829,16 @@
                     @foreach($chatSession->messages as $msg)
                         <div class="flex {{ $msg->role === 'user' ? 'justify-end' : 'justify-start' }} message-item">
                             @if($msg->role === 'user')
-                                <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-br-xs bg-blue-600 text-white p-3.5 shadow-xs text-xs sm:text-sm">
-                                    <div class="whitespace-pre-wrap leading-relaxed">{{ $msg->content }}</div>
+                                <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-br-xs bg-blue-600 text-white p-3 sm:p-3.5 shadow-xs text-xs sm:text-sm break-words">
+                                    <div class="whitespace-pre-wrap leading-relaxed">${escapeHtml($msg->content)}</div>
                                     <div class="text-[10px] text-blue-200 mt-1 text-right">{{ $msg->created_at->format('H:i') }}</div>
                                 </div>
                             @else
-                                <div class="max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-bl-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 p-4 shadow-xs text-xs sm:text-sm text-slate-800 dark:text-slate-100">
+                                <div class="max-w-[95%] sm:max-w-[82%] rounded-2xl rounded-bl-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 p-3.5 sm:p-4 shadow-xs text-xs sm:text-sm text-slate-800 dark:text-slate-100 break-words min-w-0">
                                     <div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400">
-                                        <span class="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                            {{ $msg->model_used ?: 'Model AI' }}
+                                        <span class="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 truncate">
+                                            <i class="fa-solid fa-microchip text-xs"></i>
+                                            <span class="truncate">{{ $msg->model_used ?: 'Model AI' }}</span>
                                         </span>
                                         <span>•</span>
                                         <span class="truncate">{{ $msg->provider_name ?: 'AI Provider' }}</span>
@@ -829,9 +849,7 @@
                                     <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-400">
                                         <span>{{ $msg->created_at->format('H:i') }}</span>
                                         <button type="button" onclick="copyMessageContent(this)" class="hover:text-blue-500 flex items-center gap-1 cursor-pointer" title="Salin Jawaban">
-                                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                            </svg>
+                                            <i class="fa-solid fa-copy text-xs"></i>
                                             <span>Salin</span>
                                         </button>
                                     </div>
@@ -843,28 +861,25 @@
 
                 <!-- Typing shimmer indicator (hidden by default) -->
                 <div id="chat-typing-indicator" class="hidden flex justify-start">
-                    <div class="rounded-2xl rounded-bl-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 p-3.5 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                    <div class="rounded-2xl rounded-bl-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 p-3 sm:p-3.5 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-spinner fa-spin text-sm text-blue-600"></i>
                         <span id="chat-generating-text">Sedang memproses respon melalui model...</span>
                     </div>
                 </div>
 
             </div>
 
-            <!-- Chat Bottom Input Bar -->
+            <!-- Chat Bottom Input Bar (Fully Responsive) -->
             <div class="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 border-t border-blue-100 dark:border-blue-900/40">
-                <form id="chat-form" onsubmit="handleSendChat(event)" class="relative flex items-end gap-2">
+                <form id="chat-form" onsubmit="handleSendChat(event)" class="relative flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
                     <input type="hidden" id="chat-session-uuid" value="{{ $chatSession?->uuid }}">
                     
-                    <div class="flex-1 relative">
+                    <div class="flex-1 min-w-0 relative">
                         <textarea
                             id="chat-user-input"
                             rows="2"
                             placeholder="Tulis pesan atau pertanyaan untuk model yang Anda pilih... (Tekan Enter untuk kirim, Shift+Enter untuk baris baru)"
-                            class="w-full px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none transition"
+                            class="w-full px-3.5 sm:px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none transition"
                             onkeydown="handleInputKeydown(event)"
                         ></textarea>
                     </div>
@@ -872,21 +887,19 @@
                     <button
                         type="submit"
                         id="btn-chat-send"
-                        class="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25 transition cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="w-full sm:w-auto h-11 sm:h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25 transition cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <span>Kirim</span>
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
                     </button>
                 </form>
 
-                <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 px-1">
-                    <span id="chat-active-indicator" class="flex items-center gap-1.5 truncate">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span id="chat-active-model-summary">Pilih model untuk mulai</span>
+                <div class="mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-[11px] text-slate-400 dark:text-slate-500 px-1">
+                    <span id="chat-active-indicator" class="flex items-center gap-1.5 truncate max-w-full">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span id="chat-active-model-summary" class="truncate">Pilih model untuk mulai</span>
                     </span>
-                    <span class="hidden sm:inline">AI Studio v2.4 • Sahabat Penelitian</span>
+                    <span class="hidden sm:inline shrink-0">AI Studio v2.4 • Sahabat Penelitian</span>
                 </div>
             </div>
 
@@ -903,33 +916,29 @@
     <!-- Backdrop -->
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeProviderModal()"></div>
 
-    <div class="flex min-h-full items-center justify-center p-4">
-        <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/60 text-left shadow-2xl transition-all sm:w-full sm:max-w-xl">
+    <div class="flex min-h-full items-center justify-center p-3 sm:p-4">
+        <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/60 text-left shadow-2xl transition-all w-full sm:max-w-xl max-h-[92vh] flex flex-col my-auto">
             
             <!-- Modal Header -->
-            <div class="p-5 border-b border-blue-100 dark:border-blue-900/40 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+            <div class="p-4 sm:p-5 border-b border-blue-100 dark:border-blue-900/40 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40 shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                        <i class="fa-solid fa-microchip text-sm"></i>
                     </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-900 dark:text-white" id="modal-provider-title">
+                    <div class="min-w-0">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate" id="modal-provider-title">
                             Tambah AI Provider Baru
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Hubungkan penyedia LLM Anda untuk dipakai di sistem.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">Hubungkan penyedia LLM Anda untuk dipakai di sistem.</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeProviderModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                <button type="button" onclick="closeProviderModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg shrink-0">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
             <!-- Modal Form -->
-            <form id="form-provider" onsubmit="handleSaveProvider(event)" class="p-5 space-y-4">
+            <form id="form-provider" onsubmit="handleSaveProvider(event)" class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
                 <input type="hidden" id="provider-edit-uuid" name="uuid" value="">
 
                 <!-- 1. Provider Driver Type -->
@@ -1004,10 +1013,7 @@
                             onclick="toggleApiKeyVisibility()"
                             class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
-                            <svg id="eye-icon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
+                            <i id="eye-icon" class="fa-solid fa-eye text-xs"></i>
                         </button>
                     </div>
                 </div>
@@ -1031,9 +1037,7 @@
                     <!-- Search input for models -->
                     <div class="relative">
                         <div class="pointer-events-none absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </div>
                         <input
                             type="text"
@@ -1049,9 +1053,7 @@
                             class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                             title="Hapus pencarian"
                         >
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <i class="fa-solid fa-xmark text-xs"></i>
                         </button>
                     </div>
 
@@ -1134,27 +1136,27 @@
                         type="checkbox"
                         id="input-provider-active"
                         name="is_active"
-                        class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700"
+                        class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700 cursor-pointer"
                         checked
                     >
-                    <label for="input-provider-active" class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label for="input-provider-active" class="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                         Aktifkan provider ini untuk digunakan langsung di Chat Studio
                     </label>
                 </div>
 
                 <!-- Modal Actions -->
-                <div class="pt-3 border-t border-blue-100 dark:border-blue-900/40 flex items-center justify-end gap-2">
+                <div class="pt-3 border-t border-blue-100 dark:border-blue-900/40 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 shrink-0">
                     <button
                         type="button"
                         onclick="closeProviderModal()"
-                        class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                        class="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-center"
                     >
                         Batal
                     </button>
                     <button
                         type="submit"
                         id="btn-save-provider-submit"
-                        class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition cursor-pointer"
+                        class="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/25 transition cursor-pointer text-center"
                     >
                         Simpan Provider
                     </button>
@@ -1187,7 +1189,7 @@
 <!-- ========================================================================= -->
 <div
     id="modal-custom-delete-alert"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-opacity overflow-y-auto"
+    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-opacity overflow-y-auto"
     role="dialog"
     aria-modal="true"
     aria-labelledby="custom-delete-title"
@@ -1195,17 +1197,15 @@
     <!-- Invisible bridge for backwards compatibility with tests and scripts -->
     <div id="modal-delete-provider" class="hidden"></div>
 
-    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border-2 border-rose-300 dark:border-rose-900/70 shadow-2xl space-y-5 my-auto animate-in zoom-in-95">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border-2 border-rose-300 dark:border-rose-900/70 shadow-2xl space-y-4 sm:space-y-5 my-auto animate-in zoom-in-95 max-h-[92vh] overflow-y-auto">
         
         <!-- Red Danger Icon Badge & Heading -->
         <div class="text-center space-y-3">
-            <div class="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 border-2 border-rose-200 dark:border-rose-800/60 flex items-center justify-center mx-auto shadow-md shadow-rose-500/10">
-                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 border-2 border-rose-200 dark:border-rose-800/60 flex items-center justify-center mx-auto shadow-md shadow-rose-500/10">
+                <i class="fa-solid fa-trash-can text-2xl text-rose-600 dark:text-rose-400"></i>
             </div>
             <div>
-                <h3 id="custom-delete-title" class="text-lg font-extrabold text-slate-900 dark:text-white">
+                <h3 id="custom-delete-title" class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
                     Konfirmasi Hapus Provider AI
                 </h3>
                 <p id="custom-delete-subtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -1228,21 +1228,28 @@
 
         <!-- Warning Callout Box -->
         <div class="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 text-[11px] text-amber-800 dark:text-amber-300">
-            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 dark:text-amber-400 shrink-0 text-sm mt-0.5"></i>
             <span>Tindakan ini permanen. Seluruh konfigurasi dan riwayat model terkait provider ini akan dihapus dari sistem.</span>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <!-- Action Buttons (Responsive Layout) -->
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
                 type="button"
                 onclick="closeCustomDeleteAlert()"
-                class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-center"
             >
                 Batal
             </button>
+            <button
+                type="button"
+                id="btn-confirm-delete-action"
+                class="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 border border-rose-500 shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center justify-center gap-1.5 text-center"
+            >
+                <i class="fa-solid fa-trash-can text-xs"></i>
+                <span id="btn-confirm-delete-text">Ya, Hapus Sekarang</span>
+            </button>
+        </div>
             <button
                 type="button"
                 id="btn-confirm-delete-action"
@@ -2018,14 +2025,27 @@
     function onChatProviderChanged() {
         const providerSelect = document.getElementById('chat-provider-select');
         const modelSelect = document.getElementById('chat-model-select');
-        modelSelect.innerHTML = '';
+        const modelOptionsList = document.getElementById('chat-model-options-list');
+        const searchContainer = document.getElementById('chat-model-search-container');
+        const selectedModelText = document.getElementById('chat-model-selected-text');
+
+        if (modelSelect) modelSelect.innerHTML = '';
+        if (modelOptionsList) modelOptionsList.innerHTML = '';
 
         updateSelectedProviderDisplay();
 
         if (!providerSelect || providerSelect.options.length === 0 || !providerSelect.value) {
-            const opt = document.createElement('option');
-            opt.textContent = 'Tidak ada model tersedia';
-            modelSelect.appendChild(opt);
+            if (modelSelect) {
+                const opt = document.createElement('option');
+                opt.textContent = 'Tidak ada model tersedia';
+                modelSelect.appendChild(opt);
+            }
+            if (selectedModelText) {
+                selectedModelText.innerHTML = '<span class="text-slate-400">Tidak ada model</span>';
+            }
+            if (searchContainer) {
+                searchContainer.classList.add('hidden');
+            }
             updateModelSummary();
             return;
         }
@@ -2040,24 +2060,182 @@
 
         const defaultModel = selectedOption.getAttribute('data-default');
 
+        // Rule: "tapi kalau modelnya hanya 1 atau 2 maka hilangkan saja fitur searchnya."
+        if (searchContainer) {
+            if (models.length <= 2) {
+                searchContainer.classList.add('hidden');
+            } else {
+                searchContainer.classList.remove('hidden');
+            }
+        }
+
+        // Reset search input and empty state
+        const searchInput = document.getElementById('chat-model-search-input');
+        if (searchInput) searchInput.value = '';
+        const emptyResult = document.getElementById('chat-model-empty-result');
+        if (emptyResult) emptyResult.classList.add('hidden');
+
+        let activeModel = '';
+
         if (models.length === 0) {
-            const opt = document.createElement('option');
-            opt.value = defaultModel || 'standard-model';
-            opt.textContent = defaultModel || 'standard-model';
-            modelSelect.appendChild(opt);
-        } else {
-            models.forEach(m => {
+            activeModel = defaultModel || 'standard-model';
+            if (modelSelect) {
                 const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m + (m === defaultModel ? ' (Default)' : '');
-                if (m === defaultModel) {
-                    opt.selected = true;
-                }
+                opt.value = activeModel;
+                opt.textContent = activeModel;
+                opt.selected = true;
                 modelSelect.appendChild(opt);
+            }
+            if (modelOptionsList) {
+                const li = document.createElement('li');
+                li.className = 'chat-model-option-item p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer flex items-center justify-between transition-colors bg-blue-50/80 dark:bg-blue-950/60 font-bold';
+                li.setAttribute('data-model', activeModel);
+                li.onclick = () => selectChatModelOption(activeModel);
+                li.innerHTML = `
+                    <div class="flex items-center gap-2 truncate font-mono">
+                        <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                        <span class="chat-model-option-name truncate text-slate-900 dark:text-white">${escapeHtml(activeModel)}</span>
+                    </div>
+                `;
+                modelOptionsList.appendChild(li);
+            }
+        } else {
+            activeModel = (defaultModel && models.includes(defaultModel)) ? defaultModel : models[0];
+
+            models.forEach(m => {
+                const isSelected = (m === activeModel);
+
+                // Populate native hidden select
+                if (modelSelect) {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m + (m === defaultModel ? ' (Default)' : '');
+                    if (isSelected) {
+                        opt.selected = true;
+                    }
+                    modelSelect.appendChild(opt);
+                }
+
+                // Populate custom dropdown options list
+                if (modelOptionsList) {
+                    const li = document.createElement('li');
+                    li.className = `chat-model-option-item p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer flex items-center justify-between transition-colors ${isSelected ? 'bg-blue-50/80 dark:bg-blue-950/60 font-bold' : ''}`;
+                    li.setAttribute('data-model', m);
+                    li.onclick = () => selectChatModelOption(m);
+                    li.innerHTML = `
+                        <div class="flex items-center gap-2 truncate font-mono">
+                            <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'} shrink-0"></span>
+                            <span class="chat-model-option-name truncate text-slate-900 dark:text-white">${escapeHtml(m)}</span>
+                        </div>
+                        ${m === defaultModel ? '<span class="text-[10px] px-1.5 py-0.5 rounded font-normal bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 shrink-0 font-sans"><i class="fa-solid fa-star text-[9px] mr-1 text-blue-500"></i>Utama</span>' : ''}
+                    `;
+                    modelOptionsList.appendChild(li);
+                }
             });
         }
 
+        if (selectedModelText) {
+            selectedModelText.innerHTML = `
+                <i class="fa-solid fa-microchip text-xs text-blue-600 dark:text-blue-400 shrink-0"></i>
+                <span class="truncate font-mono">${escapeHtml(activeModel)}</span>
+            `;
+        }
+
         updateModelSummary();
+    }
+
+    // Toggle Searchable Model Dropdown
+    function toggleChatModelDropdown() {
+        const dropdown = document.getElementById('chat-model-dropdown');
+        const chevron = document.getElementById('chat-model-chevron');
+        if (!dropdown) return;
+
+        // Close provider dropdown if open
+        const provDropdown = document.getElementById('chat-provider-dropdown');
+        const provChevron = document.getElementById('chat-provider-chevron');
+        if (provDropdown && !provDropdown.classList.contains('hidden')) {
+            provDropdown.classList.add('hidden');
+            if (provChevron) provChevron.classList.remove('rotate-180');
+        }
+
+        const isHidden = dropdown.classList.contains('hidden');
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+            const searchContainer = document.getElementById('chat-model-search-container');
+            const searchInput = document.getElementById('chat-model-search-input');
+            if (searchInput && searchContainer && !searchContainer.classList.contains('hidden')) {
+                searchInput.value = '';
+                filterChatModelOptions();
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        } else {
+            dropdown.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
+    // Select Model Option
+    function selectChatModelOption(modelName) {
+        const modelSelect = document.getElementById('chat-model-select');
+        if (modelSelect) {
+            modelSelect.value = modelName;
+            modelSelect.dispatchEvent(new Event('change'));
+        }
+
+        const selectedModelText = document.getElementById('chat-model-selected-text');
+        if (selectedModelText) {
+            selectedModelText.innerHTML = `
+                <i class="fa-solid fa-microchip text-xs text-blue-600 dark:text-blue-400 shrink-0"></i>
+                <span class="truncate font-mono">${escapeHtml(modelName)}</span>
+            `;
+        }
+
+        // Highlight active item
+        document.querySelectorAll('#chat-model-options-list .chat-model-option-item').forEach(li => {
+            const isMatch = (li.getAttribute('data-model') === modelName);
+            const dot = li.querySelector('.rounded-full');
+            if (isMatch) {
+                li.classList.add('bg-blue-50/80', 'dark:bg-blue-950/60', 'font-bold');
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-blue-500 shrink-0';
+            } else {
+                li.classList.remove('bg-blue-50/80', 'dark:bg-blue-950/60', 'font-bold');
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0';
+            }
+        });
+
+        const dropdown = document.getElementById('chat-model-dropdown');
+        const chevron = document.getElementById('chat-model-chevron');
+        if (dropdown) dropdown.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+
+        updateModelSummary();
+    }
+
+    // Filter Model Options by search input
+    function filterChatModelOptions() {
+        const query = (document.getElementById('chat-model-search-input')?.value || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#chat-model-options-list .chat-model-option-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const model = (item.getAttribute('data-model') || '').toLowerCase();
+            if (model.includes(query)) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+
+        const emptyMsg = document.getElementById('chat-model-empty-result');
+        if (emptyMsg) {
+            if (visibleCount === 0 && items.length > 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+        }
     }
 
     function updateModelSummary() {
@@ -2206,20 +2384,18 @@
 
         if (msg.role === 'user') {
             wrapper.innerHTML = `
-                <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-br-xs bg-blue-600 text-white p-3.5 shadow-xs text-xs sm:text-sm">
+                <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-br-xs bg-blue-600 text-white p-3 sm:p-3.5 shadow-xs text-xs sm:text-sm break-words">
                     <div class="whitespace-pre-wrap leading-relaxed">${escapeHtml(msg.content)}</div>
                     <div class="text-[10px] text-blue-200 mt-1 text-right">${msg.created_at || 'Baru saja'}</div>
                 </div>
             `;
         } else {
             wrapper.innerHTML = `
-                <div class="max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-bl-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 p-4 shadow-xs text-xs sm:text-sm text-slate-800 dark:text-slate-100">
+                <div class="max-w-[95%] sm:max-w-[82%] rounded-2xl rounded-bl-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 p-3.5 sm:p-4 shadow-xs text-xs sm:text-sm text-slate-800 dark:text-slate-100 break-words min-w-0">
                     <div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span class="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            ${escapeHtml(msg.model_used || 'Model AI')}
+                        <span class="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 truncate">
+                            <i class="fa-solid fa-microchip text-xs"></i>
+                            <span class="truncate">${escapeHtml(msg.model_used || 'Model AI')}</span>
                         </span>
                         <span>•</span>
                         <span class="truncate">${escapeHtml(msg.provider_name || 'AI Provider')}</span>
@@ -2228,9 +2404,7 @@
                     <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-400">
                         <span>${msg.created_at || 'Baru saja'}</span>
                         <button type="button" onclick="copyMessageContent(this)" class="hover:text-blue-500 flex items-center gap-1 cursor-pointer" title="Salin Jawaban">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
+                            <i class="fa-solid fa-copy text-xs"></i>
                             <span>Salin</span>
                         </button>
                     </div>
@@ -2278,16 +2452,12 @@
             const rawText = contentDiv.getAttribute('data-raw-content') || contentDiv.innerText || contentDiv.textContent;
             navigator.clipboard.writeText(rawText);
             btn.innerHTML = `
-                <svg class="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <i class="fa-solid fa-check text-xs text-emerald-500 mr-1"></i>
                 <span class="text-emerald-500">Tersalin!</span>
             `;
             setTimeout(() => {
                 btn.innerHTML = `
-                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                    <i class="fa-solid fa-copy text-xs mr-1"></i>
                     <span>Salin</span>
                 `;
             }, 2000);
@@ -2459,24 +2629,40 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeCustomDeleteAlert();
-                const dropdown = document.getElementById('chat-provider-dropdown');
-                const chevron = document.getElementById('chat-provider-chevron');
-                if (dropdown && !dropdown.classList.contains('hidden')) {
-                    dropdown.classList.add('hidden');
-                    if (chevron) chevron.classList.remove('rotate-180');
+                const provDropdown = document.getElementById('chat-provider-dropdown');
+                const provChevron = document.getElementById('chat-provider-chevron');
+                if (provDropdown && !provDropdown.classList.contains('hidden')) {
+                    provDropdown.classList.add('hidden');
+                    if (provChevron) provChevron.classList.remove('rotate-180');
+                }
+                const modelDropdown = document.getElementById('chat-model-dropdown');
+                const modelChevron = document.getElementById('chat-model-chevron');
+                if (modelDropdown && !modelDropdown.classList.contains('hidden')) {
+                    modelDropdown.classList.add('hidden');
+                    if (modelChevron) modelChevron.classList.remove('rotate-180');
                 }
             }
         });
 
-        // Close Searchable Provider Dropdown on Click Outside
+        // Close Searchable Dropdowns on Click Outside
         document.addEventListener('click', (e) => {
-            const wrapper = document.getElementById('chat-provider-searchable-wrapper');
-            if (wrapper && !wrapper.contains(e.target)) {
-                const dropdown = document.getElementById('chat-provider-dropdown');
-                const chevron = document.getElementById('chat-provider-chevron');
-                if (dropdown && !dropdown.classList.contains('hidden')) {
-                    dropdown.classList.add('hidden');
-                    if (chevron) chevron.classList.remove('rotate-180');
+            const provWrapper = document.getElementById('chat-provider-searchable-wrapper');
+            if (provWrapper && !provWrapper.contains(e.target)) {
+                const provDropdown = document.getElementById('chat-provider-dropdown');
+                const provChevron = document.getElementById('chat-provider-chevron');
+                if (provDropdown && !provDropdown.classList.contains('hidden')) {
+                    provDropdown.classList.add('hidden');
+                    if (provChevron) provChevron.classList.remove('rotate-180');
+                }
+            }
+
+            const modelWrapper = document.getElementById('chat-model-searchable-wrapper');
+            if (modelWrapper && !modelWrapper.contains(e.target)) {
+                const modelDropdown = document.getElementById('chat-model-dropdown');
+                const modelChevron = document.getElementById('chat-model-chevron');
+                if (modelDropdown && !modelDropdown.classList.contains('hidden')) {
+                    modelDropdown.classList.add('hidden');
+                    if (modelChevron) modelChevron.classList.remove('rotate-180');
                 }
             }
         });

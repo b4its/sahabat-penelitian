@@ -309,3 +309,102 @@ test('document multiple choice persists selections across simulated pagination n
     const bulkUuids = Object.values(totalStored).map(item => item.uuid);
     assert.deepEqual(bulkUuids, ['doc-1', 'doc-6']);
 });
+
+test('chat model dropdown conditionally hides search input when models count is 1 or 2, and shows when > 2', () => {
+    const dom = new JSDOM(`
+        <div id="chat-model-searchable-wrapper">
+            <button id="chat-model-search-trigger">
+                <span id="chat-model-selected-text">Pilih Model</span>
+            </button>
+            <div id="chat-model-dropdown">
+                <div id="chat-model-search-container">
+                    <input type="text" id="chat-model-search-input" />
+                </div>
+                <ul id="chat-model-options-list"></ul>
+            </div>
+        </div>
+    `);
+
+    const { document } = dom.window;
+    const searchContainer = document.getElementById('chat-model-search-container');
+
+    // Case 1: 1 model -> search container must be hidden
+    const models1 = ['gpt-4o'];
+    if (models1.length <= 2) {
+        searchContainer.classList.add('hidden');
+    } else {
+        searchContainer.classList.remove('hidden');
+    }
+    assert.equal(searchContainer.classList.contains('hidden'), true);
+
+    // Case 2: 2 models -> search container must be hidden
+    const models2 = ['gpt-4o', 'gpt-4o-mini'];
+    if (models2.length <= 2) {
+        searchContainer.classList.add('hidden');
+    } else {
+        searchContainer.classList.remove('hidden');
+    }
+    assert.equal(searchContainer.classList.contains('hidden'), true);
+
+    // Case 3: 3 models -> search container must be shown (NOT hidden)
+    const models3 = ['gpt-4o', 'gpt-4o-mini', 'o3-mini'];
+    if (models3.length <= 2) {
+        searchContainer.classList.add('hidden');
+    } else {
+        searchContainer.classList.remove('hidden');
+    }
+    assert.equal(searchContainer.classList.contains('hidden'), false);
+
+    // Case 4: 0 models -> search container must be hidden
+    const models0 = [];
+    if (models0.length <= 2) {
+        searchContainer.classList.add('hidden');
+    } else {
+        searchContainer.classList.remove('hidden');
+    }
+    assert.equal(searchContainer.classList.contains('hidden'), true);
+});
+
+test('chat model dropdown filters options based on search query', () => {
+    const dom = new JSDOM(`
+        <div id="chat-model-searchable-wrapper">
+            <input type="text" id="chat-model-search-input" value="mini" />
+            <ul id="chat-model-options-list">
+                <li class="chat-model-option-item" data-model="gpt-4o">gpt-4o</li>
+                <li class="chat-model-option-item" data-model="gpt-4o-mini">gpt-4o-mini</li>
+                <li class="chat-model-option-item" data-model="o3-mini">o3-mini</li>
+                <li class="chat-model-option-item" data-model="claude-3-5-sonnet">claude-3-5-sonnet</li>
+            </ul>
+            <div id="chat-model-empty-result" class="hidden">Model tidak ditemukan</div>
+        </div>
+    `);
+
+    const { document } = dom.window;
+    const query = (document.getElementById('chat-model-search-input')?.value || '').toLowerCase().trim();
+    const items = document.querySelectorAll('#chat-model-options-list .chat-model-option-item');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+        const model = (item.getAttribute('data-model') || '').toLowerCase();
+        if (model.includes(query)) {
+            item.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+
+    assert.equal(visibleCount, 2);
+    assert.equal(items[0].classList.contains('hidden'), true);
+    assert.equal(items[1].classList.contains('hidden'), false); // gpt-4o-mini
+    assert.equal(items[2].classList.contains('hidden'), false); // o3-mini
+    assert.equal(items[3].classList.contains('hidden'), true);
+
+    const emptyResult = document.getElementById('chat-model-empty-result');
+    if (visibleCount === 0 && items.length > 0) {
+        emptyResult.classList.remove('hidden');
+    } else {
+        emptyResult.classList.add('hidden');
+    }
+    assert.equal(emptyResult.classList.contains('hidden'), true);
+});

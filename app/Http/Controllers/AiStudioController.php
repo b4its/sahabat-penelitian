@@ -30,8 +30,8 @@ class AiStudioController extends Controller
             $activeTab = 'connections';
         }
 
-        $providers = AiProvider::latest()->paginate(5)->withQueryString();
-        $activeProviders = AiProvider::active()->latest()->get();
+        $providers = AiProvider::latest('id')->paginate(5)->withQueryString();
+        $activeProviders = AiProvider::active()->latest('id')->get();
         $presets = $this->aiStudioService->getProviderPresets();
 
         // Get or initialize active chat session

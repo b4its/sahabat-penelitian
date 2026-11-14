@@ -796,4 +796,64 @@ class AiStudioBlackBoxTest extends TestCase
         $response->assertSee('saveStoredProviders', false);
         $response->assertSee('clearStoredProviders', false);
     }
+
+    /**
+     * Black-box BB22: Chat model selector has searchable dropdown structure and conditional search visibility rule.
+     */
+    public function test_black_box_chat_model_selector_has_search_feature_and_conditional_rule(): void
+    {
+        $response = $this->get('/panel/ai-studio?tab=chat');
+        $response->assertStatus(200);
+
+        // Searchable model wrapper and triggers
+        $response->assertSee('id="chat-model-searchable-wrapper"', false);
+        $response->assertSee('id="chat-model-search-trigger"', false);
+        $response->assertSee('id="chat-model-selected-text"', false);
+        $response->assertSee('id="chat-model-dropdown"', false);
+        $response->assertSee('id="chat-model-search-container"', false);
+        $response->assertSee('id="chat-model-search-input"', false);
+        $response->assertSee('id="chat-model-options-list"', false);
+        $response->assertSee('id="chat-model-empty-result"', false);
+
+        // JavaScript functions for model search and dropdown control
+        $response->assertSee('toggleChatModelDropdown', false);
+        $response->assertSee('selectChatModelOption', false);
+        $response->assertSee('filterChatModelOptions', false);
+
+        // Verify conditional search rule (models.length <= 2 hides search container)
+        $response->assertSee('models.length <= 2', false);
+        $response->assertSee("searchContainer.classList.add('hidden')", false);
+        $response->assertSee("searchContainer.classList.remove('hidden')", false);
+    }
+
+    /**
+     * Black-box BB23: AI Studio page has responsive layouts and zero emojis across components.
+     */
+    public function test_black_box_responsive_layout_and_zero_emojis_in_ai_studio(): void
+    {
+        $responseConn = $this->get('/panel/ai-studio?tab=connections');
+        $responseConn->assertStatus(200);
+
+        // Responsive grid and overflow classes on connections tab
+        $responseConn->assertSee('grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4', false);
+        $responseConn->assertSee('overflow-x-auto', false);
+        $responseConn->assertSee('fa-microchip', false);
+        $responseConn->assertSee('fa-plug', false);
+        $responseConn->assertSee('fa-comments', false);
+        $responseConn->assertSee('fa-trash-can', false);
+
+        $responseChat = $this->get('/panel/ai-studio?tab=chat');
+        $responseChat->assertStatus(200);
+
+        // Responsive grid and heights on chat tab
+        $responseChat->assertSee('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex', false);
+        $responseChat->assertSee('h-[520px] sm:h-[600px] lg:h-[680px]', false);
+        $responseChat->assertSee('fa-paper-plane', false);
+        $responseChat->assertSee('fa-arrows-rotate', false);
+
+        // Verify zero emoji characters in rendered HTML
+        $content = $responseChat->getContent();
+        $hasEmoji = (bool) preg_match('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', $content);
+        $this->assertFalse($hasEmoji, 'Rendered chat page contains forbidden emoji characters.');
+    }
 }
