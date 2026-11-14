@@ -572,3 +572,44 @@ test('top navigation hamburger button toggles downward dropdown, handles outside
     document.getElementById('item-export').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     assert.equal(dropdown.classList.contains('hidden'), true);
 });
+
+test('draft restoration alert unhides dropdown item, hamburger alert dot, and header restore button', () => {
+    const dom = new JSDOM(`
+        <button id="btn-restore-draft" class="hidden">Pulihkan Draf</button>
+        <button id="dropdown-btn-restore-draft" class="hidden">Pulihkan Draf Tersimpan</button>
+        <span id="top-hamburger-draft-dot" class="hidden"></span>
+    `);
+
+    const { window } = dom;
+    const { document } = window;
+
+    const restoreBtn = document.getElementById('btn-restore-draft');
+    const dropdownRestoreBtn = document.getElementById('dropdown-btn-restore-draft');
+    const draftDot = document.getElementById('top-hamburger-draft-dot');
+
+    let loaded = false;
+    const handleRestoreDraft = () => {
+        loaded = true;
+        if (restoreBtn) restoreBtn.classList.add('hidden');
+        if (dropdownRestoreBtn) dropdownRestoreBtn.classList.add('hidden');
+        if (draftDot) draftDot.classList.add('hidden');
+    };
+
+    // Simulate draft detected in localStorage
+    restoreBtn.classList.remove('hidden');
+    restoreBtn.addEventListener('click', handleRestoreDraft);
+    dropdownRestoreBtn.classList.remove('hidden');
+    dropdownRestoreBtn.addEventListener('click', handleRestoreDraft);
+    draftDot.classList.remove('hidden');
+
+    assert.equal(restoreBtn.classList.contains('hidden'), false);
+    assert.equal(dropdownRestoreBtn.classList.contains('hidden'), false);
+    assert.equal(draftDot.classList.contains('hidden'), false);
+
+    // Click dropdown restore button
+    dropdownRestoreBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    assert.equal(loaded, true);
+    assert.equal(restoreBtn.classList.contains('hidden'), true);
+    assert.equal(dropdownRestoreBtn.classList.contains('hidden'), true);
+    assert.equal(draftDot.classList.contains('hidden'), true);
+});

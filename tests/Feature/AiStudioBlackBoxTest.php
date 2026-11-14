@@ -877,7 +877,11 @@ class AiStudioBlackBoxTest extends TestCase
         // Responsive top navigation hamburger and dropdown menu in editor
         $response->assertSee('id="btn-top-hamburger"', false);
         $response->assertSee('id="top-hamburger-icon"', false);
+        $response->assertSee('id="top-hamburger-draft-dot"', false);
         $response->assertSee('id="top-nav-dropdown"', false);
+        $response->assertSee('id="dropdown-btn-restore-draft"', false);
+        $response->assertSee('id="dropdown-doc-format"', false);
+        $response->assertSee('id="dropdown-doc-status"', false);
         $response->assertSee('id="dropdown-btn-toggle-ai"', false);
         $response->assertSee('id="dropdown-btn-toggle-outline"', false);
         $response->assertSee('id="dropdown-theme-toggle-btn"', false);

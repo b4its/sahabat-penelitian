@@ -2050,6 +2050,10 @@ export class DocumentEngine {
 
             const restoreBtn = document.getElementById('btn-restore-draft');
             if (restoreBtn) restoreBtn.classList.add('hidden');
+            const dropdownRestoreBtn = document.getElementById('dropdown-btn-restore-draft');
+            if (dropdownRestoreBtn) dropdownRestoreBtn.classList.add('hidden');
+            const draftDot = document.getElementById('top-hamburger-draft-dot');
+            if (draftDot) draftDot.classList.add('hidden');
 
             return {
                 success: true,
@@ -5909,6 +5913,10 @@ ${entriesHtml}    </div>
         this.currentFormat = format;
         if (this.formatBadge) {
             this.formatBadge.textContent = format.toUpperCase();
+        }
+        const dropdownFormat = document.getElementById('dropdown-doc-format');
+        if (dropdownFormat) {
+            dropdownFormat.textContent = `Format: ${format.toUpperCase()}`;
         }
     }
 

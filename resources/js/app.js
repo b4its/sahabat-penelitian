@@ -163,13 +163,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = JSON.parse(raw);
             if (data && data.content && data.content.length > 50) {
                 const restoreBtn = document.getElementById('btn-restore-draft');
+                const dropdownRestoreBtn = document.getElementById('dropdown-btn-restore-draft');
+                const draftDot = document.getElementById('top-hamburger-draft-dot');
+
+                const handleRestoreDraft = () => {
+                    engine.loadFromLocalStorage();
+                    if (restoreBtn) restoreBtn.classList.add('hidden');
+                    if (dropdownRestoreBtn) dropdownRestoreBtn.classList.add('hidden');
+                    if (draftDot) draftDot.classList.add('hidden');
+                    uiController.showToast('Draf terakhir dari penyimpanan lokal dipulihkan!');
+                };
+
                 if (restoreBtn) {
                     restoreBtn.classList.remove('hidden');
-                    restoreBtn.addEventListener('click', () => {
-                        engine.loadFromLocalStorage();
-                        restoreBtn.classList.add('hidden');
-                        uiController.showToast('Draf terakhir dari penyimpanan lokal dipulihkan!');
-                    });
+                    restoreBtn.addEventListener('click', handleRestoreDraft);
+                }
+                if (dropdownRestoreBtn) {
+                    dropdownRestoreBtn.classList.remove('hidden');
+                    dropdownRestoreBtn.addEventListener('click', handleRestoreDraft);
+                }
+                if (draftDot) {
+                    draftDot.classList.remove('hidden');
                 }
             }
         }

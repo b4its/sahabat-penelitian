@@ -765,7 +765,7 @@
     <!-- 1. TOP APPLICATION BAR (Google Docs & Microsoft Word inspired)            -->
     <!-- ========================================================================= -->
     <header id="top-nav" class="relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-2.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between shrink-0 no-print z-30 shadow-xs gap-1.5 sm:gap-2">
-        <div class="flex items-center gap-1.5 sm:gap-3 min-w-0">
+        <div class="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1 mr-2">
             <!-- App Logo & Link to Landing Page -->
             <a href="{{ url('/') }}" class="flex items-center gap-2 pr-1.5 sm:pr-3 border-r border-gray-200 dark:border-gray-800 hover:opacity-90 transition group shrink-0" title="Kembali ke Beranda Sahabat Penelitian">
                 <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-400 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
@@ -776,40 +776,41 @@
                 <div class="hidden sm:block">
                     <div class="font-bold text-sm tracking-tight flex items-center gap-1.5 text-gray-900 dark:text-white">
                         <span>Sahabat Penelitian</span>
-                        <span class="text-[10px] px-1.5 py-0.2 rounded font-mono bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">Sahabat Penelitian - Xishie Studio</span>
+                        <span class="hidden 2xl:inline-block text-[10px] px-1.5 py-0.2 rounded font-mono bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">Sahabat Penelitian - Xishie Studio</span>
                     </div>
                 </div>
             </a>
 
             <!-- Inline Editable Document Title -->
-            <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                <div class="relative flex items-center min-w-0">
+            <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 max-w-full">
+                <div class="relative flex items-center flex-1 min-w-[90px] max-w-[200px] sm:max-w-[280px] md:max-w-[340px] xl:max-w-[420px]">
                     <input
                         type="text"
                         id="document-title-input"
                         value="{{ $initialTitle }}"
-                        class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 px-1.5 sm:px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-white dark:focus:bg-gray-900 border border-transparent focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none w-28 xs:w-36 sm:w-52 md:w-80 transition truncate"
+                        class="w-full text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 pl-2 pr-6 py-1 rounded-md bg-gray-50/70 hover:bg-gray-100/90 dark:bg-gray-800/40 dark:hover:bg-gray-800 focus:bg-white dark:focus:bg-gray-900 border border-transparent focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition truncate"
                         title="Klik untuk mengubah nama naskah/dokumen"
                     />
-                    <svg class="w-3.5 h-3.5 text-gray-400 pointer-events-none absolute right-2 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3.5 h-3.5 text-gray-400 pointer-events-none absolute right-1.5 hidden sm:block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                     </svg>
                 </div>
 
-                <!-- Format & Auto-Save Badges -->
-                <span id="document-format-badge" class="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shrink-0">
+                <!-- Format & Auto-Save Badges (desktop >= xl to prevent any collision) -->
+                <span id="document-format-badge" class="hidden xl:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shrink-0">
                     DOCX
                 </span>
-                <span id="document-protection-badge" class="hidden inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shrink-0">
+                <span id="document-protection-badge" class="hidden 2xl:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shrink-0">
                     <i class="fa-solid fa-lock mr-1"></i> Terproteksi
                 </span>
-                <span id="document-save-status" class="hidden md:inline-flex text-xs text-gray-500 dark:text-gray-400 items-center gap-1 shrink-0">
+                <span id="document-save-status" class="hidden 2xl:inline-flex text-xs text-gray-500 dark:text-gray-400 items-center gap-1 shrink-0">
                     <svg class="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
                     Tersimpan di lokal
                 </span>
 
-                <button id="btn-restore-draft" class="hidden text-xs px-2.5 py-1 rounded bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium shrink-0">
-                    Pulihkan Draf Tersimpan
+                <button id="btn-restore-draft" class="hidden xl:inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-950/80 dark:text-amber-300 transition font-medium shrink-0 shadow-xs" title="Pulihkan Draf Tersimpan di Browser">
+                    <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                    <span>Pulihkan Draf</span>
                 </button>
             </div>
         </div>
@@ -922,13 +923,14 @@
             <button
                 id="btn-top-hamburger"
                 type="button"
-                class="p-1.5 sm:p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-200 shadow-2xs transition focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                class="relative p-1.5 sm:p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-200 shadow-2xs transition focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shrink-0"
                 aria-expanded="false"
                 aria-haspopup="true"
                 aria-controls="top-nav-dropdown"
                 title="Menu Aksi Dokumen"
             >
                 <i id="top-hamburger-icon" class="fa-solid fa-bars text-sm"></i>
+                <span id="top-hamburger-draft-dot" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-gray-900"></span>
             </button>
         </div>
 
@@ -937,6 +939,33 @@
             id="top-nav-dropdown"
             class="hidden absolute top-full right-2 sm:right-4 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-2.5 z-50 text-xs font-medium text-gray-700 dark:text-gray-200 divide-y divide-gray-100 dark:divide-gray-800 transition-all duration-150 origin-top-right"
         >
+            <!-- Draft Restoration Alert in Dropdown (Visible when localStorage draft exists) -->
+            <button
+                type="button"
+                id="dropdown-btn-restore-draft"
+                class="hidden top-dropdown-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left font-medium text-amber-800 dark:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 transition cursor-pointer mb-1.5"
+                title="Pulihkan Draf Dokumen Tersimpan"
+            >
+                <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/80 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs font-semibold">Pulihkan Draf Tersimpan</div>
+                    <div class="text-[10px] text-amber-600 dark:text-amber-400 truncate">Draf naskah otomatis ditemukan di penyimpanan lokal</div>
+                </div>
+            </button>
+
+            <!-- Document Status Info Pill in Dropdown -->
+            <div class="px-2.5 py-1.5 mb-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-800">
+                <span class="flex items-center gap-1.5 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span id="dropdown-doc-format">Format: DOCX</span>
+                </span>
+                <span id="dropdown-doc-status" class="truncate font-medium flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <i class="fa-solid fa-check text-[10px]"></i> Tersimpan di lokal
+                </span>
+            </div>
+
             <!-- Group 1: Aksi Dokumen Utama -->
             <div class="py-1.5 space-y-1">
                 <div class="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
@@ -1099,7 +1128,7 @@
         </div>
 
         <!-- Ribbon Panel 0: BERKAS (FILE) -->
-        <div data-ribbon-panel="file" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap sm:flex-wrap bg-indigo-50/40 dark:bg-indigo-950/20">
+        <div data-ribbon-panel="file" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap bg-indigo-50/40 dark:bg-indigo-950/20">
             <!-- Dokumen Lokal CTA -->
             <div class="flex items-center gap-1.5 pr-3 border-r border-indigo-200 dark:border-indigo-900">
                 <button data-action="open-file-modal" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold shadow-xs flex items-center gap-1.5 transition cursor-pointer">
@@ -1157,7 +1186,7 @@
         </div>
 
         <!-- Ribbon Panel 1: BERANDA (HOME) -->
-        <div data-ribbon-panel="home" class="flex items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap sm:flex-wrap">
+        <div data-ribbon-panel="home" class="flex items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
             <!-- Riwayat (History) & Format Painter -->
             <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button data-action="undo" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Urungkan (Undo Ctrl+Z)">
@@ -1445,7 +1474,7 @@
         </div>
 
         <!-- Ribbon Panel 2: SISIPKAN (INSERT) -->
-        <div data-ribbon-panel="insert" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap sm:flex-wrap">
+        <div data-ribbon-panel="insert" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
             <button data-action="open-file-modal" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 <span>Buka Dokumen Lokal</span>
@@ -1536,7 +1565,7 @@
         </div>
 
         <!-- Ribbon Panel 3: TATA LETAK (LAYOUT) -->
-        <div data-ribbon-panel="layout" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap sm:flex-wrap">
+        <div data-ribbon-panel="layout" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
             <!-- Group 1: Page Setup (Margins, Size, Orientation, Dialog Launcher) -->
             <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <span class="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-wider">Halaman:</span>
@@ -1813,7 +1842,7 @@
         </div>
 
         <!-- Ribbon Panel 4: TINJAU & REFERENSI (REVIEW & REFERENCES) -->
-        <div data-ribbon-panel="review" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap sm:flex-wrap bg-indigo-50/20 dark:bg-indigo-950/10">
+        <div data-ribbon-panel="review" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap bg-indigo-50/20 dark:bg-indigo-950/10">
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Komentar:</span>
                 <button type="button" id="btn-review-new-comment" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-semibold cursor-pointer">Komentar baru</button>
@@ -1982,7 +2011,7 @@
         </div>
 
         <!-- Ribbon Panel 5: TAMPILAN (VIEW) -->
-        <div data-ribbon-panel="view" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap sm:flex-wrap">
+        <div data-ribbon-panel="view" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800 shrink-0">
                 <button data-layout-mode="print" class="px-2.5 py-1 text-indigo-600 font-bold bg-indigo-50 dark:bg-indigo-950/40 rounded transition">
                     Tata Letak Cetak A4
@@ -2038,7 +2067,7 @@
         </div>
 
         <!-- Ribbon Panel 6: ASISTEN AI XISHIE STUDIO -->
-        <div data-ribbon-panel="ai" class="hidden items-center px-3 sm:px-4 py-2 gap-2 overflow-x-auto no-scrollbar text-xs flex-nowrap sm:flex-wrap bg-purple-50/50 dark:bg-purple-950/20">
+        <div data-ribbon-panel="ai" class="hidden items-center px-3 sm:px-4 py-2 gap-2 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap bg-purple-50/50 dark:bg-purple-950/20">
             <span class="text-xs font-semibold text-purple-700 dark:text-purple-300">Aksi Cepat Xishie Studio:</span>
             <button onclick="window.wordcraftAi.executeAction('continue')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
                 <i class="fa-solid fa-bolt mr-1"></i> Lanjutkan Tulisan
@@ -4841,7 +4870,7 @@
     </div>
 
     <!-- Floating Theme Switcher Widget -->
-    <div id="floating-theme-widget" class="fixed bottom-12 right-6 z-40 no-print flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-gray-900/95 border border-gray-300 dark:border-gray-700 shadow-xl backdrop-blur-md transition-all">
+    <div id="floating-theme-widget" class="hidden xl:flex fixed bottom-12 right-6 z-40 no-print items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-gray-900/95 border border-gray-300 dark:border-gray-700 shadow-xl backdrop-blur-md transition-all">
         <button id="floating-theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-amber-500 dark:text-indigo-400 transition cursor-pointer" title="Beralih Cepat Tema Terang / Gelap">
             <span id="floating-theme-icon" class="text-base leading-none"><i class="fa-solid fa-sun"></i></span>
         </button>
