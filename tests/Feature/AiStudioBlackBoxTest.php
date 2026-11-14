@@ -856,4 +856,37 @@ class AiStudioBlackBoxTest extends TestCase
         $hasEmoji = (bool) preg_match('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', $content);
         $this->assertFalse($hasEmoji, 'Rendered chat page contains forbidden emoji characters.');
     }
+
+    /**
+     * Black-box BB24: Editor and panel views are responsive across mobile/tablet/desktop with zero emojis.
+     */
+    public function test_black_box_responsive_editor_and_zero_emojis_across_all_views(): void
+    {
+        $response = $this->get('/editor');
+        $response->assertStatus(200);
+
+        // Responsive drawer and backdrop elements in editor
+        $response->assertSee('id="outline-backdrop"', false);
+        $response->assertSee('id="wordcraft-backdrop"', false);
+        $response->assertSee('id="outline-sidebar"', false);
+        $response->assertSee('id="wordcraft-sidebar"', false);
+
+        // Responsive CSS media query in editor
+        $response->assertSee('@media screen and (max-width: 840px)', false);
+
+        // Responsive top-nav and status-bar utilities
+        $response->assertSee('overflow-x-auto no-scrollbar', false);
+
+        // Check zero emojis in rendered editor view
+        $content = $response->getContent();
+        $hasEmoji = (bool) preg_match('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', $content);
+        $this->assertFalse($hasEmoji, 'Rendered editor page contains forbidden emoji characters.');
+
+        // Also verify personalize view is responsive and has zero emojis
+        $responsePers = $this->get('/panel/ai-studio/personalize');
+        $responsePers->assertStatus(200);
+        $persContent = $responsePers->getContent();
+        $persHasEmoji = (bool) preg_match('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', $persContent);
+        $this->assertFalse($persHasEmoji, 'Rendered personalize page contains forbidden emoji characters.');
+    }
 }

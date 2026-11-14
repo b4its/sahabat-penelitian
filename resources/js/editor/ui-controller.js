@@ -15,9 +15,10 @@ export class UiController {
 
         this.currentZoom = 100;
         this.layoutMode = 'print'; // 'print' | 'web' | 'zen'
+        const isWideScreen = typeof window !== 'undefined' && (window.innerWidth >= 1280 || window.innerWidth === undefined);
         this.isRulerVisible = true;
-        this.isOutlineVisible = true;
-        this.isWordcraftVisible = true;
+        this.isOutlineVisible = isWideScreen;
+        this.isWordcraftVisible = false;
         this.findMatches = [];
         this.currentMatchIndex = -1;
 
@@ -231,9 +232,7 @@ export class UiController {
         const toggleOutlineBtn = document.getElementById('btn-toggle-outline');
         if (toggleOutlineBtn) {
             toggleOutlineBtn.addEventListener('click', () => {
-                this.isOutlineVisible = !this.isOutlineVisible;
-                const sidebar = document.getElementById('outline-sidebar');
-                if (sidebar) sidebar.classList.toggle('hidden', !this.isOutlineVisible);
+                this.toggleOutline();
             });
         }
 
@@ -526,8 +525,32 @@ export class UiController {
         }
     }
 
+    toggleOutline(forceOpen = null) {
+        const sidebar = document.getElementById('outline-sidebar');
+        const backdrop = document.getElementById('outline-backdrop');
+        if (!sidebar) return;
+
+        if (forceOpen !== null) {
+            this.isOutlineVisible = forceOpen;
+        } else {
+            this.isOutlineVisible = !this.isOutlineVisible;
+        }
+
+        sidebar.classList.toggle('hidden', !this.isOutlineVisible);
+        if (backdrop) {
+            const isNarrow = typeof window !== 'undefined' && window.innerWidth < 1280;
+            backdrop.classList.toggle('hidden', !this.isOutlineVisible || !isNarrow);
+        }
+
+        const outlineCb = document.querySelector('#btn-toggle-outline input[type="checkbox"]');
+        if (outlineCb) {
+            outlineCb.checked = this.isOutlineVisible;
+        }
+    }
+
     toggleWordcraftSidebar(forceOpen = null) {
         const sidebar = document.getElementById('wordcraft-sidebar');
+        const backdrop = document.getElementById('wordcraft-backdrop');
         if (!sidebar) return;
 
         if (forceOpen !== null) {
@@ -537,6 +560,10 @@ export class UiController {
         }
 
         sidebar.classList.toggle('hidden', !this.isWordcraftVisible);
+        if (backdrop) {
+            const isNarrow = typeof window !== 'undefined' && window.innerWidth < 1280;
+            backdrop.classList.toggle('hidden', !this.isWordcraftVisible || !isNarrow);
+        }
     }
 
     /* -------------------------------------------------------------

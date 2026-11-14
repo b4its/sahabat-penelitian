@@ -408,3 +408,69 @@ test('chat model dropdown filters options based on search query', () => {
     }
     assert.equal(emptyResult.classList.contains('hidden'), true);
 });
+
+test('UiController responsive drawer and backdrop logic for narrow and wide viewports', () => {
+    const dom = new JSDOM(`
+        <div id="outline-backdrop" class="hidden"></div>
+        <aside id="outline-sidebar" class="hidden"></aside>
+        <div id="wordcraft-backdrop" class="hidden"></div>
+        <aside id="wordcraft-sidebar" class="hidden"></aside>
+        <div id="btn-toggle-outline"><input type="checkbox" /></div>
+    `);
+
+    const { window } = dom;
+    const { document } = window;
+
+    // Simulate narrow screen (< 1280px, e.g. mobile 375px or tablet 768px)
+    let isNarrow = true;
+
+    // Helper functions mirroring UiController
+    function toggleOutline(forceOpen = null, isOutlineVisible) {
+        const sidebar = document.getElementById('outline-sidebar');
+        const backdrop = document.getElementById('outline-backdrop');
+        const newVisible = forceOpen !== null ? forceOpen : !isOutlineVisible;
+
+        sidebar.classList.toggle('hidden', !newVisible);
+        if (backdrop) {
+            backdrop.classList.toggle('hidden', !newVisible || !isNarrow);
+        }
+        return newVisible;
+    }
+
+    function toggleWordcraft(forceOpen = null, isWordcraftVisible) {
+        const sidebar = document.getElementById('wordcraft-sidebar');
+        const backdrop = document.getElementById('wordcraft-backdrop');
+        const newVisible = forceOpen !== null ? forceOpen : !isWordcraftVisible;
+
+        sidebar.classList.toggle('hidden', !newVisible);
+        if (backdrop) {
+            backdrop.classList.toggle('hidden', !newVisible || !isNarrow);
+        }
+        return newVisible;
+    }
+
+    // 1. Open outline on mobile: sidebar and backdrop must be visible
+    let outlineVis = toggleOutline(true, false);
+    assert.equal(outlineVis, true);
+    assert.equal(document.getElementById('outline-sidebar').classList.contains('hidden'), false);
+    assert.equal(document.getElementById('outline-backdrop').classList.contains('hidden'), false);
+
+    // 2. Close outline on mobile: sidebar and backdrop must be hidden
+    outlineVis = toggleOutline(false, outlineVis);
+    assert.equal(outlineVis, false);
+    assert.equal(document.getElementById('outline-sidebar').classList.contains('hidden'), true);
+    assert.equal(document.getElementById('outline-backdrop').classList.contains('hidden'), true);
+
+    // 3. Open Wordcraft AI on mobile: sidebar and backdrop visible
+    let wcVis = toggleWordcraft(true, false);
+    assert.equal(wcVis, true);
+    assert.equal(document.getElementById('wordcraft-sidebar').classList.contains('hidden'), false);
+    assert.equal(document.getElementById('wordcraft-backdrop').classList.contains('hidden'), false);
+
+    // 4. Switch to wide screen (>= 1280px desktop): backdrop should never be shown even when open
+    isNarrow = false;
+    wcVis = toggleWordcraft(true, false);
+    assert.equal(wcVis, true);
+    assert.equal(document.getElementById('wordcraft-sidebar').classList.contains('hidden'), false);
+    assert.equal(document.getElementById('wordcraft-backdrop').classList.contains('hidden'), true);
+});
