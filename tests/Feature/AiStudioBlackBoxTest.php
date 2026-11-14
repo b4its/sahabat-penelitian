@@ -888,5 +888,14 @@ class AiStudioBlackBoxTest extends TestCase
         $persContent = $responsePers->getContent();
         $persHasEmoji = (bool) preg_match('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', $persContent);
         $this->assertFalse($persHasEmoji, 'Rendered personalize page contains forbidden emoji characters.');
+
+        // Also verify landing page is responsive with mobile navigation drawer and zero emojis
+        $responseLanding = $this->get('/');
+        $responseLanding->assertStatus(200);
+        $responseLanding->assertSee('id="mobile-menu-toggle"', false);
+        $responseLanding->assertSee('id="mobile-nav-menu"', false);
+        $landingContent = $responseLanding->getContent();
+        $landingHasEmoji = (bool) preg_match('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', $landingContent);
+        $this->assertFalse($landingHasEmoji, 'Rendered landing page contains forbidden emoji characters.');
     }
 }

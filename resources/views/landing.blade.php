@@ -241,9 +241,47 @@
                     <span class="hidden sm:inline">Buka Editor Naskah</span>
                     <span class="inline sm:hidden">Editor</span>
                 </a>
+
+                <!-- Mobile Navigation Menu Toggle Button -->
+                <button
+                    id="mobile-menu-toggle"
+                    type="button"
+                    aria-label="Menu Navigasi Mobile"
+                    class="md:hidden p-2 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-white/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none cursor-pointer"
+                    onclick="toggleLandingMobileMenu()"
+                >
+                    <i id="mobile-menu-icon" class="fa-solid fa-bars text-sm"></i>
+                </button>
             </div>
         </div>
-    </header>
+
+        <!-- Mobile Navigation Drawer -->
+        <div
+            id="mobile-nav-menu"
+            class="hidden md:hidden border-t border-blue-100 dark:border-blue-900/40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-3 space-y-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xl"
+        >
+            <a href="#features" onclick="toggleLandingMobileMenu(false)" class="block px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <i class="fa-solid fa-wand-magic-sparkles mr-2 text-blue-500"></i> Fitur Unggulan
+            </a>
+            <a href="#demo-studio" onclick="toggleLandingMobileMenu(false)" class="block px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <i class="fa-solid fa-laptop-code mr-2 text-indigo-500"></i> Demo Interaktif
+            </a>
+            <a href="#workflow" onclick="toggleLandingMobileMenu(false)" class="block px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <i class="fa-solid fa-diagram-project mr-2 text-sky-500"></i> Alur Riset
+            </a>
+            <a href="#calculator" onclick="toggleLandingMobileMenu(false)" class="block px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <i class="fa-solid fa-calculator mr-2 text-emerald-500"></i> Kesiapan Naskah
+            </a>
+            <a href="#faq" onclick="toggleLandingMobileMenu(false)" class="block px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <i class="fa-solid fa-circle-question mr-2 text-amber-500"></i> FAQ
+            </a>
+            <a href="{{ route('panel.dashboard') }}" onclick="toggleLandingMobileMenu(false)" class="block px-3 py-2 rounded-xl text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-table-columns"></i>
+                    <span>Panel Riset</span>
+                </span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
         </div>
     </header>
 
@@ -1059,6 +1097,19 @@
     <!-- INTERACTIVE JAVASCRIPT LOGIC (DARK/LIGHT THEME, SIMULATOR, CALCULATOR)    -->
     <!-- ========================================================================= -->
     <script>
+        // Global Mobile Navigation Toggle
+        window.toggleLandingMobileMenu = function(force = null) {
+            const menu = document.getElementById('mobile-nav-menu');
+            const icon = document.getElementById('mobile-menu-icon');
+            if (!menu) return;
+            const isHidden = menu.classList.contains('hidden');
+            const willOpen = force !== null ? force : isHidden;
+            menu.classList.toggle('hidden', !willOpen);
+            if (icon) {
+                icon.className = willOpen ? 'fa-solid fa-xmark text-sm' : 'fa-solid fa-bars text-sm';
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
 
             // -------------------------------------------------------------

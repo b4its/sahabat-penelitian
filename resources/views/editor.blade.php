@@ -1361,9 +1361,9 @@
                 <span class="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-wider">Halaman:</span>
 
                 <!-- Preset Margin -->
-                <div class="flex items-center gap-1.5" title="Margin Halaman (Microsoft Word)">
+                <div class="flex items-center gap-1.5 shrink-0" title="Margin Halaman (Microsoft Word)">
                     <span class="text-gray-500 font-bold">Margin:</span>
-                    <select id="layout-margins" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none font-medium">
+                    <select id="layout-margins" class="px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs outline-none font-medium max-w-[130px] sm:max-w-[200px] md:max-w-none">
                         <option value="skripsi" selected>Skripsi / Tesis (Atas 4, Kiri 4, Kanan 3, Bawah 3 cm)</option>
                         <option value="normal">Normal (2.54 cm / 1 inch)</option>
                         <option value="narrow">Sempit (1.27 cm)</option>
