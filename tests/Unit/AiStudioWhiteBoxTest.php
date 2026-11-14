@@ -426,4 +426,83 @@ class AiStudioWhiteBoxTest extends TestCase
         $this->assertEquals(['claude-3-5-sonnet', 'claude-3-5-haiku', 'claude-3-opus'], $data['provider']['models']);
         $this->assertEquals('claude-3-5-sonnet', $data['provider']['default_model']);
     }
+
+    /**
+     * White-box WB16: Controller personalize view loads with providers and division of labor matrix.
+     */
+    public function test_white_box_personalize_view_loads_correctly(): void
+    {
+        $request = Request::create('/panel/ai-studio/personalize', 'GET');
+        $view = $this->controller->personalize($request);
+
+        $this->assertEquals('panel.ai-studio.personalize', $view->name());
+        $this->assertArrayHasKey('providers', $view->getData());
+        $this->assertArrayHasKey('selectedProvider', $view->getData());
+        $this->assertArrayHasKey('divisionOfLabor', $view->getData());
+
+        $division = $view->getData()['divisionOfLabor'];
+        $this->assertArrayHasKey('frontier', $division);
+        $this->assertArrayHasKey('worker', $division);
+        $this->assertNotEmpty($division['frontier']['tasks']);
+        $this->assertNotEmpty($division['worker']['tasks']);
+    }
+
+    /**
+     * White-box WB17: Controller savePersonalize updates frontier and worker models successfully.
+     */
+    public function test_white_box_save_personalize_updates_models(): void
+    {
+        $provider = AiProvider::create([
+            'name' => 'Provider Personalize Test '.uniqid(),
+            'provider' => 'gemini',
+            'models' => ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+            'default_model' => 'gemini-2.0-flash',
+            'frontier_model' => 'gemini-2.0-flash',
+            'worker_model' => 'gemini-2.0-flash',
+        ]);
+
+        $request = Request::create('/panel/ai-studio/personalize', 'POST', [
+            'provider_uuid' => $provider->uuid,
+            'frontier_model' => 'gemini-1.5-pro',
+            'worker_model' => 'gemini-1.5-flash',
+        ]);
+        $request->headers->set('Accept', 'application/json');
+
+        $response = $this->controller->savePersonalize($request);
+        $this->assertInstanceOf(JsonResponse::class, $response);
+
+        $data = $response->getData(true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals('gemini-1.5-pro', $data['provider']['frontier_model']);
+        $this->assertEquals('gemini-1.5-flash', $data['provider']['worker_model']);
+
+        $provider->refresh();
+        $this->assertEquals('gemini-1.5-pro', $provider->frontier_model);
+        $this->assertEquals('gemini-1.5-flash', $provider->worker_model);
+    }
+
+    /**
+     * White-box WB18: Controller getProviderModels returns provider details and active model roles.
+     */
+    public function test_white_box_get_provider_models_endpoint(): void
+    {
+        $provider = AiProvider::create([
+            'name' => 'Provider Get Models '.uniqid(),
+            'provider' => 'openai',
+            'models' => ['gpt-4o', 'gpt-4o-mini'],
+            'default_model' => 'gpt-4o',
+            'frontier_model' => 'gpt-4o',
+            'worker_model' => 'gpt-4o-mini',
+        ]);
+
+        $response = $this->controller->getProviderModels($provider->uuid);
+        $this->assertInstanceOf(JsonResponse::class, $response);
+
+        $data = $response->getData(true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals($provider->uuid, $data['uuid']);
+        $this->assertEquals('gpt-4o', $data['frontier_model']);
+        $this->assertEquals('gpt-4o-mini', $data['worker_model']);
+        $this->assertEquals(['gpt-4o', 'gpt-4o-mini'], $data['models']);
+    }
 }

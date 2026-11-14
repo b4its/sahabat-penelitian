@@ -459,6 +459,150 @@ class AiStudioController extends Controller
     }
 
     /**
+     * Display the AI Provider Personalize page (Transparency & Model Roles: Frontier vs Worker).
+     */
+    public function personalize(Request $request): View
+    {
+        $this->aiStudioService->ensureDefaultProvidersExist();
+
+        $providers = AiProvider::active()->latest()->get();
+        $selectedProvider = null;
+
+        if ($request->filled('provider')) {
+            $selectedProvider = $providers->firstWhere('uuid', $request->query('provider'));
+        }
+
+        if (! $selectedProvider) {
+            $selectedProvider = $providers->first();
+        }
+
+        $divisionOfLabor = [
+            'frontier' => [
+                'role' => 'Frontier Model',
+                'title' => 'Penalaran & Analisis Mendalam (High Reasoning)',
+                'badge' => 'Tugas Penalaran',
+                'badge_color' => 'bg-purple-100 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+                'icon' => 'fa-solid fa-brain',
+                'summary' => 'Didedikasikan untuk tugas kognitif bernalar tinggi, sintesis argumentasi ilmiah, orkestrasi bab dokumen, dan analisis hipotesis.',
+                'tasks' => [
+                    [
+                        'name' => 'Brainstorming Ide & Kerangka Bab',
+                        'desc' => 'Merancang struktur naskah, memetakan pertanyaan riset, dan merumuskan kerangka teori.',
+                        'complexity' => 'Tinggi (Kompleks)',
+                    ],
+                    [
+                        'name' => 'Elaborasi & Analisis Konseptual',
+                        'desc' => 'Memperdalam pembahasan analitis dan memperluas narasi bab dengan perspektif kritis.',
+                        'complexity' => 'Tinggi (Kompleks)',
+                    ],
+                    [
+                        'name' => 'Sintesis Literatur Multidisiplin',
+                        'desc' => 'Menghubungkan teori-teori relevan dan membangun jembatan antar argumen akademik.',
+                        'complexity' => 'Tinggi (Kompleks)',
+                    ],
+                    [
+                        'name' => 'Peer Review & Evaluasi Naskah',
+                        'desc' => 'Menilai koherensi paragraf, mengidentifikasi bias, dan memberikan kritik metodologis.',
+                        'complexity' => 'Tinggi (Kompleks)',
+                    ],
+                ],
+            ],
+            'worker' => [
+                'role' => 'Worker Model',
+                'title' => 'Kecepatan & Presisi Eksekusi (High Speed & Precision)',
+                'badge' => 'Tugas Cepat',
+                'badge_color' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                'icon' => 'fa-solid fa-bolt-lightning',
+                'summary' => 'Didedikasikan untuk tugas mikro berkecepatan tinggi, penyelarasan format tata bahasa baku PUEBI, dan penataan sitasi instan.',
+                'tasks' => [
+                    [
+                        'name' => 'Koreksi Ejaan & PUEBI (Gramatika)',
+                        'desc' => 'Memperbaiki kata non-baku, tipo, tanda baca, dan konsistensi leksikal secara cepat.',
+                        'complexity' => 'Cepat & Presisi',
+                    ],
+                    [
+                        'name' => 'Format Sitasi APA 7th & IEEE',
+                        'desc' => 'Menyusun daftar pustaka dan sitasi dalam teks sesuai standar publikasi internasional.',
+                        'complexity' => 'Cepat & Presisi',
+                    ],
+                    [
+                        'name' => 'Parafrase Nada & Ringkasan Singkat',
+                        'desc' => 'Menyajikan pemadatan paragraf satu kalimat dan transformasi nada formal/akademik.',
+                        'complexity' => 'Cepat & Presisi',
+                    ],
+                    [
+                        'name' => 'Generasi Daftar Isi & Metadata Bab',
+                        'desc' => 'Mengekstraksi penomoran bab dan running header tanpa overhead token berlebih.',
+                        'complexity' => 'Cepat & Presisi',
+                    ],
+                ],
+            ],
+        ];
+
+        return view('panel.ai-studio.personalize', [
+            'providers' => $providers,
+            'selectedProvider' => $selectedProvider,
+            'divisionOfLabor' => $divisionOfLabor,
+        ]);
+    }
+
+    /**
+     * Save personalized Frontier and Worker model configuration.
+     */
+    public function savePersonalize(Request $request): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'provider_uuid' => ['required', 'string', 'exists:ai_providers,uuid'],
+            'frontier_model' => ['required', 'string', 'max:100'],
+            'worker_model' => ['required', 'string', 'max:100'],
+        ]);
+
+        $provider = AiProvider::where('uuid', $validated['provider_uuid'])->firstOrFail();
+
+        $provider->update([
+            'frontier_model' => $validated['frontier_model'],
+            'worker_model' => $validated['worker_model'],
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Konfigurasi personalisasi Frontier dan Worker model berhasil disimpan.',
+                'provider' => [
+                    'uuid' => $provider->uuid,
+                    'name' => $provider->name,
+                    'frontier_model' => $provider->frontier_model,
+                    'worker_model' => $provider->worker_model,
+                ],
+            ]);
+        }
+
+        return redirect()->route('panel.ai-studio.personalize', ['provider' => $provider->uuid])
+            ->with('success', 'Personalisasi model untuk '.$provider->name.' berhasil diperbarui!');
+    }
+
+    /**
+     * Get details and models of a specific AI provider for personalization.
+     */
+    public function getProviderModels(string $uuid): JsonResponse
+    {
+        $provider = AiProvider::where('uuid', $uuid)->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'uuid' => $provider->uuid,
+            'name' => $provider->name,
+            'provider' => $provider->provider,
+            'provider_label' => $provider->provider_label,
+            'badge_color' => $provider->badge_color,
+            'models' => $provider->models ?? [],
+            'default_model' => $provider->default_model,
+            'frontier_model' => $provider->active_frontier_model,
+            'worker_model' => $provider->active_worker_model,
+        ]);
+    }
+
+    /**
      * Parse models input string (e.g. comma separated or newlines) or array into a clean array.
      */
     protected function parseModelsInput(mixed $input): array

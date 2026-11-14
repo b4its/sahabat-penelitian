@@ -53,11 +53,20 @@ class AiService
         }
 
         if ($provider) {
+            $isFrontierJob = in_array($action, ['continue', 'elaborate', 'brainstorm'], true);
+            $modelUsed = $isFrontierJob ? $provider->active_frontier_model : $provider->active_worker_model;
+            $jobRole = $isFrontierJob ? 'Frontier Model' : 'Worker Model';
+
             $result['provider'] = $provider->name;
             $result['provider_uuid'] = $provider->uuid;
             $result['provider_label'] = $provider->provider_label;
+            $result['frontier_model'] = $provider->active_frontier_model;
+            $result['worker_model'] = $provider->active_worker_model;
+            $result['model_used'] = $modelUsed;
+            $result['job_role'] = $jobRole;
+
             if (! empty($result['explanation'])) {
-                $result['explanation'] .= ' (Diproses dengan '.$provider->name.').';
+                $result['explanation'] .= ' (Diproses dengan '.$provider->name.' ['.$jobRole.': '.$modelUsed.']).';
             }
         }
 

@@ -36,7 +36,10 @@ Route::prefix('panel')->name('panel.')->group(function () {
     Route::get('/ai-studio', [AiStudioController::class, 'index'])->name('ai-studio.index');
     Route::get('/ai-studio/connections', [AiStudioController::class, 'connections'])->name('ai-studio.connections');
     Route::get('/ai-studio/chat', [AiStudioController::class, 'chatView'])->name('ai-studio.chat');
+    Route::get('/ai-studio/personalize', [AiStudioController::class, 'personalize'])->name('ai-studio.personalize');
+    Route::post('/ai-studio/personalize', [AiStudioController::class, 'savePersonalize'])->name('ai-studio.personalize.save');
     Route::get('/ai-studio/providers/list', [AiStudioController::class, 'getProvidersJson'])->name('ai-studio.providers.list');
+    Route::get('/ai-studio/providers/{uuid}/models', [AiStudioController::class, 'getProviderModels'])->name('ai-studio.providers.models');
     Route::post('/ai-studio/providers', [AiStudioController::class, 'storeProvider'])->name('ai-studio.providers.store');
     Route::post('/ai-studio/providers/bulk-destroy', [AiStudioController::class, 'bulkDestroyProviders'])->name('ai-studio.providers.bulk-destroy');
     Route::post('/ai-studio/providers/{uuid}/update', [AiStudioController::class, 'updateProvider'])->name('ai-studio.providers.update');

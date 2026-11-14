@@ -19,6 +19,8 @@ class AiProvider extends Model
         'api_key',
         'models',
         'default_model',
+        'frontier_model',
+        'worker_model',
         'is_active',
         'description',
         'status',
@@ -116,5 +118,33 @@ class AiProvider extends Model
             'ollama' => 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
             default => 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
         };
+    }
+
+    /**
+     * Get active Frontier Model with fallback.
+     */
+    public function getActiveFrontierModelAttribute(): ?string
+    {
+        if (! empty($this->frontier_model)) {
+            return $this->frontier_model;
+        }
+
+        return $this->default_model ?? ($this->models[0] ?? null);
+    }
+
+    /**
+     * Get active Worker Model with fallback.
+     */
+    public function getActiveWorkerModelAttribute(): ?string
+    {
+        if (! empty($this->worker_model)) {
+            return $this->worker_model;
+        }
+
+        if (! empty($this->models) && count($this->models) > 1) {
+            return $this->models[1];
+        }
+
+        return $this->default_model ?? ($this->models[0] ?? null);
     }
 }

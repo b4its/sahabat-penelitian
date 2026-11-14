@@ -185,11 +185,11 @@
                         <!-- AI Studio: Connection -->
                         <a
                             href="{{ route('panel.ai-studio.index', ['tab' => 'connections']) }}"
-                            class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 {{ (request()->routeIs('panel.ai-studio*') && (request()->query('tab') === 'connections' || !request()->query('tab'))) ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
+                            class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 {{ (request()->routeIs('panel.ai-studio*') && !request()->routeIs('panel.ai-studio.personalize*') && (request()->query('tab') === 'connections' || !request()->query('tab'))) ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
                             title="Koneksi Provider AI"
                         >
                             <div class="flex items-center gap-3 min-w-0">
-                                <svg class="w-5 h-5 shrink-0 {{ (request()->routeIs('panel.ai-studio*') && (request()->query('tab') === 'connections' || !request()->query('tab'))) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="w-5 h-5 shrink-0 {{ (request()->routeIs('panel.ai-studio*') && !request()->routeIs('panel.ai-studio.personalize*') && (request()->query('tab') === 'connections' || !request()->query('tab'))) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
                                 <span class="sidebar-text-label truncate">Koneksi Provider</span>
@@ -202,17 +202,34 @@
                         <!-- AI Studio: Chat -->
                         <a
                             href="{{ route('panel.ai-studio.index', ['tab' => 'chat']) }}"
-                            class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 {{ (request()->routeIs('panel.ai-studio*') && request()->query('tab') === 'chat') ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
+                            class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 {{ (request()->routeIs('panel.ai-studio*') && !request()->routeIs('panel.ai-studio.personalize*') && request()->query('tab') === 'chat') ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
                             title="Chat Model AI Studio"
                         >
                             <div class="flex items-center gap-3 min-w-0">
-                                <svg class="w-5 h-5 shrink-0 {{ (request()->routeIs('panel.ai-studio*') && request()->query('tab') === 'chat') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="w-5 h-5 shrink-0 {{ (request()->routeIs('panel.ai-studio*') && !request()->routeIs('panel.ai-studio.personalize*') && request()->query('tab') === 'chat') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                                 </svg>
                                 <span class="sidebar-text-label truncate">Chat Studio AI</span>
                             </div>
                             <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300">
                                 Chat
+                            </span>
+                        </a>
+
+                        <!-- AI Studio: Personalize -->
+                        <a
+                            href="{{ route('panel.ai-studio.personalize') }}"
+                            class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 {{ request()->routeIs('panel.ai-studio.personalize*') ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
+                            title="Personalisasi & Transparansi Model AI"
+                        >
+                            <div class="flex items-center gap-3 min-w-0">
+                                <svg class="w-5 h-5 shrink-0 {{ request()->routeIs('panel.ai-studio.personalize*') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                </svg>
+                                <span class="sidebar-text-label truncate">Personalisasi Model</span>
+                            </div>
+                            <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                Roles
                             </span>
                         </a>
                     </div>
