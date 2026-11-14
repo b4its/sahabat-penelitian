@@ -199,3 +199,113 @@ test('model multiple choice custom model addition integrates into list and marks
     assert.equal(selectedSet.size, 2);
     assert.equal(Array.from(selectedSet).includes(customModel), true);
 });
+
+test('provider multiple choice persists selections across simulated pagination navigation using storage', () => {
+    let mockStorage = {};
+    const storageApi = {
+        getItem: (k) => mockStorage[k] || null,
+        setItem: (k, v) => { mockStorage[k] = v; },
+        removeItem: (k) => { delete mockStorage[k]; },
+    };
+
+    const STORAGE_KEY = 'sp_selected_providers';
+
+    // Page 1: 3 providers, user selects prov-1 and prov-2
+    const page1Dom = new JSDOM(`
+        <input type="checkbox" id="select-all-providers" />
+        <div id="bulk-actions-bar" class="hidden">
+            <span id="bulk-selected-count">0</span>
+        </div>
+        <input type="checkbox" class="provider-checkbox" value="prov-1" data-name="Provider 1" />
+        <input type="checkbox" class="provider-checkbox" value="prov-2" data-name="Provider 2" />
+        <input type="checkbox" class="provider-checkbox" value="prov-3" data-name="Provider 3" />
+    `);
+
+    // Simulate selecting prov-1 and prov-2 on page 1 and saving to storage
+    let stored = {};
+    stored['prov-1'] = { uuid: 'prov-1', name: 'Provider 1' };
+    stored['prov-2'] = { uuid: 'prov-2', name: 'Provider 2' };
+    storageApi.setItem(STORAGE_KEY, JSON.stringify(stored));
+
+    // Page 2: user navigates to page 2 (new DOM)
+    const page2Dom = new JSDOM(`
+        <input type="checkbox" id="select-all-providers" />
+        <div id="bulk-actions-bar" class="hidden">
+            <span id="bulk-selected-count">0</span>
+            <span id="bulk-selected-badge">0</span>
+        </div>
+        <input type="checkbox" class="provider-checkbox" value="prov-4" data-name="Provider 4" />
+        <input type="checkbox" class="provider-checkbox" value="prov-5" data-name="Provider 5" />
+    `);
+
+    // On Page 2 load: read storage and update checkboxes
+    const loadedStored = JSON.parse(storageApi.getItem(STORAGE_KEY));
+    assert.equal(Object.keys(loadedStored).length, 2);
+
+    const page2Cbs = Array.from(page2Dom.window.document.querySelectorAll('.provider-checkbox'));
+    page2Cbs.forEach(cb => {
+        if (loadedStored[cb.value]) cb.checked = true;
+    });
+
+    // On Page 2, prov-4 and prov-5 are unchecked, but total stored count is 2
+    assert.equal(page2Cbs[0].checked, false);
+    assert.equal(page2Cbs[1].checked, false);
+    assert.equal(Object.keys(loadedStored).length, 2);
+
+    // User checks prov-4 on Page 2
+    page2Cbs[0].checked = true;
+    loadedStored[page2Cbs[0].value] = { uuid: page2Cbs[0].value, name: 'Provider 4' };
+    storageApi.setItem(STORAGE_KEY, JSON.stringify(loadedStored));
+
+    // Total stored count becomes 3
+    const updatedStored = JSON.parse(storageApi.getItem(STORAGE_KEY));
+    assert.equal(Object.keys(updatedStored).length, 3);
+    assert.ok(updatedStored['prov-1']);
+    assert.ok(updatedStored['prov-2']);
+    assert.ok(updatedStored['prov-4']);
+
+    // User navigates back to Page 1: prov-1 and prov-2 must still be checked!
+    const page1Cbs = Array.from(page1Dom.window.document.querySelectorAll('.provider-checkbox'));
+    page1Cbs.forEach(cb => {
+        cb.checked = !!updatedStored[cb.value];
+    });
+
+    assert.equal(page1Cbs[0].checked, true);
+    assert.equal(page1Cbs[1].checked, true);
+    assert.equal(page1Cbs[2].checked, false);
+
+    // After bulk deletion, storage is cleared
+    storageApi.removeItem(STORAGE_KEY);
+    assert.equal(storageApi.getItem(STORAGE_KEY), null);
+});
+
+test('document multiple choice persists selections across simulated pagination navigation using storage', () => {
+    let mockStorage = {};
+    const storageApi = {
+        getItem: (k) => mockStorage[k] || null,
+        setItem: (k, v) => { mockStorage[k] = v; },
+        removeItem: (k) => { delete mockStorage[k]; },
+    };
+
+    const STORAGE_KEY = 'sp_selected_documents';
+
+    // Page 1: select doc-1
+    let stored = {};
+    stored['doc-1'] = { uuid: 'doc-1', title: 'Naskah Bab 1' };
+    storageApi.setItem(STORAGE_KEY, JSON.stringify(stored));
+
+    // Page 2: select doc-6
+    let storedPage2 = JSON.parse(storageApi.getItem(STORAGE_KEY));
+    assert.equal(Object.keys(storedPage2).length, 1);
+    storedPage2['doc-6'] = { uuid: 'doc-6', title: 'Naskah Bab 6' };
+    storageApi.setItem(STORAGE_KEY, JSON.stringify(storedPage2));
+
+    // Total selections across both pages is 2
+    const totalStored = JSON.parse(storageApi.getItem(STORAGE_KEY));
+    assert.equal(Object.keys(totalStored).length, 2);
+    assert.deepEqual(Object.keys(totalStored), ['doc-1', 'doc-6']);
+
+    // Form inputs array contains both uuids
+    const bulkUuids = Object.values(totalStored).map(item => item.uuid);
+    assert.deepEqual(bulkUuids, ['doc-1', 'doc-6']);
+});

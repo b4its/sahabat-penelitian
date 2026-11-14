@@ -30,7 +30,7 @@ class AiStudioController extends Controller
             $activeTab = 'connections';
         }
 
-        $providers = AiProvider::latest()->get();
+        $providers = AiProvider::latest()->paginate(5)->withQueryString();
         $activeProviders = AiProvider::active()->latest()->get();
         $presets = $this->aiStudioService->getProviderPresets();
 

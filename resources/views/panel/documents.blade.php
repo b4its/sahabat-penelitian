@@ -533,6 +533,34 @@
         let pendingDeleteMode = null; // 'single' or 'bulk'
         let pendingSingleUuid = null;
 
+        const STORAGE_KEY = 'sp_selected_documents';
+
+        function getStoredDocuments() {
+            try {
+                if (typeof window !== 'undefined' && window.sessionStorage) {
+                    const raw = sessionStorage.getItem(STORAGE_KEY);
+                    return raw ? JSON.parse(raw) : {};
+                }
+            } catch (e) {}
+            return {};
+        }
+
+        function saveStoredDocuments(map) {
+            try {
+                if (typeof window !== 'undefined' && window.sessionStorage) {
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+                }
+            } catch (e) {}
+        }
+
+        function clearStoredDocuments() {
+            try {
+                if (typeof window !== 'undefined' && window.sessionStorage) {
+                    sessionStorage.removeItem(STORAGE_KEY);
+                }
+            } catch (e) {}
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const selectAllCheckbox = document.getElementById('select-all-documents');
             const rowCheckboxes = Array.from(document.querySelectorAll('.doc-checkbox'));
@@ -549,9 +577,18 @@
             }
 
             function updateSelectionUI() {
-                const selected = getSelectedCheckboxes();
-                const total = rowCheckboxes.length;
-                const count = selected.length;
+                const stored = getStoredDocuments();
+                const totalStoredCount = Object.keys(stored).length;
+
+                // Restore checkbox checked state based on storage
+                rowCheckboxes.forEach(cb => {
+                    if (stored[cb.value]) {
+                        cb.checked = true;
+                    }
+                });
+
+                const pageSelectedCount = rowCheckboxes.filter(cb => cb.checked).length;
+                const pageTotalCount = rowCheckboxes.length;
 
                 // Update row visual styling
                 rowCheckboxes.forEach(cb => {
@@ -567,13 +604,13 @@
 
                 // Update select-all checkbox state
                 if (selectAllCheckbox) {
-                    if (total === 0) {
+                    if (pageTotalCount === 0) {
                         selectAllCheckbox.checked = false;
                         selectAllCheckbox.indeterminate = false;
-                    } else if (count === total) {
+                    } else if (pageSelectedCount === pageTotalCount) {
                         selectAllCheckbox.checked = true;
                         selectAllCheckbox.indeterminate = false;
-                    } else if (count > 0) {
+                    } else if (pageSelectedCount > 0 || totalStoredCount > 0) {
                         selectAllCheckbox.checked = false;
                         selectAllCheckbox.indeterminate = true;
                     } else {
@@ -582,12 +619,12 @@
                     }
                 }
 
-                // Update bulk actions bar
+                // Update bulk actions bar with cumulative count across all pages
                 if (bulkBar && countLabel && badgeLabel) {
-                    if (count > 0) {
+                    if (totalStoredCount > 0) {
                         bulkBar.classList.remove('hidden');
-                        countLabel.textContent = count;
-                        badgeLabel.textContent = count;
+                        countLabel.textContent = totalStoredCount;
+                        badgeLabel.textContent = totalStoredCount;
                     } else {
                         bulkBar.classList.add('hidden');
                         countLabel.textContent = '0';
@@ -600,9 +637,19 @@
             if (selectAllCheckbox) {
                 selectAllCheckbox.addEventListener('change', () => {
                     const targetState = selectAllCheckbox.checked;
+                    const stored = getStoredDocuments();
                     rowCheckboxes.forEach(cb => {
                         cb.checked = targetState;
+                        if (targetState) {
+                            stored[cb.value] = {
+                                uuid: cb.value,
+                                title: cb.getAttribute('data-title') || cb.value
+                            };
+                        } else {
+                            delete stored[cb.value];
+                        }
                     });
+                    saveStoredDocuments(stored);
                     updateSelectionUI();
                 });
             }
@@ -610,6 +657,16 @@
             // Individual Row Checkbox Handler
             rowCheckboxes.forEach(cb => {
                 cb.addEventListener('change', () => {
+                    const stored = getStoredDocuments();
+                    if (cb.checked) {
+                        stored[cb.value] = {
+                            uuid: cb.value,
+                            title: cb.getAttribute('data-title') || cb.value
+                        };
+                    } else {
+                        delete stored[cb.value];
+                    }
+                    saveStoredDocuments(stored);
                     updateSelectionUI();
                 });
             });
@@ -617,6 +674,7 @@
             // Clear Selection Handler
             if (clearBtn) {
                 clearBtn.addEventListener('click', () => {
+                    clearStoredDocuments();
                     rowCheckboxes.forEach(cb => {
                         cb.checked = false;
                     });
@@ -627,21 +685,23 @@
             // Bulk Clone Action Handler
             if (bulkCloneBtn) {
                 bulkCloneBtn.addEventListener('click', () => {
-                    const selected = getSelectedCheckboxes();
-                    if (selected.length === 0) return;
+                    const stored = getStoredDocuments();
+                    const items = Object.values(stored);
+                    if (items.length === 0) return;
 
                     const container = document.getElementById('bulk-clone-inputs-container');
                     if (!container) return;
                     container.innerHTML = '';
 
-                    selected.forEach(cb => {
+                    items.forEach(item => {
                         const input = document.createElement('input');
                         input.type = 'hidden';
                         input.name = 'uuids[]';
-                        input.value = cb.value;
+                        input.value = item.uuid;
                         container.appendChild(input);
                     });
 
+                    clearStoredDocuments();
                     document.getElementById('form-bulk-clone').submit();
                 });
             }
@@ -649,8 +709,9 @@
             // Bulk Destroy Action Handler (Opens Custom Alert Modal)
             if (bulkDestroyBtn) {
                 bulkDestroyBtn.addEventListener('click', () => {
-                    const selected = getSelectedCheckboxes();
-                    if (selected.length === 0) return;
+                    const stored = getStoredDocuments();
+                    const items = Object.values(stored);
+                    if (items.length === 0) return;
 
                     pendingDeleteMode = 'bulk';
                     pendingSingleUuid = null;
@@ -661,23 +722,23 @@
                     const previewEl = document.getElementById('custom-delete-preview-content');
                     const confirmBtnText = document.getElementById('btn-confirm-delete-text');
 
-                    if (titleEl) titleEl.textContent = `Hapus ${selected.length} Naskah Terpilih`;
-                    if (subtitleEl) subtitleEl.textContent = `Anda akan menghapus ${selected.length} naskah penelitian sekaligus.`;
-                    if (labelEl) labelEl.textContent = `Daftar ${selected.length} Naskah yang Akan Dihapus:`;
+                    if (titleEl) titleEl.textContent = `Hapus ${items.length} Naskah Terpilih`;
+                    if (subtitleEl) subtitleEl.textContent = `Anda akan menghapus ${items.length} naskah penelitian sekaligus.`;
+                    if (labelEl) labelEl.textContent = `Daftar ${items.length} Naskah yang Akan Dihapus:`;
 
                     if (previewEl) {
                         previewEl.innerHTML = '';
                         const ul = document.createElement('ul');
                         ul.className = 'list-disc list-inside space-y-1 text-slate-900 dark:text-slate-100 font-medium';
-                        selected.forEach(cb => {
+                        items.forEach(item => {
                             const li = document.createElement('li');
-                            li.textContent = cb.getAttribute('data-title') || cb.value;
+                            li.textContent = item.title;
                             ul.appendChild(li);
                         });
                         previewEl.appendChild(ul);
                     }
 
-                    if (confirmBtnText) confirmBtnText.textContent = `Ya, Hapus (${selected.length}) Naskah`;
+                    if (confirmBtnText) confirmBtnText.textContent = `Ya, Hapus (${items.length}) Naskah`;
 
                     const modal = document.getElementById('modal-custom-delete-alert');
                     if (modal) modal.classList.remove('hidden');
@@ -688,23 +749,30 @@
             if (confirmDeleteBtn) {
                 confirmDeleteBtn.addEventListener('click', () => {
                     if (pendingDeleteMode === 'bulk') {
-                        const selected = getSelectedCheckboxes();
-                        if (selected.length === 0) return;
+                        const stored = getStoredDocuments();
+                        const items = Object.values(stored);
+                        if (items.length === 0) return;
 
                         const container = document.getElementById('bulk-destroy-inputs-container');
                         if (!container) return;
                         container.innerHTML = '';
 
-                        selected.forEach(cb => {
+                        items.forEach(item => {
                             const input = document.createElement('input');
                             input.type = 'hidden';
                             input.name = 'uuids[]';
-                            input.value = cb.value;
+                            input.value = item.uuid;
                             container.appendChild(input);
                         });
 
+                        clearStoredDocuments();
                         document.getElementById('form-bulk-destroy').submit();
                     } else if (pendingDeleteMode === 'single' && pendingSingleUuid) {
+                        const stored = getStoredDocuments();
+                        if (stored[pendingSingleUuid]) {
+                            delete stored[pendingSingleUuid];
+                            saveStoredDocuments(stored);
+                        }
                         const singleForm = document.getElementById('form-single-destroy');
                         if (singleForm) {
                             singleForm.action = `/panel/documents/${pendingSingleUuid}`;
@@ -713,6 +781,9 @@
                     }
                 });
             }
+
+            // Initial UI sync
+            updateSelectionUI();
 
             // Close Custom Delete Alert on Backdrop Click
             const deleteModal = document.getElementById('modal-custom-delete-alert');

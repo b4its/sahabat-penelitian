@@ -188,7 +188,7 @@
                 </svg>
                 <span>Koneksi Provider</span>
                 <span class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                    {{ $providers->count() }}
+                    {{ $providers->total() }}
                 </span>
             </button>
 
@@ -236,7 +236,7 @@
             <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 shadow-xs">
                 <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Total Provider</span>
                 <div class="mt-2 flex items-baseline justify-between">
-                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="stat-total-providers">{{ $providers->count() }}</span>
+                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="stat-total-providers">{{ $providers->total() }}</span>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">Terkonfigurasi</span>
                 </div>
             </div>
@@ -321,7 +321,7 @@
                     <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <span>Daftar Provider AI Terhubung</span>
                         <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                            {{ $providers->count() }} Provider
+                            {{ $providers->total() }} Provider
                         </span>
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -552,6 +552,18 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+                <div class="text-slate-500 dark:text-slate-400 font-medium text-center sm:text-left shrink-0">
+                    Menampilkan <span class="font-bold text-slate-800 dark:text-slate-200">{{ $providers->firstItem() ?? 0 }}</span> sampai <span class="font-bold text-slate-800 dark:text-slate-200">{{ $providers->lastItem() ?? 0 }}</span> dari <span class="font-bold text-slate-800 dark:text-slate-200">{{ $providers->total() }}</span> provider terhubung
+                </div>
+                @if ($providers->hasPages())
+                    <div class="pagination-container w-full sm:w-auto flex justify-center sm:justify-end overflow-x-auto max-w-full py-0.5" id="providers-pagination-container">
+                        {{ $providers->links() }}
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -1735,6 +1747,34 @@
     let pendingDeleteMode = null; // 'single' or 'bulk'
     let pendingSingleUuid = null;
 
+    const PROVIDER_STORAGE_KEY = 'sp_selected_providers';
+
+    function getStoredProviders() {
+        try {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+                const raw = sessionStorage.getItem(PROVIDER_STORAGE_KEY);
+                return raw ? JSON.parse(raw) : {};
+            }
+        } catch (e) {}
+        return {};
+    }
+
+    function saveStoredProviders(map) {
+        try {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+                sessionStorage.setItem(PROVIDER_STORAGE_KEY, JSON.stringify(map));
+            }
+        } catch (e) {}
+    }
+
+    function clearStoredProviders() {
+        try {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+                sessionStorage.removeItem(PROVIDER_STORAGE_KEY);
+            }
+        } catch (e) {}
+    }
+
     function getSelectedProviderCheckboxes() {
         return Array.from(document.querySelectorAll('.provider-checkbox')).filter(cb => cb.checked);
     }
@@ -1746,9 +1786,18 @@
         const countLabel = document.getElementById('bulk-selected-count');
         const badgeLabel = document.getElementById('bulk-selected-badge');
 
-        const selected = getSelectedProviderCheckboxes();
-        const total = rowCheckboxes.length;
-        const count = selected.length;
+        const stored = getStoredProviders();
+        const totalStoredCount = Object.keys(stored).length;
+
+        // Restore checkbox checked state based on storage
+        rowCheckboxes.forEach(cb => {
+            if (stored[cb.value]) {
+                cb.checked = true;
+            }
+        });
+
+        const pageSelectedCount = rowCheckboxes.filter(cb => cb.checked).length;
+        const pageTotalCount = rowCheckboxes.length;
 
         // Update row visual styling
         rowCheckboxes.forEach(cb => {
@@ -1764,13 +1813,13 @@
 
         // Header checkbox state
         if (selectAllCheckbox) {
-            if (total === 0) {
+            if (pageTotalCount === 0) {
                 selectAllCheckbox.checked = false;
                 selectAllCheckbox.indeterminate = false;
-            } else if (count === total) {
+            } else if (pageSelectedCount === pageTotalCount) {
                 selectAllCheckbox.checked = true;
                 selectAllCheckbox.indeterminate = false;
-            } else if (count > 0) {
+            } else if (pageSelectedCount > 0 || totalStoredCount > 0) {
                 selectAllCheckbox.checked = false;
                 selectAllCheckbox.indeterminate = true;
             } else {
@@ -1779,12 +1828,12 @@
             }
         }
 
-        // Bulk bar display
+        // Bulk bar display showing cumulative count across pages
         if (bulkBar && countLabel && badgeLabel) {
-            if (count > 0) {
+            if (totalStoredCount > 0) {
                 bulkBar.classList.remove('hidden');
-                countLabel.textContent = count;
-                badgeLabel.textContent = count;
+                countLabel.textContent = totalStoredCount;
+                badgeLabel.textContent = totalStoredCount;
             } else {
                 bulkBar.classList.add('hidden');
                 countLabel.textContent = '0';
@@ -1840,23 +1889,30 @@
 
     function executeDeleteAction() {
         if (pendingDeleteMode === 'bulk') {
-            const selected = getSelectedProviderCheckboxes();
-            if (selected.length === 0) return;
+            const stored = getStoredProviders();
+            const items = Object.values(stored);
+            if (items.length === 0) return;
 
             const container = document.getElementById('bulk-destroy-inputs-container');
             if (!container) return;
             container.innerHTML = '';
 
-            selected.forEach(cb => {
+            items.forEach(item => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = 'uuids[]';
-                input.value = cb.value;
+                input.value = item.uuid;
                 container.appendChild(input);
             });
 
+            clearStoredProviders();
             document.getElementById('form-bulk-destroy').submit();
         } else if (pendingDeleteMode === 'single' && pendingSingleUuid) {
+            const stored = getStoredProviders();
+            if (stored[pendingSingleUuid]) {
+                delete stored[pendingSingleUuid];
+                saveStoredProviders(stored);
+            }
             const singleForm = document.getElementById('form-single-destroy');
             if (singleForm) {
                 singleForm.action = `/panel/ai-studio/providers/${pendingSingleUuid}`;
@@ -2298,9 +2354,19 @@
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', () => {
                 const targetState = selectAllCheckbox.checked;
+                const stored = getStoredProviders();
                 rowCheckboxes.forEach(cb => {
                     cb.checked = targetState;
+                    if (targetState) {
+                        stored[cb.value] = {
+                            uuid: cb.value,
+                            name: cb.getAttribute('data-name') || cb.value
+                        };
+                    } else {
+                        delete stored[cb.value];
+                    }
                 });
+                saveStoredProviders(stored);
                 updateProviderSelectionUI();
             });
         }
@@ -2308,6 +2374,16 @@
         // Individual Row Checkbox Handler
         rowCheckboxes.forEach(cb => {
             cb.addEventListener('change', () => {
+                const stored = getStoredProviders();
+                if (cb.checked) {
+                    stored[cb.value] = {
+                        uuid: cb.value,
+                        name: cb.getAttribute('data-name') || cb.value
+                    };
+                } else {
+                    delete stored[cb.value];
+                }
+                saveStoredProviders(stored);
                 updateProviderSelectionUI();
             });
         });
@@ -2315,6 +2391,7 @@
         // Clear Selection Handler
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
+                clearStoredProviders();
                 rowCheckboxes.forEach(cb => {
                     cb.checked = false;
                 });
@@ -2325,8 +2402,9 @@
         // Bulk Destroy Action Handler
         if (bulkDestroyBtn) {
             bulkDestroyBtn.addEventListener('click', () => {
-                const selected = getSelectedProviderCheckboxes();
-                if (selected.length === 0) return;
+                const stored = getStoredProviders();
+                const items = Object.values(stored);
+                if (items.length === 0) return;
 
                 pendingDeleteMode = 'bulk';
                 pendingSingleUuid = null;
@@ -2337,23 +2415,23 @@
                 const previewEl = document.getElementById('custom-delete-preview-content');
                 const confirmBtnText = document.getElementById('btn-confirm-delete-text');
 
-                if (titleEl) titleEl.textContent = `Hapus ${selected.length} Provider Terpilih`;
-                if (subtitleEl) subtitleEl.textContent = `Anda akan menghapus ${selected.length} koneksi provider AI sekaligus.`;
-                if (labelEl) labelEl.textContent = `Daftar ${selected.length} Provider yang Akan Dihapus:`;
+                if (titleEl) titleEl.textContent = `Hapus ${items.length} Provider Terpilih`;
+                if (subtitleEl) subtitleEl.textContent = `Anda akan menghapus ${items.length} koneksi provider AI sekaligus.`;
+                if (labelEl) labelEl.textContent = `Daftar ${items.length} Provider yang Akan Dihapus:`;
 
                 if (previewEl) {
                     previewEl.innerHTML = '';
                     const ul = document.createElement('ul');
                     ul.className = 'list-disc list-inside space-y-1 text-slate-900 dark:text-slate-100 font-medium';
-                    selected.forEach(cb => {
+                    items.forEach(item => {
                         const li = document.createElement('li');
-                        li.textContent = cb.getAttribute('data-name') || cb.value;
+                        li.textContent = item.name;
                         ul.appendChild(li);
                     });
                     previewEl.appendChild(ul);
                 }
 
-                if (confirmBtnText) confirmBtnText.textContent = `Ya, Hapus (${selected.length}) Provider`;
+                if (confirmBtnText) confirmBtnText.textContent = `Ya, Hapus (${items.length}) Provider`;
 
                 const modal = document.getElementById('modal-custom-delete-alert');
                 if (modal) modal.classList.remove('hidden');

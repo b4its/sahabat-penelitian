@@ -7,6 +7,7 @@ use App\Models\AiChatMessage;
 use App\Models\AiChatSession;
 use App\Models\AiProvider;
 use App\Services\AiStudioService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -504,5 +505,34 @@ class AiStudioWhiteBoxTest extends TestCase
         $this->assertEquals('gpt-4o', $data['frontier_model']);
         $this->assertEquals('gpt-4o-mini', $data['worker_model']);
         $this->assertEquals(['gpt-4o', 'gpt-4o-mini'], $data['models']);
+    }
+
+    /**
+     * White-box WB19: Controller index paginates providers with 5 items per page and preserves query parameters.
+     */
+    public function test_white_box_index_paginates_providers_with_five_per_page(): void
+    {
+        $unique = 'WB_Pag_'.uniqid();
+        for ($i = 1; $i <= 6; $i++) {
+            AiProvider::create([
+                'name' => "WB Pag Provider {$i} {$unique}",
+                'provider' => 'openai',
+                'models' => ['gpt-4o'],
+                'is_active' => true,
+            ]);
+        }
+
+        $request = Request::create('/panel/ai-studio', 'GET', ['tab' => 'connections']);
+        $view = $this->controller->index($request);
+
+        $data = $view->getData();
+        $this->assertArrayHasKey('providers', $data);
+
+        $providers = $data['providers'];
+        $this->assertInstanceOf(LengthAwarePaginator::class, $providers);
+        $this->assertEquals(5, $providers->perPage());
+        $this->assertGreaterThanOrEqual(6, $providers->total());
+        $this->assertTrue($providers->hasPages());
+        $this->assertEquals('connections', $data['activeTab']);
     }
 }

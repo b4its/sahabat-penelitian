@@ -746,4 +746,54 @@ class AiStudioBlackBoxTest extends TestCase
         $this->assertNotEmpty($apiResponse->json('assistant_message.formatted_content'));
         $this->assertStringContainsString('<', $apiResponse->json('assistant_message.formatted_content'));
     }
+
+    /**
+     * Black-box BB20: AI provider connections page paginates at 5 items per page when count exceeds 5.
+     */
+    public function test_black_box_ai_studio_providers_pagination_activates_when_count_exceeds_five(): void
+    {
+        $unique = 'PagProv_'.uniqid();
+        for ($i = 1; $i <= 7; $i++) {
+            AiProvider::create([
+                'name' => "Batch Provider {$i} {$unique}",
+                'provider' => 'openai',
+                'models' => ['gpt-4o'],
+                'is_active' => true,
+            ]);
+        }
+
+        // 1. First Page (Page 1)
+        $responsePage1 = $this->get('/panel/ai-studio?tab=connections');
+        $responsePage1->assertStatus(200);
+
+        // Assert pagination bar summary and page link
+        $responsePage1->assertSee('Menampilkan', false);
+        $responsePage1->assertSee('sampai <span class="font-bold text-slate-800 dark:text-slate-200">5</span>', false);
+        $responsePage1->assertSee('provider terhubung', false);
+        $responsePage1->assertSee('id="providers-pagination-container"', false);
+        $responsePage1->assertSee('page=2', false);
+        $responsePage1->assertSee('tab=connections', false);
+
+        // 2. Second Page (Page 2)
+        $responsePage2 = $this->get('/panel/ai-studio?tab=connections&page=2');
+        $responsePage2->assertStatus(200);
+        $responsePage2->assertSee('Menampilkan <span class="font-bold text-slate-800 dark:text-slate-200">6</span>', false);
+        $responsePage2->assertSee('tab=connections', false);
+    }
+
+    /**
+     * Black-box BB21: AI provider connections page includes persistent multiple-choice script for pagination.
+     */
+    public function test_black_box_ai_studio_providers_renders_cross_page_selection_persistence_script(): void
+    {
+        $response = $this->get('/panel/ai-studio?tab=connections');
+        $response->assertStatus(200);
+
+        // Check for sessionStorage key and persistence handler functions
+        $response->assertSee('sp_selected_providers', false);
+        $response->assertSee('sessionStorage', false);
+        $response->assertSee('getStoredProviders', false);
+        $response->assertSee('saveStoredProviders', false);
+        $response->assertSee('clearStoredProviders', false);
+    }
 }

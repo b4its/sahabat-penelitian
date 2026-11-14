@@ -231,4 +231,19 @@ class PanelBulkActionsAndProfileBlackBoxTest extends TestCase
         $response->assertSessionMissing('panel_user_email');
         $response->assertSessionHas('success', 'Anda telah berhasil keluar dari Panel Riset.');
     }
+
+    /**
+     * Black-box BB08: Documents page includes cross-page multiple choice persistence logic.
+     */
+    public function test_black_box_documents_view_renders_cross_page_selection_persistence_script(): void
+    {
+        $response = $this->get('/panel/documents');
+        $response->assertStatus(200);
+
+        $response->assertSee('sp_selected_documents', false);
+        $response->assertSee('sessionStorage', false);
+        $response->assertSee('getStoredDocuments', false);
+        $response->assertSee('saveStoredDocuments', false);
+        $response->assertSee('clearStoredDocuments', false);
+    }
 }
