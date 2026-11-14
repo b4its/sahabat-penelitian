@@ -268,16 +268,18 @@
                             Model dengan kapasitas parameter terbesar dan penalaran logis tertinggi. Bertanggung jawab atas sintesis konseptual, elaborasi teori, dan kritik metodologis.
                         </p>
 
-                        <!-- Select Model Dropdown -->
-                        <div class="mb-5">
-                            <label for="frontier-model-select" class="block text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300 mb-1.5 flex items-center gap-1.5">
+                        <!-- Searchable Frontier Model Dropdown -->
+                        <div class="mb-5 relative" id="frontier-model-searchable-wrapper">
+                            <label for="frontier-model-search-trigger" class="block text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300 mb-1.5 flex items-center gap-1.5">
                                 <i class="fa-solid fa-crosshairs text-purple-500"></i>
                                 Pilih Model untuk Frontier Job:
                             </label>
+
+                            <!-- Native Hidden Select for Form Submission and Test Compatibility -->
                             <select
                                 id="frontier-model-select"
                                 name="frontier_model"
-                                class="w-full px-3.5 py-2.5 rounded-xl border border-purple-300 dark:border-purple-700 bg-purple-50/40 dark:bg-purple-950/30 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
+                                class="hidden"
                                 required
                             >
                                 @if(is_array($selectedProvider->models))
@@ -287,9 +289,81 @@
                                         </option>
                                     @endforeach
                                 @else
-                                    <option value="{{ $selectedProvider->default_model }}">{{ $selectedProvider->default_model }}</option>
+                                    <option value="{{ $selectedProvider->default_model }}" selected>{{ $selectedProvider->default_model }}</option>
                                 @endif
                             </select>
+
+                            <!-- Searchable Trigger Button -->
+                            <button
+                                type="button"
+                                id="frontier-model-search-trigger"
+                                onclick="toggleFrontierModelDropdown()"
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/40 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none cursor-pointer flex items-center justify-between text-left shadow-xs transition hover:border-purple-400 dark:hover:border-purple-600"
+                                aria-haspopup="listbox"
+                                aria-expanded="false"
+                            >
+                                <span id="frontier-model-selected-text" class="truncate flex items-center gap-2 font-mono font-bold">
+                                    <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                                    <span class="truncate">{{ $selectedProvider->active_frontier_model ?? 'Pilih Frontier Model' }}</span>
+                                </span>
+                                <div class="pointer-events-none flex items-center pl-2 text-purple-600 dark:text-purple-400">
+                                    <i id="frontier-model-chevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-150"></i>
+                                </div>
+                            </button>
+
+                            <!-- Searchable Dropdown Panel -->
+                            <div
+                                id="frontier-model-dropdown"
+                                class="hidden absolute z-30 left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 rounded-xl border border-purple-200 dark:border-purple-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
+                            >
+                                <!-- Search Input Inside Select -->
+                                <div class="p-2 border-b border-slate-100 dark:border-slate-800 bg-purple-50/30 dark:bg-purple-950/20">
+                                    <div class="relative">
+                                        <input
+                                            type="text"
+                                            id="frontier-model-search-input"
+                                            placeholder="Cari model frontier..."
+                                            class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            oninput="filterFrontierModels()"
+                                            autocomplete="off"
+                                        />
+                                        <i class="fa-solid fa-magnifying-glass text-purple-400 text-xs absolute left-2.5 top-2.5 pointer-events-none"></i>
+                                    </div>
+                                </div>
+
+                                <!-- List of Models -->
+                                <ul
+                                    id="frontier-model-options-list"
+                                    class="max-h-48 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-800 text-xs font-mono"
+                                    role="listbox"
+                                >
+                                    @if(is_array($selectedProvider->models))
+                                        @foreach($selectedProvider->models as $m)
+                                            <li
+                                                class="frontier-model-option-item p-2.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950/50 cursor-pointer flex items-center justify-between transition-colors {{ ($selectedProvider->active_frontier_model === $m) ? 'bg-purple-50 dark:bg-purple-950/60 font-bold text-purple-900 dark:text-purple-200' : 'text-slate-800 dark:text-slate-200' }}"
+                                                data-model="{{ $m }}"
+                                                onclick="selectFrontierModel('{{ $m }}')"
+                                                role="option"
+                                            >
+                                                <div class="flex items-center gap-2 truncate">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"></span>
+                                                    <span class="frontier-option-model-name truncate">{{ $m }}</span>
+                                                </div>
+                                                @if($selectedProvider->active_frontier_model === $m)
+                                                    <span class="text-[10px] px-1.5 py-0.2 rounded font-sans font-extrabold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                                        Aktif
+                                                    </span>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    @endif
+                                </ul>
+
+                                <!-- Empty search result -->
+                                <div id="frontier-model-empty-result" class="hidden p-3 text-center text-xs text-slate-400 dark:text-slate-500 font-sans">
+                                    Model tidak ditemukan
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Division of Labor Tasks list -->
@@ -343,16 +417,18 @@
                             Model ramping dengan latensi instan (< 1s) dan konsumsi token minimal. Bertanggung jawab atas koreksi PUEBI, format bibliografi, parafrase cepat, dan ringkasan kilat.
                         </p>
 
-                        <!-- Select Model Dropdown -->
-                        <div class="mb-5">
-                            <label for="worker-model-select" class="block text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-300 mb-1.5 flex items-center gap-1.5">
+                        <!-- Searchable Worker Model Dropdown -->
+                        <div class="mb-5 relative" id="worker-model-searchable-wrapper">
+                            <label for="worker-model-search-trigger" class="block text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-300 mb-1.5 flex items-center gap-1.5">
                                 <i class="fa-solid fa-crosshairs text-emerald-500"></i>
                                 Pilih Model untuk Worker Job:
                             </label>
+
+                            <!-- Native Hidden Select for Form Submission and Test Compatibility -->
                             <select
                                 id="worker-model-select"
                                 name="worker_model"
-                                class="w-full px-3.5 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50/40 dark:bg-emerald-950/30 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+                                class="hidden"
                                 required
                             >
                                 @if(is_array($selectedProvider->models))
@@ -362,9 +438,81 @@
                                         </option>
                                     @endforeach
                                 @else
-                                    <option value="{{ $selectedProvider->default_model }}">{{ $selectedProvider->default_model }}</option>
+                                    <option value="{{ $selectedProvider->default_model }}" selected>{{ $selectedProvider->default_model }}</option>
                                 @endif
                             </select>
+
+                            <!-- Searchable Trigger Button -->
+                            <button
+                                type="button"
+                                id="worker-model-search-trigger"
+                                onclick="toggleWorkerModelDropdown()"
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/40 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer flex items-center justify-between text-left shadow-xs transition hover:border-emerald-400 dark:hover:border-emerald-600"
+                                aria-haspopup="listbox"
+                                aria-expanded="false"
+                            >
+                                <span id="worker-model-selected-text" class="truncate flex items-center gap-2 font-mono font-bold">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                    <span class="truncate">{{ $selectedProvider->active_worker_model ?? 'Pilih Worker Model' }}</span>
+                                </span>
+                                <div class="pointer-events-none flex items-center pl-2 text-emerald-600 dark:text-emerald-400">
+                                    <i id="worker-model-chevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-150"></i>
+                                </div>
+                            </button>
+
+                            <!-- Searchable Dropdown Panel -->
+                            <div
+                                id="worker-model-dropdown"
+                                class="hidden absolute z-30 left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
+                            >
+                                <!-- Search Input Inside Select -->
+                                <div class="p-2 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/30 dark:bg-emerald-950/20">
+                                    <div class="relative">
+                                        <input
+                                            type="text"
+                                            id="worker-model-search-input"
+                                            placeholder="Cari model worker..."
+                                            class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            oninput="filterWorkerModels()"
+                                            autocomplete="off"
+                                        />
+                                        <i class="fa-solid fa-magnifying-glass text-emerald-400 text-xs absolute left-2.5 top-2.5 pointer-events-none"></i>
+                                    </div>
+                                </div>
+
+                                <!-- List of Models -->
+                                <ul
+                                    id="worker-model-options-list"
+                                    class="max-h-48 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-800 text-xs font-mono"
+                                    role="listbox"
+                                >
+                                    @if(is_array($selectedProvider->models))
+                                        @foreach($selectedProvider->models as $m)
+                                            <li
+                                                class="worker-model-option-item p-2.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer flex items-center justify-between transition-colors {{ ($selectedProvider->active_worker_model === $m) ? 'bg-emerald-50 dark:bg-emerald-950/60 font-bold text-emerald-900 dark:text-emerald-200' : 'text-slate-800 dark:text-slate-200' }}"
+                                                data-model="{{ $m }}"
+                                                onclick="selectWorkerModel('{{ $m }}')"
+                                                role="option"
+                                            >
+                                                <div class="flex items-center gap-2 truncate">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                                    <span class="worker-option-model-name truncate">{{ $m }}</span>
+                                                </div>
+                                                @if($selectedProvider->active_worker_model === $m)
+                                                    <span class="text-[10px] px-1.5 py-0.2 rounded font-sans font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                                                        Aktif
+                                                    </span>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    @endif
+                                </ul>
+
+                                <!-- Empty search result -->
+                                <div id="worker-model-empty-result" class="hidden p-3 text-center text-xs text-slate-400 dark:text-slate-500 font-sans">
+                                    Model tidak ditemukan
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Division of Labor Tasks list -->
@@ -678,6 +826,176 @@
         window.location.href = url.toString();
     }
 
+    // Frontier Model Searchable Dropdown
+    function toggleFrontierModelDropdown() {
+        const dropdown = document.getElementById('frontier-model-dropdown');
+        const chevron = document.getElementById('frontier-model-chevron');
+        const trigger = document.getElementById('frontier-model-search-trigger');
+        if (!dropdown) return;
+
+        const isHidden = dropdown.classList.contains('hidden');
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+            if (trigger) trigger.setAttribute('aria-expanded', 'true');
+            const searchInput = document.getElementById('frontier-model-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                filterFrontierModels();
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        } else {
+            dropdown.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function filterFrontierModels() {
+        const query = (document.getElementById('frontier-model-search-input')?.value || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#frontier-model-options-list .frontier-model-option-item');
+        const emptyResult = document.getElementById('frontier-model-empty-result');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const model = (item.getAttribute('data-model') || '').toLowerCase();
+            if (!query || model.includes(query)) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+
+        if (emptyResult) {
+            if (visibleCount === 0) {
+                emptyResult.classList.remove('hidden');
+            } else {
+                emptyResult.classList.add('hidden');
+            }
+        }
+    }
+
+    function selectFrontierModel(modelName) {
+        const select = document.getElementById('frontier-model-select');
+        if (select) {
+            select.value = modelName;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const selectedText = document.getElementById('frontier-model-selected-text');
+        if (selectedText) {
+            selectedText.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                <span class="truncate">${escapeHtml(modelName)}</span>
+            `;
+        }
+
+        // Update Matrix displays
+        const m1 = document.getElementById('matrix-frontier-model-1');
+        const m2 = document.getElementById('matrix-frontier-model-2');
+        if (m1) m1.textContent = modelName;
+        if (m2) m2.textContent = modelName;
+
+        // Highlight active item
+        document.querySelectorAll('#frontier-model-options-list .frontier-model-option-item').forEach(item => {
+            const isActive = item.getAttribute('data-model') === modelName;
+            item.classList.toggle('bg-purple-50', isActive);
+            item.classList.toggle('dark:bg-purple-950/60', isActive);
+            item.classList.toggle('font-bold', isActive);
+            item.classList.toggle('text-purple-900', isActive);
+            item.classList.toggle('dark:text-purple-200', isActive);
+        });
+
+        toggleFrontierModelDropdown();
+    }
+
+    // Worker Model Searchable Dropdown
+    function toggleWorkerModelDropdown() {
+        const dropdown = document.getElementById('worker-model-dropdown');
+        const chevron = document.getElementById('worker-model-chevron');
+        const trigger = document.getElementById('worker-model-search-trigger');
+        if (!dropdown) return;
+
+        const isHidden = dropdown.classList.contains('hidden');
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+            if (trigger) trigger.setAttribute('aria-expanded', 'true');
+            const searchInput = document.getElementById('worker-model-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                filterWorkerModels();
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        } else {
+            dropdown.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function filterWorkerModels() {
+        const query = (document.getElementById('worker-model-search-input')?.value || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#worker-model-options-list .worker-model-option-item');
+        const emptyResult = document.getElementById('worker-model-empty-result');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const model = (item.getAttribute('data-model') || '').toLowerCase();
+            if (!query || model.includes(query)) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+
+        if (emptyResult) {
+            if (visibleCount === 0) {
+                emptyResult.classList.remove('hidden');
+            } else {
+                emptyResult.classList.add('hidden');
+            }
+        }
+    }
+
+    function selectWorkerModel(modelName) {
+        const select = document.getElementById('worker-model-select');
+        if (select) {
+            select.value = modelName;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const selectedText = document.getElementById('worker-model-selected-text');
+        if (selectedText) {
+            selectedText.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                <span class="truncate">${escapeHtml(modelName)}</span>
+            `;
+        }
+
+        // Update Matrix displays
+        const m1 = document.getElementById('matrix-worker-model-1');
+        const m2 = document.getElementById('matrix-worker-model-2');
+        const m3 = document.getElementById('matrix-worker-model-3');
+        if (m1) m1.textContent = modelName;
+        if (m2) m2.textContent = modelName;
+        if (m3) m3.textContent = modelName;
+
+        // Highlight active item
+        document.querySelectorAll('#worker-model-options-list .worker-model-option-item').forEach(item => {
+            const isActive = item.getAttribute('data-model') === modelName;
+            item.classList.toggle('bg-emerald-50', isActive);
+            item.classList.toggle('dark:bg-emerald-950/60', isActive);
+            item.classList.toggle('font-bold', isActive);
+            item.classList.toggle('text-emerald-900', isActive);
+            item.classList.toggle('dark:text-emerald-200', isActive);
+        });
+
+        toggleWorkerModelDropdown();
+    }
+
     // Dynamic asynchronous model loader
     async function loadProviderModelsAsync(uuid) {
         try {
@@ -690,10 +1008,14 @@
 
             const frontierSelect = document.getElementById('frontier-model-select');
             const workerSelect = document.getElementById('worker-model-select');
+            const frontierList = document.getElementById('frontier-model-options-list');
+            const workerList = document.getElementById('worker-model-options-list');
 
             if (frontierSelect && workerSelect && Array.isArray(data.models)) {
                 frontierSelect.innerHTML = '';
                 workerSelect.innerHTML = '';
+                if (frontierList) frontierList.innerHTML = '';
+                if (workerList) workerList.innerHTML = '';
 
                 data.models.forEach(m => {
                     const optF = document.createElement('option');
@@ -707,38 +1029,110 @@
                     optW.textContent = m + (m === data.worker_model ? ' (Saat Ini)' : '');
                     if (m === data.worker_model) optW.selected = true;
                     workerSelect.appendChild(optW);
+
+                    if (frontierList) {
+                        const liF = document.createElement('li');
+                        liF.className = `frontier-model-option-item p-2.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950/50 cursor-pointer flex items-center justify-between transition-colors ${m === data.frontier_model ? 'bg-purple-50 dark:bg-purple-950/60 font-bold text-purple-900 dark:text-purple-200' : 'text-slate-800 dark:text-slate-200'}`;
+                        liF.setAttribute('data-model', m);
+                        liF.setAttribute('role', 'option');
+                        liF.onclick = () => selectFrontierModel(m);
+                        liF.innerHTML = `
+                            <div class="flex items-center gap-2 truncate">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"></span>
+                                <span class="frontier-option-model-name truncate">${escapeHtml(m)}</span>
+                            </div>
+                            ${m === data.frontier_model ? '<span class="text-[10px] px-1.5 py-0.2 rounded font-sans font-extrabold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">Aktif</span>' : ''}
+                        `;
+                        frontierList.appendChild(liF);
+                    }
+
+                    if (workerList) {
+                        const liW = document.createElement('li');
+                        liW.className = `worker-model-option-item p-2.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer flex items-center justify-between transition-colors ${m === data.worker_model ? 'bg-emerald-50 dark:bg-emerald-950/60 font-bold text-emerald-900 dark:text-emerald-200' : 'text-slate-800 dark:text-slate-200'}`;
+                        liW.setAttribute('data-model', m);
+                        liW.setAttribute('role', 'option');
+                        liW.onclick = () => selectWorkerModel(m);
+                        liW.innerHTML = `
+                            <div class="flex items-center gap-2 truncate">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                <span class="worker-option-model-name truncate">${escapeHtml(m)}</span>
+                            </div>
+                            ${m === data.worker_model ? '<span class="text-[10px] px-1.5 py-0.2 rounded font-sans font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">Aktif</span>' : ''}
+                        `;
+                        workerList.appendChild(liW);
+                    }
                 });
+
+                const frontierText = document.getElementById('frontier-model-selected-text');
+                if (frontierText && data.frontier_model) {
+                    frontierText.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                        <span class="truncate">${escapeHtml(data.frontier_model)}</span>
+                    `;
+                }
+
+                const workerText = document.getElementById('worker-model-selected-text');
+                if (workerText && data.worker_model) {
+                    workerText.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span class="truncate">${escapeHtml(data.worker_model)}</span>
+                    `;
+                }
             }
         } catch (e) {
             console.error('Failed to load provider models async', e);
         }
     }
 
-    // Close dropdown on outside click
+    // Close dropdowns on outside click
     document.addEventListener('click', function(e) {
+        // Provider Dropdown
         const wrapper = document.getElementById('personalize-provider-searchable-wrapper');
         const dropdown = document.getElementById('personalize-provider-dropdown');
         const chevron = document.getElementById('personalize-provider-chevron');
         const trigger = document.getElementById('personalize-provider-search-trigger');
-
         if (wrapper && !wrapper.contains(e.target) && dropdown && !dropdown.classList.contains('hidden')) {
             dropdown.classList.add('hidden');
             if (chevron) chevron.classList.remove('rotate-180');
             if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        // Frontier Model Dropdown
+        const frontierWrapper = document.getElementById('frontier-model-searchable-wrapper');
+        const frontierDropdown = document.getElementById('frontier-model-dropdown');
+        const frontierChevron = document.getElementById('frontier-model-chevron');
+        const frontierTrigger = document.getElementById('frontier-model-search-trigger');
+        if (frontierWrapper && !frontierWrapper.contains(e.target) && frontierDropdown && !frontierDropdown.classList.contains('hidden')) {
+            frontierDropdown.classList.add('hidden');
+            if (frontierChevron) frontierChevron.classList.remove('rotate-180');
+            if (frontierTrigger) frontierTrigger.setAttribute('aria-expanded', 'false');
+        }
+
+        // Worker Model Dropdown
+        const workerWrapper = document.getElementById('worker-model-searchable-wrapper');
+        const workerDropdown = document.getElementById('worker-model-dropdown');
+        const workerChevron = document.getElementById('worker-model-chevron');
+        const workerTrigger = document.getElementById('worker-model-search-trigger');
+        if (workerWrapper && !workerWrapper.contains(e.target) && workerDropdown && !workerDropdown.classList.contains('hidden')) {
+            workerDropdown.classList.add('hidden');
+            if (workerChevron) workerChevron.classList.remove('rotate-180');
+            if (workerTrigger) workerTrigger.setAttribute('aria-expanded', 'false');
         }
     });
 
     // Close on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            const dropdown = document.getElementById('personalize-provider-dropdown');
-            const chevron = document.getElementById('personalize-provider-chevron');
-            const trigger = document.getElementById('personalize-provider-search-trigger');
-            if (dropdown && !dropdown.classList.contains('hidden')) {
-                dropdown.classList.add('hidden');
-                if (chevron) chevron.classList.remove('rotate-180');
-                if (trigger) trigger.setAttribute('aria-expanded', 'false');
-            }
+            ['personalize-provider', 'frontier-model', 'worker-model'].forEach(prefix => {
+                const dropdown = document.getElementById(prefix + '-dropdown');
+                const chevron = document.getElementById(prefix + '-chevron');
+                const trigger = document.getElementById(prefix + '-search-trigger');
+                if (dropdown && !dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                    if (chevron) chevron.classList.remove('rotate-180');
+                    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+                }
+            });
         }
     });
 

@@ -42,7 +42,17 @@ test('black-box: ai provider personalize page displays registered models and bot
     $response->assertStatus(200);
     $response->assertSee('Model yang Terdaftar pada '.$provider->name);
     $response->assertSee('frontier-model-select', false);
+    $response->assertSee('frontier-model-search-trigger', false);
+    $response->assertSee('frontier-model-search-input', false);
+    $response->assertSee('frontier-model-dropdown', false);
+    $response->assertSee('frontier-model-options-list', false);
+    $response->assertSee('frontier-model-empty-result', false);
     $response->assertSee('worker-model-select', false);
+    $response->assertSee('worker-model-search-trigger', false);
+    $response->assertSee('worker-model-search-input', false);
+    $response->assertSee('worker-model-dropdown', false);
+    $response->assertSee('worker-model-options-list', false);
+    $response->assertSee('worker-model-empty-result', false);
     $response->assertSee('btn-save-personalize', false);
     $response->assertSee('Matriks Transparansi Alokasi Komputasi');
     $response->assertSee('Uji Coba Alokasi Permintaan Otomatis');
