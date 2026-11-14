@@ -425,8 +425,8 @@
         </header>
 
         <!-- Main Scrollable Content Viewport -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            <div class="max-w-7xl mx-auto space-y-6">
+        <main class="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 min-w-0 w-full">
+            <div class="max-w-7xl mx-auto space-y-6 min-w-0 w-full">
                 <!-- Flash Notification Banner -->
                 @if (session('success'))
                     <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-200 text-sm font-semibold flex items-center justify-between gap-3 shadow-xs">

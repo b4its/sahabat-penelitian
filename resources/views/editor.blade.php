@@ -67,6 +67,7 @@
         #document-page-canvas,
         .document-page-sheet {
             width: 210mm;
+            max-width: 100%;
             min-height: 297mm;
             padding: 25.4mm;
             margin: 18px auto;
@@ -76,6 +77,8 @@
             box-sizing: border-box;
             border-radius: 2px;
             position: relative;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         /* Paper Sizes: Portrait */
@@ -246,10 +249,28 @@
             outline: none;
             min-height: 200mm;
             min-width: 0;
+            max-width: 100%;
+            overflow-wrap: break-word;
+            word-break: break-word;
             font-family: 'Times New Roman', 'Liberation Serif', 'Nimbus Roman', 'DejaVu Serif', serif;
             font-size: 12pt;
             line-height: 1.5;
             color: #111827;
+        }
+
+        .page-sheet-body p,
+        .page-sheet-body div,
+        .page-sheet-body h1,
+        .page-sheet-body h2,
+        .page-sheet-body h3,
+        .page-sheet-body h4,
+        .page-sheet-body h5,
+        .page-sheet-body h6,
+        .page-sheet-body li,
+        .page-sheet-body td,
+        .page-sheet-body th {
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         .document-page-sheet .page-sheet-body[style*="Times New Roman"],
@@ -685,16 +706,16 @@
         }
 
         /* Responsive Overrides & Viewport Constraints */
-        @media screen and (max-width: 840px) {
+        @media screen and (max-width: 1024px) {
             #document-page-canvas,
             .document-page-sheet {
                 width: 100% !important;
                 max-width: 100% !important;
                 min-height: auto !important;
-                padding: 20px 14px !important;
-                margin: 10px 0 !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-                border-radius: 6px !important;
+                padding: 24px 16px !important;
+                margin: 12px 0 !important;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+                border-radius: 8px !important;
             }
             #document-pages-wrapper {
                 padding-left: 8px !important;
@@ -1883,7 +1904,7 @@
     <!-- ========================================================================= -->
     <!-- 3. METRIC HORIZONTAL RULER BAR                                            -->
     <!-- ========================================================================= -->
-    <div id="ruler-bar" class="hidden sm:flex h-6 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 items-center justify-center shrink-0 no-print overflow-hidden relative select-none">
+    <div id="ruler-bar" class="hidden lg:flex h-6 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 items-center justify-center shrink-0 no-print overflow-hidden relative select-none">
         <div class="h-full flex relative px-0" id="ruler-container" style="width: 210mm; max-width: 100%;">
             <!-- Left Margin Shaded Area -->
             <div id="ruler-left-shade" class="absolute top-0 bottom-0 left-0 bg-gray-200/70 dark:bg-gray-800/80 pointer-events-none" style="width: 40mm;"></div>
@@ -1921,16 +1942,16 @@
     <main class="flex-1 flex overflow-hidden relative">
 
         <!-- Mobile Outline Backdrop Overlay -->
-        <div id="outline-backdrop" class="hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-30 xl:hidden" onclick="window.uiController.toggleOutline(false)"></div>
+        <div id="outline-backdrop" class="hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-30 2xl:hidden" onclick="window.uiController.toggleOutline(false)"></div>
 
         <!-- Left Document Outline Sidebar (Google Docs inspired) -->
-        <aside id="outline-sidebar" class="hidden xl:flex fixed xl:static inset-y-0 left-0 z-40 xl:z-10 w-72 max-w-[85vw] xl:w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shrink-0 flex-col no-print shadow-2xl xl:shadow-none transition-all duration-200">
+        <aside id="outline-sidebar" class="hidden 2xl:flex fixed 2xl:static inset-y-0 left-0 z-40 2xl:z-10 w-72 max-w-[85vw] 2xl:w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shrink-0 flex-col no-print shadow-2xl 2xl:shadow-none transition-all duration-200">
             <div class="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div class="flex items-center gap-1.5 min-w-0">
                     <span class="text-xs font-bold uppercase tracking-wider text-gray-500 truncate">Struktur Dokumen (Outline)</span>
                     <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold shrink-0">Bab & Subbab</span>
                 </div>
-                <button type="button" onclick="window.uiController.toggleOutline(false)" class="xl:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" title="Tutup Outline">
+                <button type="button" onclick="window.uiController.toggleOutline(false)" class="2xl:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" title="Tutup Outline">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -2067,7 +2088,7 @@
             <!-- A4 Document Multi-Page Sheets Container -->
             <div id="document-pages-wrapper" class="w-full flex flex-col items-center relative py-2 sm:py-4 px-2 sm:px-6 md:px-14 min-w-0">
                 <!-- Vertical Metric Ruler (Microsoft Word Standard) -->
-                <div id="vertical-ruler" class="hidden xl:flex w-5 shrink-0 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex-col absolute left-2 sm:left-4 top-4 select-none no-print rounded-xs overflow-hidden shadow-2xs z-10" style="height: 297mm;" title="Penggaris Vertikal (Klik ganda untuk Penyetelan Margin)">
+                <div id="vertical-ruler" class="hidden 2xl:flex w-5 shrink-0 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex-col absolute left-2 sm:left-4 top-4 select-none no-print rounded-xs overflow-hidden shadow-2xs z-10" style="height: 297mm;" title="Penggaris Vertikal (Klik ganda untuk Penyetelan Margin)">
                     <!-- Top Margin Shaded Area -->
                     <div id="v-ruler-top-shade" class="w-full bg-gray-200/70 dark:bg-gray-800/80 pointer-events-none absolute top-0 left-0" style="height: 40mm;"></div>
                     <!-- Bottom Margin Shaded Area -->
@@ -2106,7 +2127,7 @@
                     </footer>
 
                     <!-- Side Page Indicator (Outside Document Canvas) -->
-                    <div class="page-side-indicator hidden xl:flex absolute -left-12 sm:-left-16 top-6 select-none no-print pointer-events-auto flex-col items-center" title="Lembar Halaman 1">
+                    <div class="page-side-indicator hidden 2xl:flex absolute -left-12 sm:-left-16 top-6 select-none no-print pointer-events-auto flex-col items-center" title="Lembar Halaman 1">
                         <div class="flex flex-col items-center justify-center min-w-[38px] px-2 py-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-600 dark:text-gray-300 font-mono text-[11px] hover:border-indigo-400 hover:text-indigo-600 transition">
                             <span class="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold leading-none mb-0.5">Hal</span>
                             <span class="font-bold text-xs leading-none text-indigo-600 dark:text-indigo-400">1</span>
@@ -2115,13 +2136,13 @@
                     </div>
 
                     <!-- Side Header & Footer Quick Edit Actions (Outside Document Canvas) -->
-                    <div class="page-side-actions hidden xl:flex absolute -right-12 sm:-right-14 top-4 select-none no-print flex-col items-center gap-1 pointer-events-auto">
+                    <div class="page-side-actions hidden 2xl:flex absolute -right-12 sm:-right-14 top-4 select-none no-print flex-col items-center gap-1 pointer-events-auto">
                         <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition cursor-pointer" title="Header: Belum diterapkan (Klik untuk mengatur)">
                             <span class="text-xs"><i class="fa-solid fa-tag"></i></span>
                         </button>
                         <span class="side-header-status text-[8px] font-sans text-center leading-tight select-none tracking-tight block text-gray-400 dark:text-gray-500">Header:<br><span class="text-[7.5px] text-amber-500">Belum diterapkan</span></span>
                     </div>
-                    <div class="page-side-footer-action hidden xl:flex absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex-col items-center gap-1">
+                    <div class="page-side-footer-action hidden 2xl:flex absolute -right-12 sm:-right-14 bottom-4 select-none no-print pointer-events-auto flex-col items-center gap-1">
                         <button data-action="header-footer-modal" class="p-1.5 rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition cursor-pointer" title="Footer: Belum diterapkan (Klik untuk mengatur)">
                             <span class="text-xs"><i class="fa-solid fa-clipboard"></i></span>
                         </button>
@@ -2133,10 +2154,10 @@
         </section>
 
         <!-- Mobile Wordcraft AI Backdrop Overlay -->
-        <div id="wordcraft-backdrop" class="hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-30 xl:hidden" onclick="window.uiController.toggleWordcraftSidebar(false)"></div>
+        <div id="wordcraft-backdrop" class="hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-30 2xl:hidden" onclick="window.uiController.toggleWordcraftSidebar(false)"></div>
 
         <!-- Right Xishie Studio AI Drawer (https://github.com/storytold/wordcraft inspired) -->
-        <aside id="wordcraft-sidebar" class="hidden fixed xl:static inset-y-0 right-0 z-40 xl:z-10 w-full sm:w-96 xl:w-80 2xl:w-96 max-w-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shrink-0 flex flex-col no-print shadow-2xl xl:shadow-none transition-all duration-200">
+        <aside id="wordcraft-sidebar" class="hidden fixed 2xl:static inset-y-0 right-0 z-40 2xl:z-10 w-full sm:w-96 2xl:w-80 max-w-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shrink-0 flex flex-col no-print shadow-2xl 2xl:shadow-none transition-all duration-200">
             <!-- Studio Header -->
             <div class="p-3.5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
                 <div class="flex items-center gap-2">

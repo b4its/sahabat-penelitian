@@ -15,7 +15,7 @@ export class UiController {
 
         this.currentZoom = 100;
         this.layoutMode = 'print'; // 'print' | 'web' | 'zen'
-        const isWideScreen = typeof window !== 'undefined' && (window.innerWidth >= 1280 || window.innerWidth === undefined);
+        const isWideScreen = typeof window !== 'undefined' && (window.innerWidth >= 1536 || window.innerWidth === undefined);
         this.isRulerVisible = true;
         this.isOutlineVisible = isWideScreen;
         this.isWordcraftVisible = false;
@@ -538,7 +538,7 @@ export class UiController {
 
         sidebar.classList.toggle('hidden', !this.isOutlineVisible);
         if (backdrop) {
-            const isNarrow = typeof window !== 'undefined' && window.innerWidth < 1280;
+            const isNarrow = typeof window !== 'undefined' && window.innerWidth < 1536;
             backdrop.classList.toggle('hidden', !this.isOutlineVisible || !isNarrow);
         }
 
@@ -561,7 +561,7 @@ export class UiController {
 
         sidebar.classList.toggle('hidden', !this.isWordcraftVisible);
         if (backdrop) {
-            const isNarrow = typeof window !== 'undefined' && window.innerWidth < 1280;
+            const isNarrow = typeof window !== 'undefined' && window.innerWidth < 1536;
             backdrop.classList.toggle('hidden', !this.isWordcraftVisible || !isNarrow);
         }
     }

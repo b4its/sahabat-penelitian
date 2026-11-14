@@ -872,7 +872,7 @@ class AiStudioBlackBoxTest extends TestCase
         $response->assertSee('id="wordcraft-sidebar"', false);
 
         // Responsive CSS media query in editor
-        $response->assertSee('@media screen and (max-width: 840px)', false);
+        $response->assertSee('@media screen and (max-width: 1024px)', false);
 
         // Responsive top-nav and status-bar utilities
         $response->assertSee('overflow-x-auto no-scrollbar', false);

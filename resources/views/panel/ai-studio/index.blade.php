@@ -57,6 +57,7 @@
     /* Markdown Styling for AI Assistant Responses */
     .ai-markdown-content {
         word-break: break-word;
+        overflow-wrap: break-word;
         overflow-x: auto;
         min-width: 0;
         max-width: 100%;
@@ -338,8 +339,8 @@
             </div>
 
             <!-- Table Responsive Container -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs sm:text-sm divide-y divide-blue-50 dark:divide-blue-900/30">
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left text-xs sm:text-sm divide-y divide-blue-50 dark:divide-blue-900/30 min-w-[760px]">
                     <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">
                         <tr>
                             <!-- Multiple Choice Header Checkbox -->
@@ -830,7 +831,7 @@
                         <div class="flex {{ $msg->role === 'user' ? 'justify-end' : 'justify-start' }} message-item">
                             @if($msg->role === 'user')
                                 <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-br-xs bg-blue-600 text-white p-3 sm:p-3.5 shadow-xs text-xs sm:text-sm break-words">
-                                    <div class="whitespace-pre-wrap leading-relaxed">${escapeHtml($msg->content)}</div>
+                                    <div class="whitespace-pre-wrap leading-relaxed">{{ $msg->content }}</div>
                                     <div class="text-[10px] text-blue-200 mt-1 text-right">{{ $msg->created_at->format('H:i') }}</div>
                                 </div>
                             @else
