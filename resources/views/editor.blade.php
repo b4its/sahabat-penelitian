@@ -757,6 +757,23 @@
             flex-direction: column;
             overflow: hidden;
         }
+
+        /* Prevent text penetration and responsive collisions in top application bar */
+        #top-nav {
+            overflow: visible !important;
+        }
+        #top-nav #document-title-input {
+            min-width: 0 !important;
+            text-overflow: ellipsis !important;
+        }
+        @media screen and (max-width: 1535px) {
+            #top-nav #btn-restore-draft,
+            #top-nav #document-format-badge,
+            #top-nav #document-protection-badge,
+            #top-nav #document-save-status {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-100 h-full flex flex-col overflow-hidden select-none">
@@ -808,64 +825,58 @@
                     Tersimpan di lokal
                 </span>
 
-                <button id="btn-restore-draft" class="hidden xl:inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-950/80 dark:text-amber-300 transition font-medium shrink-0 shadow-xs" title="Pulihkan Draf Tersimpan di Browser">
+                <button id="btn-restore-draft" class="hidden 2xl:inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-950/80 dark:text-amber-300 transition font-medium shrink-0 shadow-xs" title="Pulihkan Draf Tersimpan di Browser">
                     <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                     <span>Pulihkan Draf</span>
                 </button>
             </div>
         </div>
 
-        <!-- Desktop Action Buttons (lg and up) -->
-        <div class="hidden lg:flex items-center gap-1 sm:gap-2 shrink-0">
-            <!-- Open Local File (Primary CTA) -->
-            <button
-                data-action="open-file-modal"
-                class="px-2 sm:px-3.5 py-1 sm:py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow transition flex items-center gap-1.5 cursor-pointer shrink-0"
-                title="Buka Dokumen dari File Komputer (Ctrl+O)"
-            >
-                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                </svg>
-                <span class="hidden sm:inline">Buka Dokumen Lokal</span>
-                <span class="inline sm:hidden">Buka</span>
-            </button>
+        <!-- Right Side Header Navigation Group (Clean, uncolliding, with universal Hamburger Menu) -->
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <!-- Extra Large Desktop Quick Actions (2xl: >= 1536px only) -->
+            <div class="hidden 2xl:flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Open Local File -->
+                <button
+                    data-action="open-file-modal"
+                    class="px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                    title="Buka Dokumen dari File Komputer (Ctrl+O)"
+                >
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <span>Buka Dokumen Lokal</span>
+                </button>
 
-            <!-- Export / Download Dropdown -->
-            <button
-                data-action="export-modal"
-                class="px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition flex items-center gap-1.5 cursor-pointer shrink-0"
-                title="Ekspor Dokumen (Word, PDF, Markdown, HTML, dll)"
-            >
-                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                <span class="hidden sm:inline">Unduh / Ekspor</span>
-                <span class="inline sm:hidden">Ekspor</span>
-            </button>
+                <!-- Export / Download -->
+                <button
+                    data-action="export-modal"
+                    class="px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                    title="Ekspor Dokumen (Word, PDF, Markdown, HTML, dll)"
+                >
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    <span>Unduh / Ekspor</span>
+                </button>
 
-            <!-- Dark / Light Theme Visual Switcher -->
-            <div class="flex items-center gap-1">
+                <!-- Dark / Light Theme Visual Switcher -->
                 <button
                     id="theme-toggle-btn"
                     type="button"
                     role="switch"
                     aria-checked="false"
-                    class="group relative inline-flex items-center gap-2 px-1.5 sm:px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    class="group relative inline-flex items-center gap-2 px-2 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     title="Ganti Tema Tampilan (Terang / Gelap)"
                 >
-                    <!-- Visual Switch Track -->
                     <div class="relative w-10 sm:w-12 h-5 sm:h-6 rounded-full bg-amber-100 dark:bg-indigo-950/80 border border-amber-300 dark:border-indigo-800/80 transition-colors px-1 flex items-center justify-between pointer-events-none">
-                        <!-- Sun Icon (Gold/Amber) -->
                         <span id="theme-icon-sun" class="text-[10px] sm:text-[11px] transition-opacity duration-200 text-amber-500 leading-none"><i class="fa-solid fa-sun"></i></span>
-                        <!-- Moon Icon (Indigo/Blue) -->
                         <span id="theme-icon-moon" class="text-[10px] sm:text-[11px] transition-opacity duration-200 text-indigo-400 opacity-40 leading-none"><i class="fa-solid fa-moon"></i></span>
-                        <!-- Sliding Knob with Active State Glow -->
                         <span id="theme-toggle-knob" class="absolute left-0.5 top-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white shadow-md transform translate-x-0 transition-transform duration-300 ease-in-out border border-gray-200 dark:border-indigo-400 flex items-center justify-center">
                             <span id="knob-icon" class="text-[9px] sm:text-[10px] leading-none select-none"><i class="fa-solid fa-sun"></i></span>
                         </span>
                     </div>
-                    <!-- Label Text -->
-                    <span id="theme-toggle-text" class="text-xs font-semibold text-gray-700 dark:text-gray-200 hidden lg:inline select-none">
+                    <span id="theme-toggle-text" class="text-xs font-semibold text-gray-700 dark:text-gray-200 select-none">
                         Mode Terang
                     </span>
                 </button>
@@ -873,53 +884,40 @@
                 <!-- Quick Theme Customization Modal Trigger -->
                 <button
                     data-action="open-theme-modal"
-                    class="hidden md:inline-flex p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                    class="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
                     title="Buka Pengaturan Tema & Visual Tampilan"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4 4 4 0 014-4h4a4 4 0 014 4 4 4 0 01-4 4H7zm0 0v-8m0 0a4 4 0 014-4h4a4 4 0 014 4v8m-4-8a4 4 0 00-4-4H7a4 4 0 00-4 4v4"></path>
                     </svg>
                 </button>
+
+                <!-- Print Shortcut -->
+                <button
+                    onclick="window.print()"
+                    class="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                    title="Cetak Dokumen / Ekspor ke PDF (Ctrl+P)"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                </button>
             </div>
 
-            <!-- Print Shortcut -->
-            <button
-                onclick="window.print()"
-                class="hidden sm:inline-flex p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
-                title="Cetak Dokumen / Ekspor ke PDF (Ctrl+P)"
-            >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                </svg>
-            </button>
-
-            <!-- Toggle Wordcraft AI Sidebar -->
+            <!-- Toggle Wordcraft AI Sidebar Button (Always accessible) -->
             <button
                 id="btn-toggle-ai"
-                class="px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                class="top-nav-ai-trigger px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0"
                 title="Buka Asisten AI Xishie Studio"
             >
                 <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path>
                 </svg>
-                <span class="hidden md:inline">Xishie Studio AI</span>
-                <span class="inline md:hidden text-[11px] font-bold">AI</span>
-            </button>
-        </div>
-
-        <!-- Mobile & Tablet Actions with Hamburger Menu (< lg) -->
-        <div class="lg:hidden flex items-center gap-1.5 shrink-0">
-            <!-- Compact Quick AI Button -->
-            <button
-                type="button"
-                class="top-nav-ai-trigger px-2 sm:px-2.5 py-1 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
-                title="Buka Asisten AI Xishie Studio"
-            >
-                <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
-                <span class="text-[11px] font-bold">AI</span>
+                <span class="hidden sm:inline">Xishie Studio AI</span>
+                <span class="inline sm:hidden text-[11px] font-bold">AI</span>
             </button>
 
-            <!-- Top Navigation Hamburger Button -->
+            <!-- Top Navigation Hamburger Button (Always accessible on all viewports) -->
             <button
                 id="btn-top-hamburger"
                 type="button"
@@ -930,7 +928,7 @@
                 title="Menu Aksi Dokumen"
             >
                 <i id="top-hamburger-icon" class="fa-solid fa-bars text-sm"></i>
-                <span id="top-hamburger-draft-dot" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-gray-900"></span>
+                <span id="top-hamburger-draft-dot" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-gray-900 animate-pulse"></span>
             </button>
         </div>
 
@@ -1128,7 +1126,7 @@
         </div>
 
         <!-- Ribbon Panel 0: BERKAS (FILE) -->
-        <div data-ribbon-panel="file" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap bg-indigo-50/40 dark:bg-indigo-950/20">
+        <div data-ribbon-panel="file" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap 2xl:flex-wrap bg-indigo-50/40 dark:bg-indigo-950/20">
             <!-- Dokumen Lokal CTA -->
             <div class="flex items-center gap-1.5 pr-3 border-r border-indigo-200 dark:border-indigo-900">
                 <button data-action="open-file-modal" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold shadow-xs flex items-center gap-1.5 transition cursor-pointer">
@@ -1186,7 +1184,7 @@
         </div>
 
         <!-- Ribbon Panel 1: BERANDA (HOME) -->
-        <div data-ribbon-panel="home" class="flex items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
+        <div data-ribbon-panel="home" class="flex items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap 2xl:flex-wrap">
             <!-- Riwayat (History) & Format Painter -->
             <div class="flex items-center gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <button data-action="undo" class="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition" title="Urungkan (Undo Ctrl+Z)">
@@ -1474,7 +1472,7 @@
         </div>
 
         <!-- Ribbon Panel 2: SISIPKAN (INSERT) -->
-        <div data-ribbon-panel="insert" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
+        <div data-ribbon-panel="insert" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap 2xl:flex-wrap">
             <button data-action="open-file-modal" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 <span>Buka Dokumen Lokal</span>
@@ -1565,7 +1563,7 @@
         </div>
 
         <!-- Ribbon Panel 3: TATA LETAK (LAYOUT) -->
-        <div data-ribbon-panel="layout" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
+        <div data-ribbon-panel="layout" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap 2xl:flex-wrap">
             <!-- Group 1: Page Setup (Margins, Size, Orientation, Dialog Launcher) -->
             <div class="flex items-center gap-2 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <span class="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-wider">Halaman:</span>
@@ -1842,7 +1840,7 @@
         </div>
 
         <!-- Ribbon Panel 4: TINJAU & REFERENSI (REVIEW & REFERENCES) -->
-        <div data-ribbon-panel="review" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap bg-indigo-50/20 dark:bg-indigo-950/10">
+        <div data-ribbon-panel="review" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap 2xl:flex-wrap bg-indigo-50/20 dark:bg-indigo-950/10">
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <span class="text-gray-400 dark:text-gray-500 text-[11px] font-semibold uppercase">Komentar:</span>
                 <button type="button" id="btn-review-new-comment" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-semibold cursor-pointer">Komentar baru</button>
@@ -2011,7 +2009,7 @@
         </div>
 
         <!-- Ribbon Panel 5: TAMPILAN (VIEW) -->
-        <div data-ribbon-panel="view" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap">
+        <div data-ribbon-panel="view" class="hidden items-center px-3 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar text-xs flex-nowrap 2xl:flex-wrap">
             <div class="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-800 shrink-0">
                 <button data-layout-mode="print" class="px-2.5 py-1 text-indigo-600 font-bold bg-indigo-50 dark:bg-indigo-950/40 rounded transition">
                     Tata Letak Cetak A4
@@ -2067,7 +2065,7 @@
         </div>
 
         <!-- Ribbon Panel 6: ASISTEN AI XISHIE STUDIO -->
-        <div data-ribbon-panel="ai" class="hidden items-center px-3 sm:px-4 py-2 gap-2 overflow-x-auto no-scrollbar text-xs flex-nowrap lg:flex-wrap bg-purple-50/50 dark:bg-purple-950/20">
+        <div data-ribbon-panel="ai" class="hidden items-center px-3 sm:px-4 py-2 gap-2 overflow-x-auto no-scrollbar text-xs flex-nowrap 2xl:flex-wrap bg-purple-50/50 dark:bg-purple-950/20">
             <span class="text-xs font-semibold text-purple-700 dark:text-purple-300">Aksi Cepat Xishie Studio:</span>
             <button onclick="window.wordcraftAi.executeAction('continue')" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 rounded font-medium text-purple-800 dark:text-purple-200 hover:bg-purple-100 transition shadow-2xs">
                 <i class="fa-solid fa-bolt mr-1"></i> Lanjutkan Tulisan
