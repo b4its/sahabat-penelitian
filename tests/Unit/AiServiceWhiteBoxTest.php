@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\AiProvider;
 use App\Services\AiService;
 
 /*
@@ -86,4 +87,28 @@ test('white-box: ai service chat answers user inquiry based on active context', 
     expect($res['action'])->toBe('chat')
         ->and($res['options'][0])->toContain('Format apa saja yang didukung?')
         ->and($res['options'][0])->toContain('Berdasarkan isi dokumen');
+});
+
+test('white-box: ai service process attaches provider attribution and metadata when provider is passed', function () {
+    $provider = new AiProvider([
+        'uuid' => 'test-provider-uuid-1234',
+        'name' => 'OpenAI GPT-4o Custom',
+        'provider' => 'openai',
+        'is_active' => true,
+    ]);
+
+    $res = $this->aiService->process('continue', 'Pendahuluan riset', 'Konteks dokumen', '', 'formal', $provider);
+
+    expect($res)->toHaveKey('provider')
+        ->and($res['provider'])->toBe('OpenAI GPT-4o Custom')
+        ->and($res['provider_uuid'])->toBe('test-provider-uuid-1234')
+        ->and($res['provider_label'])->toBe('OpenAI')
+        ->and($res['explanation'])->toContain('Diproses dengan OpenAI GPT-4o Custom');
+});
+
+test('white-box: ai service process omits provider keys when provider is null', function () {
+    $res = $this->aiService->process('continue', 'Pendahuluan riset', 'Konteks dokumen', '', 'formal', null);
+
+    expect($res)->not->toHaveKey('provider')
+        ->and($res)->not->toHaveKey('provider_uuid');
 });

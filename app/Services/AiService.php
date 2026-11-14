@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\AiProvider;
+
 class AiService
 {
     /**
@@ -12,7 +14,8 @@ class AiService
         string $selection = '',
         string $context = '',
         string $prompt = '',
-        string $style = 'formal'
+        string $style = 'formal',
+        ?AiProvider $provider = null
     ): array {
         $cleanSelection = trim($selection);
         $cleanContext = trim($context);
@@ -20,27 +23,45 @@ class AiService
 
         switch ($action) {
             case 'continue':
-                return $this->handleContinue($cleanSelection, $cleanContext, $style);
+                $result = $this->handleContinue($cleanSelection, $cleanContext, $style);
+                break;
 
             case 'elaborate':
-                return $this->handleElaborate($cleanSelection, $cleanContext, $style);
+                $result = $this->handleElaborate($cleanSelection, $cleanContext, $style);
+                break;
 
             case 'rewrite':
-                return $this->handleRewrite($cleanSelection, $style);
+                $result = $this->handleRewrite($cleanSelection, $style);
+                break;
 
             case 'grammar':
-                return $this->handleGrammar($cleanSelection ?: $cleanContext);
+                $result = $this->handleGrammar($cleanSelection ?: $cleanContext);
+                break;
 
             case 'summarize':
-                return $this->handleSummarize($cleanSelection ?: $cleanContext);
+                $result = $this->handleSummarize($cleanSelection ?: $cleanContext);
+                break;
 
             case 'brainstorm':
-                return $this->handleBrainstorm($cleanSelection ?: $cleanContext, $cleanPrompt);
+                $result = $this->handleBrainstorm($cleanSelection ?: $cleanContext, $cleanPrompt);
+                break;
 
             case 'chat':
             default:
-                return $this->handleChat($cleanPrompt, $cleanSelection ?: $cleanContext);
+                $result = $this->handleChat($cleanPrompt, $cleanSelection ?: $cleanContext);
+                break;
         }
+
+        if ($provider) {
+            $result['provider'] = $provider->name;
+            $result['provider_uuid'] = $provider->uuid;
+            $result['provider_label'] = $provider->provider_label;
+            if (! empty($result['explanation'])) {
+                $result['explanation'] .= ' (Diproses dengan '.$provider->name.').';
+            }
+        }
+
+        return $result;
     }
 
     /**

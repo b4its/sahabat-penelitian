@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AiProvider;
 use Illuminate\Http\UploadedFile;
 
 /*
@@ -1892,4 +1893,62 @@ XML;
         ->and($sourceImporterJs)->toContain("color = '9ca3af'");
 
     @unlink($zipPath);
+});
+
+test('black-box: xishie studio ai renders searchable provider select and loads active providers in editor view', function () {
+    $response = $this->get('/editor');
+    $response->assertStatus(200);
+
+    // AI Provider Select and Search UI elements
+    $response->assertSee('Pilih AI Provider:', false);
+    $response->assertSee('wordcraft-provider-select', false);
+    $response->assertSee('wordcraft-provider-search-trigger', false);
+    $response->assertSee('wordcraft-provider-search-input', false);
+    $response->assertSee('wordcraft-provider-options-list', false);
+    $response->assertSee('wordcraft-provider-dropdown', false);
+    $response->assertSee('wordcraft-provider-empty-result', false);
+    $response->assertSee('wordcraft-provider-chevron', false);
+    $response->assertSee('fa-magnifying-glass', false);
+});
+
+test('black-box: api documents ai-providers endpoint returns active provider list', function () {
+    $response = $this->getJson('/api/documents/ai-providers');
+    $response->assertStatus(200)
+        ->assertJson(['success' => true])
+        ->assertJsonStructure([
+            'success',
+            'providers' => [
+                '*' => [
+                    'uuid',
+                    'name',
+                    'provider',
+                    'provider_label',
+                    'badge_color',
+                    'models',
+                    'default_model',
+                ],
+            ],
+        ]);
+
+    expect(count($response->json('providers')))->toBeGreaterThan(0);
+});
+
+test('black-box: xishie studio ai assistant processes request with selected provider uuid and returns attribution', function () {
+    $provider = AiProvider::active()->first();
+    expect($provider)->not->toBeNull();
+
+    $response = $this->postJson('/api/documents/ai-assistant', [
+        'action' => 'continue',
+        'selection' => 'Berdasarkan data observasi kuantitatif',
+        'style' => 'formal',
+        'provider' => $provider->uuid,
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'action' => 'continue',
+            'provider' => $provider->name,
+            'provider_uuid' => $provider->uuid,
+        ]);
 });

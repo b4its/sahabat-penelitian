@@ -11,6 +11,14 @@ export class WordcraftAi {
         this.promptInput = options.promptInput;
         this.styleSelect = options.styleSelect;
         this.statusEl = options.statusEl;
+        this.providerSelect = options.providerSelect || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-select') : null) || document.getElementById('wordcraft-provider-select');
+        this.providerDropdown = options.providerDropdown || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-dropdown') : null) || document.getElementById('wordcraft-provider-dropdown');
+        this.providerTrigger = options.providerTrigger || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-search-trigger') : null) || document.getElementById('wordcraft-provider-search-trigger');
+        this.providerSearchInput = options.providerSearchInput || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-search-input') : null) || document.getElementById('wordcraft-provider-search-input');
+        this.providerOptionsList = options.providerOptionsList || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-options-list') : null) || document.getElementById('wordcraft-provider-options-list');
+        this.providerSelectedText = options.providerSelectedText || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-selected-text') : null) || document.getElementById('wordcraft-provider-selected-text');
+        this.providerEmptyResult = options.providerEmptyResult || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-empty-result') : null) || document.getElementById('wordcraft-provider-empty-result');
+        this.providerChevron = options.providerChevron || (this.containerEl ? this.containerEl.querySelector('#wordcraft-provider-chevron') : null) || document.getElementById('wordcraft-provider-chevron');
         this.onNotify = options.onNotify || (() => {});
 
         this.currentAction = 'continue';
@@ -56,6 +64,170 @@ export class WordcraftAi {
                 }
             });
         }
+
+        // Initialize Searchable AI Provider Dropdown
+        this.initProviderSelector();
+    }
+
+    initProviderSelector() {
+        if (!this.providerTrigger || !this.providerDropdown) return;
+
+        // Toggle dropdown on trigger click
+        this.providerTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleProviderDropdown();
+        });
+
+        // Filter on search input
+        if (this.providerSearchInput) {
+            this.providerSearchInput.addEventListener('input', () => {
+                this.filterProviderOptions();
+            });
+            this.providerSearchInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            this.providerSearchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.toggleProviderDropdown(false);
+                }
+            });
+        }
+
+        // Option item click
+        if (this.providerOptionsList) {
+            this.providerOptionsList.querySelectorAll('.wordcraft-provider-option-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const uuid = item.getAttribute('data-uuid');
+                    if (uuid) {
+                        this.selectProvider(uuid);
+                    }
+                });
+            });
+        }
+
+        // Click outside closes dropdown
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('wordcraft-provider-searchable-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                this.toggleProviderDropdown(false);
+            }
+        });
+
+        // Close dropdown on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.providerDropdown && !this.providerDropdown.classList.contains('hidden')) {
+                this.toggleProviderDropdown(false);
+            }
+        });
+    }
+
+    toggleProviderDropdown(force) {
+        if (!this.providerDropdown) return;
+        const isCurrentlyHidden = this.providerDropdown.classList.contains('hidden');
+        const show = typeof force === 'boolean' ? force : isCurrentlyHidden;
+
+        if (show) {
+            this.providerDropdown.classList.remove('hidden');
+            if (this.providerChevron) {
+                this.providerChevron.classList.add('rotate-180');
+            }
+            if (this.providerTrigger) {
+                this.providerTrigger.setAttribute('aria-expanded', 'true');
+            }
+            if (this.providerSearchInput) {
+                this.providerSearchInput.value = '';
+                this.filterProviderOptions();
+                setTimeout(() => this.providerSearchInput.focus(), 50);
+            }
+        } else {
+            this.providerDropdown.classList.add('hidden');
+            if (this.providerChevron) {
+                this.providerChevron.classList.remove('rotate-180');
+            }
+            if (this.providerTrigger) {
+                this.providerTrigger.setAttribute('aria-expanded', 'false');
+            }
+        }
+    }
+
+    filterProviderOptions() {
+        if (!this.providerOptionsList) return;
+        const query = (this.providerSearchInput ? this.providerSearchInput.value : '').toLowerCase().trim();
+        const items = this.providerOptionsList.querySelectorAll('.wordcraft-provider-option-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const name = (item.getAttribute('data-name') || '').toLowerCase();
+            const label = (item.getAttribute('data-label') || '').toLowerCase();
+            if (!query || name.includes(query) || label.includes(query)) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+
+        if (this.providerEmptyResult) {
+            if (visibleCount === 0) {
+                this.providerEmptyResult.classList.remove('hidden');
+            } else {
+                this.providerEmptyResult.classList.add('hidden');
+            }
+        }
+    }
+
+    selectProvider(uuid) {
+        if (this.providerSelect) {
+            this.providerSelect.value = uuid;
+            this.providerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Highlight selected option
+        if (this.providerOptionsList) {
+            this.providerOptionsList.querySelectorAll('.wordcraft-provider-option-item').forEach(item => {
+                if (item.getAttribute('data-uuid') === uuid) {
+                    item.classList.add('bg-indigo-50/80', 'dark:bg-indigo-950/60', 'font-bold');
+                } else {
+                    item.classList.remove('bg-indigo-50/80', 'dark:bg-indigo-950/60', 'font-bold');
+                }
+            });
+        }
+
+        // Update selected display text
+        this.updateSelectedProviderDisplay(uuid);
+        this.toggleProviderDropdown(false);
+    }
+
+    updateSelectedProviderDisplay(uuid) {
+        if (!this.providerSelectedText) return;
+        let selectedItem = null;
+        if (this.providerOptionsList) {
+            selectedItem = this.providerOptionsList.querySelector(`.wordcraft-provider-option-item[data-uuid="${uuid}"]`);
+        }
+
+        if (selectedItem) {
+            const name = selectedItem.getAttribute('data-name') || '';
+            const label = selectedItem.getAttribute('data-label') || '';
+            const badge = selectedItem.getAttribute('data-badge') || '';
+            this.providerSelectedText.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                <span class="truncate font-bold text-gray-900 dark:text-white">${this.escapeHtml(name)}</span>
+                ${label ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-normal shrink-0 ${badge}">${this.escapeHtml(label)}</span>` : ''}
+            `;
+        }
+    }
+
+    getSelectedProvider() {
+        return this.providerSelect ? this.providerSelect.value : '';
+    }
+
+    escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     setAction(action) {
@@ -86,6 +258,8 @@ export class WordcraftAi {
 
         this.setLoading(true);
 
+        const providerUuid = this.getSelectedProvider();
+
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             const res = await fetch('/api/documents/ai-assistant', {
@@ -102,6 +276,7 @@ export class WordcraftAi {
                     context: context.substring(Math.max(0, context.length - 2000)),
                     prompt: customPrompt,
                     style,
+                    provider: providerUuid,
                 }),
             });
 
@@ -115,6 +290,12 @@ export class WordcraftAi {
             console.warn('Wordcraft API fallback ke generator lokal:', err);
             // Local client-side smart simulation fallback
             const fallbackData = this.generateLocalFallback(action, this.activeSelection, context, customPrompt, style);
+            if (providerUuid) {
+                const opt = this.providerSelect ? this.providerSelect.querySelector(`option[value="${providerUuid}"]`) : null;
+                if (opt) {
+                    fallbackData.provider = opt.getAttribute('data-name') || opt.textContent.trim();
+                }
+            }
             this.renderResults(fallbackData);
         } finally {
             this.setLoading(false);
@@ -126,16 +307,22 @@ export class WordcraftAi {
         this.resultsEl.innerHTML = '';
 
         const titleDiv = document.createElement('div');
-        titleDiv.className = 'mb-3 flex items-center justify-between';
+        titleDiv.className = 'mb-3 flex items-center justify-between flex-wrap gap-2';
         titleDiv.innerHTML = `
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 uppercase">
                     ${data.title || data.action}
                 </span>
+                ${data.provider ? `
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                        <i class="fa-solid fa-server text-[9px]"></i>
+                        ${this.escapeHtml(data.provider)}
+                    </span>
+                ` : ''}
                 <span class="text-xs text-gray-500">${data.options.length} saran dihasilkan</span>
             </div>
-            <button id="wordcraft-retry-btn" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <button id="wordcraft-retry-btn" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
                 Coba Lagi
             </button>
         `;
@@ -171,10 +358,10 @@ export class WordcraftAi {
 
             // Insert button
             const insertBtn = document.createElement('button');
-            insertBtn.className = 'px-2.5 py-1 text-xs font-medium rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1';
+            insertBtn.className = 'px-2.5 py-1 text-xs font-medium rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1.5 cursor-pointer';
             insertBtn.innerHTML = `
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                Sisipkan
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>Sisipkan</span>
             `;
             insertBtn.addEventListener('click', () => {
                 this.engine.insertAtCursor(`<p>${optText.replace(/\n/g, '<br>')}</p>`);
@@ -183,10 +370,10 @@ export class WordcraftAi {
 
             // Replace button (if selection exists)
             const replaceBtn = document.createElement('button');
-            replaceBtn.className = 'px-2.5 py-1 text-xs font-medium rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition flex items-center gap-1';
+            replaceBtn.className = 'px-2.5 py-1 text-xs font-medium rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition flex items-center gap-1.5 cursor-pointer';
             replaceBtn.innerHTML = `
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                Ganti Seleksi
+                <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                <span>Ganti Seleksi</span>
             `;
             replaceBtn.addEventListener('click', () => {
                 this.engine.replaceSelectedText(optText.replace(/\n/g, '<br>'));
@@ -195,9 +382,9 @@ export class WordcraftAi {
 
             // Copy button
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'px-2 py-1 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 ml-auto transition';
+            copyBtn.className = 'px-2 py-1 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 ml-auto transition cursor-pointer';
             copyBtn.innerHTML = `
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <i class="fa-regular fa-copy text-sm"></i>
             `;
             copyBtn.title = 'Salin ke Clipboard';
             copyBtn.addEventListener('click', () => {

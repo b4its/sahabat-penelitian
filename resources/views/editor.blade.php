@@ -2085,6 +2085,107 @@
                 </button>
             </div>
 
+            <!-- AI Provider Selector with Integrated Search -->
+            @php
+                $editorProviders = (isset($aiProviders) && $aiProviders->isNotEmpty())
+                    ? $aiProviders
+                    : \App\Models\AiProvider::active()->latest()->get();
+                $selectedEditorProvider = $editorProviders->first();
+            @endphp
+            <div class="p-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
+                <label for="wordcraft-provider-search-trigger" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                    Pilih AI Provider:
+                </label>
+
+                <!-- Hidden Native Select for programmatic compatibility -->
+                <select id="wordcraft-provider-select" name="provider" class="hidden">
+                    @forelse($editorProviders as $p)
+                        <option value="{{ $p->uuid }}" {{ $loop->first ? 'selected' : '' }} data-name="{{ $p->name }}" data-label="{{ $p->provider_label }}" data-badge="{{ $p->badge_color }}" data-driver="{{ $p->provider }}">
+                            {{ $p->name }} ({{ $p->provider_label }})
+                        </option>
+                    @empty
+                        <option value="" disabled selected>Belum ada provider aktif</option>
+                    @endforelse
+                </select>
+
+                <!-- Searchable Dropdown Trigger & Panel -->
+                <div class="relative" id="wordcraft-provider-searchable-wrapper">
+                    <button
+                        type="button"
+                        id="wordcraft-provider-search-trigger"
+                        class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer flex items-center justify-between text-left shadow-xs transition hover:border-indigo-300 dark:hover:border-indigo-600"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                    >
+                        <span id="wordcraft-provider-selected-text" class="truncate flex items-center gap-1.5 font-semibold text-xs">
+                            @if($selectedEditorProvider)
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                <span class="truncate font-bold text-gray-900 dark:text-white">{{ $selectedEditorProvider->name }}</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded font-normal shrink-0 {{ $selectedEditorProvider->badge_color }}">{{ $selectedEditorProvider->provider_label }}</span>
+                            @else
+                                <span class="text-gray-400">Pilih AI Provider</span>
+                            @endif
+                        </span>
+                        <div class="pointer-events-none flex items-center pl-1 text-gray-500">
+                            <i id="wordcraft-provider-chevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-150"></i>
+                        </div>
+                    </button>
+
+                    <!-- Searchable Dropdown Panel -->
+                    <div
+                        id="wordcraft-provider-dropdown"
+                        class="hidden absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden animate-in fade-in zoom-in-95"
+                    >
+                        <!-- Search Input Inside Select -->
+                        <div class="p-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/60">
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    id="wordcraft-provider-search-input"
+                                    placeholder="Cari AI provider..."
+                                    class="w-full pl-7 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    autocomplete="off"
+                                />
+                                <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-2.5 top-2.5 pointer-events-none"></i>
+                            </div>
+                        </div>
+
+                        <!-- List of Providers -->
+                        <ul
+                            id="wordcraft-provider-options-list"
+                            class="max-h-48 overflow-y-auto p-1 divide-y divide-gray-100 dark:divide-gray-800 text-xs"
+                            role="listbox"
+                        >
+                            @forelse($editorProviders as $p)
+                                <li
+                                    class="wordcraft-provider-option-item p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer flex items-center justify-between transition-colors {{ $loop->first ? 'bg-indigo-50/80 dark:bg-indigo-950/60 font-bold' : '' }}"
+                                    data-uuid="{{ $p->uuid }}"
+                                    data-name="{{ $p->name }}"
+                                    data-label="{{ $p->provider_label }}"
+                                    data-badge="{{ $p->badge_color }}"
+                                    role="option"
+                                >
+                                    <div class="flex items-center gap-2 truncate">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                        <span class="wordcraft-provider-option-name truncate text-gray-900 dark:text-white">{{ $p->name }}</span>
+                                    </div>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded font-normal {{ $p->badge_color }} shrink-0">
+                                        {{ $p->provider_label }}
+                                    </span>
+                                </li>
+                            @empty
+                                <li class="p-3 text-center text-gray-400 text-xs">Belum ada provider aktif</li>
+                            @endforelse
+                        </ul>
+
+                        <!-- Empty search result state -->
+                        <div id="wordcraft-provider-empty-result" class="hidden p-3 text-center text-xs text-gray-400 dark:text-gray-500">
+                            Provider tidak ditemukan
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Action Chips Bar -->
             <div class="p-3 border-b border-gray-100 dark:border-gray-800">
                 <div class="text-[11px] font-semibold text-gray-500 mb-2">PILIH AKSI KREATIF:</div>

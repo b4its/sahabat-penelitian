@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiProvider;
 use App\Models\Document;
 use App\Services\AiService;
+use App\Services\AiStudioService;
 use App\Services\CitationService;
 use App\Services\CollaborationService;
 use App\Services\DocumentModelService;
@@ -33,7 +35,10 @@ class DocumentController extends Controller
         protected ProofingService $proofingService = new ProofingService,
         protected MailMergeService $mailMergeService = new MailMergeService,
         protected DocumentProtectionService $protectionService = new DocumentProtectionService,
-    ) {}
+        protected ?AiStudioService $aiStudioService = null,
+    ) {
+        $this->aiStudioService = $aiStudioService ?? new AiStudioService;
+    }
 
     /**
      * Display the modern interactive landing page for "Sahabat Penelitian".
@@ -124,10 +129,14 @@ HTML;
 
         $stats = $this->documentService->calculateStats($defaultContent);
 
+        $this->aiStudioService->ensureDefaultProvidersExist();
+        $aiProviders = AiProvider::active()->latest()->get();
+
         return view('editor', [
             'initialTitle' => $defaultTitle,
             'initialContent' => $defaultContent,
             'initialStats' => $stats,
+            'aiProviders' => $aiProviders,
         ]);
     }
 
@@ -228,6 +237,8 @@ HTML;
             'context' => ['nullable', 'string'],
             'prompt' => ['nullable', 'string'],
             'style' => ['nullable', 'string', 'in:academic,formal,creative,concise,persuasive'],
+            'provider' => ['nullable', 'string'],
+            'provider_uuid' => ['nullable', 'string'],
         ]);
 
         $action = $request->input('action');
@@ -235,12 +246,44 @@ HTML;
         $context = $request->input('context', '');
         $prompt = $request->input('prompt', '');
         $style = $request->input('style', 'formal');
+        $providerUuid = $request->input('provider', $request->input('provider_uuid'));
 
-        $result = $this->aiService->process($action, $selection, $context, $prompt, $style);
+        $provider = null;
+        if (! empty($providerUuid)) {
+            $provider = AiProvider::where('uuid', $providerUuid)->first();
+        }
+
+        $result = $this->aiService->process($action, $selection, $context, $prompt, $style, $provider);
 
         return response()->json(array_merge([
             'success' => true,
+            'provider' => $provider?->name,
+            'provider_uuid' => $provider?->uuid,
         ], $result));
+    }
+
+    /**
+     * Get active AI providers for Xishie Studio AI selector.
+     */
+    public function getAiProviders(): JsonResponse
+    {
+        $this->aiStudioService->ensureDefaultProvidersExist();
+        $providers = AiProvider::active()->latest()->get()->map(function (AiProvider $provider) {
+            return [
+                'uuid' => $provider->uuid,
+                'name' => $provider->name,
+                'provider' => $provider->provider,
+                'provider_label' => $provider->provider_label,
+                'badge_color' => $provider->badge_color,
+                'models' => $provider->models ?? [],
+                'default_model' => $provider->default_model,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'providers' => $providers,
+        ]);
     }
 
     /**

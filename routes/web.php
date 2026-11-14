@@ -53,6 +53,7 @@ Route::prefix('panel')->name('panel.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('api/documents')->name('documents.')->group(function () {
+    Route::get('/ai-providers', [DocumentController::class, 'getAiProviders'])->name('ai-providers');
     Route::post('/import', [DocumentController::class, 'import'])->name('import');
     Route::post('/export', [DocumentController::class, 'export'])->name('export');
     Route::post('/ai-assistant', [DocumentController::class, 'aiAssistant'])->name('ai-assistant');

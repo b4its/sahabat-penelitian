@@ -126,6 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
             promptInput: document.getElementById('wordcraft-custom-prompt'),
             styleSelect: document.getElementById('wordcraft-style-select'),
             statusEl: document.getElementById('wordcraft-loading-spinner'),
+            providerSelect: document.getElementById('wordcraft-provider-select'),
+            providerDropdown: document.getElementById('wordcraft-provider-dropdown'),
+            providerTrigger: document.getElementById('wordcraft-provider-search-trigger'),
+            providerSearchInput: document.getElementById('wordcraft-provider-search-input'),
+            providerOptionsList: document.getElementById('wordcraft-provider-options-list'),
+            providerSelectedText: document.getElementById('wordcraft-provider-selected-text'),
+            providerEmptyResult: document.getElementById('wordcraft-provider-empty-result'),
+            providerChevron: document.getElementById('wordcraft-provider-chevron'),
             onNotify: (msg) => {
                 if (window.uiController) {
                     window.uiController.showToast(msg, 'success');
